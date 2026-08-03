@@ -12,7 +12,6 @@ import {
   moduleById,
   stepTypeLabels,
   stepsForModule,
-  steps as allSteps,
   todaysModuleIds,
 } from "@/data/mockTraining";
 
