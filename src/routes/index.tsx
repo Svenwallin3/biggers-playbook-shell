@@ -90,6 +90,7 @@ function Index() {
                     <Link
                       to="/modules/$moduleId"
                       params={{ moduleId }}
+                      search={{ step: undefined }}
                       className="text-base font-semibold hover:underline"
                     >
                       {mod.title}

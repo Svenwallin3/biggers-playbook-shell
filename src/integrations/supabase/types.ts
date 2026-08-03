@@ -14,16 +14,693 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assignable_module_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          due_date: string | null
+          employee_id: string
+          id: string
+          is_deleted: boolean
+          module_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          due_date?: string | null
+          employee_id: string
+          id?: string
+          is_deleted?: boolean
+          module_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          due_date?: string | null
+          employee_id?: string
+          id?: string
+          is_deleted?: boolean
+          module_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignable_module_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignable_module_assignments_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignable_module_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignable_module_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employees: {
+        Row: {
+          auth_tier: Database["public"]["Enums"]["auth_tier"]
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          department_scope: Database["public"]["Enums"]["department"] | null
+          email: string
+          full_name: string | null
+          id: string
+          is_deleted: boolean
+          location_id: string | null
+          merged_into: string | null
+          path: string | null
+          status: Database["public"]["Enums"]["employee_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          auth_tier?: Database["public"]["Enums"]["auth_tier"]
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department_scope?: Database["public"]["Enums"]["department"] | null
+          email: string
+          full_name?: string | null
+          id?: string
+          is_deleted?: boolean
+          location_id?: string | null
+          merged_into?: string | null
+          path?: string | null
+          status?: Database["public"]["Enums"]["employee_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          auth_tier?: Database["public"]["Enums"]["auth_tier"]
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department_scope?: Database["public"]["Enums"]["department"] | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_deleted?: boolean
+          location_id?: string | null
+          merged_into?: string | null
+          path?: string | null
+          status?: Database["public"]["Enums"]["employee_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_merged_into_fkey"
+            columns: ["merged_into"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modules: {
+        Row: {
+          created_at: string
+          day_assignment: number | null
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          id: string
+          is_assignable: boolean
+          is_deleted: boolean
+          location_tag: string | null
+          name: string
+          sequence_order: number
+          slug: string
+          sub_path: string | null
+          track_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_assignment?: number | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          id?: string
+          is_assignable?: boolean
+          is_deleted?: boolean
+          location_tag?: string | null
+          name: string
+          sequence_order?: number
+          slug: string
+          sub_path?: string | null
+          track_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_assignment?: number | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          id?: string
+          is_assignable?: boolean
+          is_deleted?: boolean
+          location_tag?: string | null
+          name?: string
+          sequence_order?: number
+          slug?: string
+          sub_path?: string | null
+          track_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modules_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "modules_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      progress_records: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          notes: string | null
+          signed_off_at: string | null
+          signed_off_by: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["progress_status"]
+          step_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          signed_off_at?: string | null
+          signed_off_by?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["progress_status"]
+          step_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          signed_off_at?: string | null
+          signed_off_by?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["progress_status"]
+          step_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_records_signed_off_by_fkey"
+            columns: ["signed_off_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_records_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_attempts: {
+        Row: {
+          attempted_at: string
+          chosen_option: number | null
+          created_at: string
+          employee_id: string
+          id: string
+          is_correct: boolean | null
+          quiz_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempted_at?: string
+          chosen_option?: number | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          is_correct?: boolean | null
+          quiz_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempted_at?: string
+          chosen_option?: number | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          is_correct?: boolean | null
+          quiz_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_bank: {
+        Row: {
+          correct_option: number
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          explanation: string | null
+          id: string
+          is_deleted: boolean
+          options: Json
+          question: string
+          sequence_order: number
+          step_id: string
+          updated_at: string
+        }
+        Insert: {
+          correct_option?: number
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          explanation?: string | null
+          id?: string
+          is_deleted?: boolean
+          options?: Json
+          question: string
+          sequence_order?: number
+          step_id: string
+          updated_at?: string
+        }
+        Update: {
+          correct_option?: number
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          explanation?: string | null
+          id?: string
+          is_deleted?: boolean
+          options?: Json
+          question?: string
+          sequence_order?: number
+          step_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_bank_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_bank_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sourcing_board_entries: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_deleted: boolean
+          location_tag: string | null
+          notes: string | null
+          product: string
+          region: string | null
+          since_date: string | null
+          supplier: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          notes?: string | null
+          product: string
+          region?: string | null
+          since_date?: string | null
+          supplier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          notes?: string | null
+          product?: string
+          region?: string | null
+          since_date?: string | null
+          supplier?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sourcing_board_entries_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      steps: {
+        Row: {
+          content_body: string | null
+          content_notes: string | null
+          content_status: Database["public"]["Enums"]["content_status"]
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_deleted: boolean
+          location_tag: string | null
+          media_url: string | null
+          module_id: string
+          sequence_order: number
+          step_type: Database["public"]["Enums"]["step_type"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content_body?: string | null
+          content_notes?: string | null
+          content_status?: Database["public"]["Enums"]["content_status"]
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          media_url?: string | null
+          module_id: string
+          sequence_order?: number
+          step_type?: Database["public"]["Enums"]["step_type"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content_body?: string | null
+          content_notes?: string | null
+          content_status?: Database["public"]["Enums"]["content_status"]
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          media_url?: string | null
+          module_id?: string
+          sequence_order?: number
+          step_type?: Database["public"]["Enums"]["step_type"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "steps_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "steps_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suggestion_queue: {
+        Row: {
+          created_at: string
+          decision_notes: string | null
+          field_how: string | null
+          field_how_you_know: string | null
+          field_what: string
+          id: string
+          module_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["suggestion_status"]
+          step_id: string | null
+          submitted_by: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decision_notes?: string | null
+          field_how?: string | null
+          field_how_you_know?: string | null
+          field_what: string
+          id?: string
+          module_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["suggestion_status"]
+          step_id?: string | null
+          submitted_by: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decision_notes?: string | null
+          field_how?: string | null
+          field_how_you_know?: string | null
+          field_what?: string
+          id?: string
+          module_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["suggestion_status"]
+          step_id?: string | null
+          submitted_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_queue_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestion_queue_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestion_queue_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestion_queue_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracks: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          department: Database["public"]["Enums"]["department"]
+          description: string | null
+          id: string
+          is_deleted: boolean
+          location_tag: string | null
+          name: string
+          sequence_order: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department: Database["public"]["Enums"]["department"]
+          description?: string | null
+          id?: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          name: string
+          sequence_order?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department?: Database["public"]["Enums"]["department"]
+          description?: string | null
+          id?: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          name?: string
+          sequence_order?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracks_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      version_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          snapshot: Json
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          snapshot: Json
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          snapshot?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_tier: {
+        Args: never
+        Returns: Database["public"]["Enums"]["auth_tier"]
+      }
+      has_tier: {
+        Args: { _tier: Database["public"]["Enums"]["auth_tier"] }
+        Returns: boolean
+      }
+      is_manager_or_owner: { Args: never; Returns: boolean }
+      my_department: {
+        Args: never
+        Returns: Database["public"]["Enums"]["department"]
+      }
     }
     Enums: {
-      [_ in never]: never
+      auth_tier: "staff" | "manager" | "owner"
+      content_status: "ready" | "needs_restructuring" | "missing" | "blocked"
+      department: "universal" | "market" | "kitchen" | "delivery"
+      employee_status: "active" | "inactive" | "merged"
+      progress_status:
+        | "not_started"
+        | "in_progress"
+        | "completed"
+        | "signed_off"
+      step_type:
+        | "text"
+        | "photo"
+        | "video"
+        | "quiz"
+        | "doing_signoff"
+        | "supervised_live_practice"
+      suggestion_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +827,26 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      auth_tier: ["staff", "manager", "owner"],
+      content_status: ["ready", "needs_restructuring", "missing", "blocked"],
+      department: ["universal", "market", "kitchen", "delivery"],
+      employee_status: ["active", "inactive", "merged"],
+      progress_status: [
+        "not_started",
+        "in_progress",
+        "completed",
+        "signed_off",
+      ],
+      step_type: [
+        "text",
+        "photo",
+        "video",
+        "quiz",
+        "doing_signoff",
+        "supervised_live_practice",
+      ],
+      suggestion_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const

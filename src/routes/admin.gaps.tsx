@@ -132,6 +132,7 @@ function GapsPage() {
                   <Link
                     to="/modules/$moduleId"
                     params={{ moduleId: mod.id }}
+                    search={{ step: undefined }}
                     className="underline underline-offset-2"
                   >
                     {mod.title}
