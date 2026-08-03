@@ -38,7 +38,7 @@ export const Route = createFileRoute("/suggest")({
 });
 
 function SuggestPage() {
-  const [stepId, setStepId] = useState(steps[0].id);
+  const [stepId, setStepId] = useState(steps[0]!.id);
   const [what, setWhat] = useState("");
   const [how, setHow] = useState("");
   const [know, setKnow] = useState("");
