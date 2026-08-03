@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SourcingBoardRouteImport } from './routes/sourcing-board'
 import { Route as SuggestRouteImport } from './routes/suggest'
+import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -47,6 +48,11 @@ const SuggestRoute = SuggestRouteImport.update({
   path: '/suggest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminContentRoute = AdminContentRouteImport.update({
+  id: '/admin/content',
+  path: '/admin/content',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ModulesModuleIdRoute = ModulesModuleIdRouteImport.update({
   id: '/modules/$moduleId',
   path: '/modules/$moduleId',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
+  '/admin/content': typeof AdminContentRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
+  '/admin/content': typeof AdminContentRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
+  '/admin/content': typeof AdminContentRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sourcing-board'
     | '/suggest'
+    | '/admin/content'
     | '/modules/$moduleId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sourcing-board'
     | '/suggest'
+    | '/admin/content'
     | '/modules/$moduleId'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sourcing-board'
     | '/suggest'
+    | '/admin/content'
     | '/modules/$moduleId'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SourcingBoardRoute: typeof SourcingBoardRoute
   SuggestRoute: typeof SuggestRoute
+  AdminContentRoute: typeof AdminContentRoute
   ModulesModuleIdRoute: typeof ModulesModuleIdRoute
 }
 
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuggestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/content': {
+      id: '/admin/content'
+      path: '/admin/content'
+      fullPath: '/admin/content'
+      preLoaderRoute: typeof AdminContentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/modules/$moduleId': {
       id: '/modules/$moduleId'
       path: '/modules/$moduleId'
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SourcingBoardRoute: SourcingBoardRoute,
   SuggestRoute: SuggestRoute,
+  AdminContentRoute: AdminContentRoute,
   ModulesModuleIdRoute: ModulesModuleIdRoute,
 }
 export const routeTree = rootRouteImport
