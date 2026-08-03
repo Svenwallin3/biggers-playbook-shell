@@ -13,6 +13,8 @@ const adminNavItems = [
   { label: "Approvals", to: "/approvals" as const },
   { label: "Content", to: "/admin/content" as const },
   { label: "Gaps", to: "/admin/gaps" as const },
+  { label: "Compliance", to: "/compliance" as const },
+  { label: "Merge", to: "/merge-tool" as const },
 ];
 
 export function AppLayout() {
