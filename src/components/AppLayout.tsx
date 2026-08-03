@@ -1,6 +1,11 @@
 import { Link, Outlet } from "@tanstack/react-router";
 
-const navItems = [{ label: "Home", to: "/" as const }];
+const navItems = [
+  { label: "Today", to: "/" as const },
+  { label: "Search", to: "/search" as const },
+  { label: "Sourcing Board", to: "/sourcing-board" as const },
+  { label: "Sign in", to: "/login" as const },
+];
 
 export function AppLayout() {
   return (
@@ -15,6 +20,7 @@ export function AppLayout() {
               <Link
                 key={item.to}
                 to={item.to}
+                activeOptions={{ exact: item.to === "/" }}
                 activeProps={{ className: "text-foreground font-medium" }}
                 className="transition-colors hover:text-foreground"
               >

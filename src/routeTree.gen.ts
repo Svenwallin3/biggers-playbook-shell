@@ -10,33 +10,80 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as SourcingBoardRouteImport } from './routes/sourcing-board'
+import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SourcingBoardRoute = SourcingBoardRouteImport.update({
+  id: '/sourcing-board',
+  path: '/sourcing-board',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModulesModuleIdRoute = ModulesModuleIdRouteImport.update({
+  id: '/modules/$moduleId',
+  path: '/modules/$moduleId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/search': typeof SearchRoute
+  '/sourcing-board': typeof SourcingBoardRoute
+  '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/search': typeof SearchRoute
+  '/sourcing-board': typeof SourcingBoardRoute
+  '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/search': typeof SearchRoute
+  '/sourcing-board': typeof SourcingBoardRoute
+  '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    '/' | '/login' | '/search' | '/sourcing-board' | '/modules/$moduleId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/login' | '/search' | '/sourcing-board' | '/modules/$moduleId'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/search'
+    | '/sourcing-board'
+    | '/modules/$moduleId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
+  SearchRoute: typeof SearchRoute
+  SourcingBoardRoute: typeof SourcingBoardRoute
+  ModulesModuleIdRoute: typeof ModulesModuleIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +95,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sourcing-board': {
+      id: '/sourcing-board'
+      path: '/sourcing-board'
+      fullPath: '/sourcing-board'
+      preLoaderRoute: typeof SourcingBoardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/modules/$moduleId': {
+      id: '/modules/$moduleId'
+      path: '/modules/$moduleId'
+      fullPath: '/modules/$moduleId'
+      preLoaderRoute: typeof ModulesModuleIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
+  SearchRoute: SearchRoute,
+  SourcingBoardRoute: SourcingBoardRoute,
+  ModulesModuleIdRoute: ModulesModuleIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
