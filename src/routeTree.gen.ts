@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApprovalsRouteImport } from './routes/approvals'
+import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MergeToolRouteImport } from './routes/merge-tool'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SourcingBoardRouteImport } from './routes/sourcing-board'
 import { Route as SuggestRouteImport } from './routes/suggest'
@@ -29,9 +31,19 @@ const ApprovalsRoute = ApprovalsRouteImport.update({
   path: '/approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComplianceRoute = ComplianceRouteImport.update({
+  id: '/compliance',
+  path: '/compliance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MergeToolRoute = MergeToolRouteImport.update({
+  id: '/merge-tool',
+  path: '/merge-tool',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SearchRoute = SearchRouteImport.update({
@@ -68,7 +80,9 @@ const ModulesModuleIdRoute = ModulesModuleIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
+  '/compliance': typeof ComplianceRoute
   '/login': typeof LoginRoute
+  '/merge-tool': typeof MergeToolRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
@@ -79,7 +93,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
+  '/compliance': typeof ComplianceRoute
   '/login': typeof LoginRoute
+  '/merge-tool': typeof MergeToolRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
@@ -91,7 +107,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
+  '/compliance': typeof ComplianceRoute
   '/login': typeof LoginRoute
+  '/merge-tool': typeof MergeToolRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
@@ -104,7 +122,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/approvals'
+    | '/compliance'
     | '/login'
+    | '/merge-tool'
     | '/search'
     | '/sourcing-board'
     | '/suggest'
@@ -115,7 +135,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/approvals'
+    | '/compliance'
     | '/login'
+    | '/merge-tool'
     | '/search'
     | '/sourcing-board'
     | '/suggest'
@@ -126,7 +148,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/approvals'
+    | '/compliance'
     | '/login'
+    | '/merge-tool'
     | '/search'
     | '/sourcing-board'
     | '/suggest'
@@ -138,7 +162,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApprovalsRoute: typeof ApprovalsRoute
+  ComplianceRoute: typeof ComplianceRoute
   LoginRoute: typeof LoginRoute
+  MergeToolRoute: typeof MergeToolRoute
   SearchRoute: typeof SearchRoute
   SourcingBoardRoute: typeof SourcingBoardRoute
   SuggestRoute: typeof SuggestRoute
@@ -163,11 +189,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApprovalsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/compliance': {
+      id: '/compliance'
+      path: '/compliance'
+      fullPath: '/compliance'
+      preLoaderRoute: typeof ComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/merge-tool': {
+      id: '/merge-tool'
+      path: '/merge-tool'
+      fullPath: '/merge-tool'
+      preLoaderRoute: typeof MergeToolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -218,7 +258,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApprovalsRoute: ApprovalsRoute,
+  ComplianceRoute: ComplianceRoute,
   LoginRoute: LoginRoute,
+  MergeToolRoute: MergeToolRoute,
   SearchRoute: SearchRoute,
   SourcingBoardRoute: SourcingBoardRoute,
   SuggestRoute: SuggestRoute,

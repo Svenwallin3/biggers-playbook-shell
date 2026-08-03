@@ -254,6 +254,10 @@ export interface SourcingEntry {
   item: string;
   supplier: string;
   note: string;
+  /** Origin / region the product comes from. */
+  region: string;
+  /** Month + year we started carrying it. */
+  since: string;
 }
 
 export const sourcingBoard: SourcingEntry[] = [
@@ -262,18 +266,64 @@ export const sourcingBoard: SourcingEntry[] = [
     item: "Stone-ground grits",
     supplier: "Old Mill of Guilford",
     note: "Sacked weekly, picked up Thursdays.",
+    region: "Oak Ridge, NC",
+    since: "Mar 2021",
   },
   {
     id: "src_2",
     item: "Pasture eggs",
     supplier: "Rocky Creek Farm",
     note: "Seasonal volume — short in January.",
+    region: "Siler City, NC",
+    since: "Jun 2022",
   },
   {
     id: "src_3",
     item: "Sourdough loaves",
     supplier: "In-house bakery",
     note: "Baker floats weekday production and weekend service.",
+    region: "In-house",
+    since: "Jan 2020",
+  },
+  {
+    id: "src_4",
+    item: "Heirloom tomatoes",
+    supplier: "Sunset Ridge Produce",
+    note: "Peak July–September; hothouse fill-in the rest of the year.",
+    region: "Rutherford County, NC",
+    since: "Jul 2021",
+  },
+  {
+    id: "src_5",
+    item: "Collards & kale",
+    supplier: "Wake Greens Co-op",
+    note: "Twice-weekly cut, best after the first frost.",
+    region: "Wake County, NC",
+    since: "Oct 2020",
+  },
+  {
+    id: "src_6",
+    item: "Sweet potatoes",
+    supplier: "Nash County Growers",
+    note: "Cured in-house for two weeks before they hit the floor.",
+    region: "Nash County, NC",
+    since: "Sep 2019",
+  },
+  {
+    id: "src_7",
+    item: "Muscadine grapes",
+    supplier: "Duplin Vineyard Farms",
+    note: "Six-week window only — don't promise them year-round.",
+    region: "Duplin County, NC",
+    since: "Aug 2023",
+  },
+  {
+    id: "src_8",
+    item: "Apples (Gala, Rome)",
+    supplier: "Hendersonville Orchards",
+    note: "Mountain fruit, arrives Tuesdays through November.",
+    region: "Henderson County, NC",
+    since: "Sep 2020",
   },
 ];
 
