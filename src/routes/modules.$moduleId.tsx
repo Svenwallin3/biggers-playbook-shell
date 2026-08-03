@@ -86,12 +86,3 @@ function ModulePage() {
     </div>
   );
 }
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/modules/$moduleId')({
-  component: RouteComponent,
-})
-
-function RouteComponent() {
-  return <div>Hello "/modules/$moduleId"!</div>
-}
