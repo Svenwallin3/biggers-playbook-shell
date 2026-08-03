@@ -24,7 +24,7 @@ function ComingSoon({ step, isAdmin }: { step: Step; isAdmin: boolean }) {
   );
 }
 
-function Body({ lines }: { lines?: string[] }) {
+function Body({ lines }: { lines: string[] | undefined }) {
   if (!lines?.length) return null;
   return (
     <ol className="space-y-3">
