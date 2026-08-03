@@ -56,7 +56,12 @@ function SearchPage() {
           Modules
         </h2>
         {modules.map((mod) => (
-          <Link key={mod.id} to="/modules/$moduleId" params={{ moduleId: mod.id }}>
+          <Link
+            key={mod.id}
+            to="/modules/$moduleId"
+            params={{ moduleId: mod.id }}
+            search={{ step: undefined }}
+          >
             <Card className="transition-colors hover:border-primary">
               <CardContent className="py-4">
                 <p className="text-sm font-medium">{mod.title}</p>
