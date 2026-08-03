@@ -16,6 +16,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as SourcingBoardRouteImport } from './routes/sourcing-board'
 import { Route as SuggestRouteImport } from './routes/suggest'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
+import { Route as AdminGapsRouteImport } from './routes/admin.gaps'
 import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,6 +54,11 @@ const AdminContentRoute = AdminContentRouteImport.update({
   path: '/admin/content',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminGapsRoute = AdminGapsRouteImport.update({
+  id: '/admin/gaps',
+  path: '/admin/gaps',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ModulesModuleIdRoute = ModulesModuleIdRouteImport.update({
   id: '/modules/$moduleId',
   path: '/modules/$moduleId',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
   '/admin/content': typeof AdminContentRoute
+  '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
   '/admin/content': typeof AdminContentRoute
+  '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
   '/admin/content': typeof AdminContentRoute
+  '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/sourcing-board'
     | '/suggest'
     | '/admin/content'
+    | '/admin/gaps'
     | '/modules/$moduleId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/sourcing-board'
     | '/suggest'
     | '/admin/content'
+    | '/admin/gaps'
     | '/modules/$moduleId'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/sourcing-board'
     | '/suggest'
     | '/admin/content'
+    | '/admin/gaps'
     | '/modules/$moduleId'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   SourcingBoardRoute: typeof SourcingBoardRoute
   SuggestRoute: typeof SuggestRoute
   AdminContentRoute: typeof AdminContentRoute
+  AdminGapsRoute: typeof AdminGapsRoute
   ModulesModuleIdRoute: typeof ModulesModuleIdRoute
 }
 
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminContentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/gaps': {
+      id: '/admin/gaps'
+      path: '/admin/gaps'
+      fullPath: '/admin/gaps'
+      preLoaderRoute: typeof AdminGapsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/modules/$moduleId': {
       id: '/modules/$moduleId'
       path: '/modules/$moduleId'
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   SourcingBoardRoute: SourcingBoardRoute,
   SuggestRoute: SuggestRoute,
   AdminContentRoute: AdminContentRoute,
+  AdminGapsRoute: AdminGapsRoute,
   ModulesModuleIdRoute: ModulesModuleIdRoute,
 }
 export const routeTree = rootRouteImport

@@ -7,6 +7,14 @@ const navItems = [
   { label: "Sign in", to: "/login" as const },
 ];
 
+const staffNavItems = [{ label: "Suggest", to: "/suggest" as const }];
+
+const adminNavItems = [
+  { label: "Approvals", to: "/approvals" as const },
+  { label: "Content", to: "/admin/content" as const },
+  { label: "Gaps", to: "/admin/gaps" as const },
+];
+
 export function AppLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -15,12 +23,23 @@ export function AppLayout() {
           <span className="text-sm font-semibold tracking-tight">
             Biggers Training Platform
           </span>
-          <nav className="flex items-center gap-4 text-sm text-muted-foreground">
-            {navItems.map((item) => (
+          <nav className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+            {[...navItems, ...staffNavItems].map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 activeOptions={{ exact: item.to === "/" }}
+                activeProps={{ className: "text-foreground font-medium" }}
+                className="transition-colors hover:text-foreground"
+              >
+                {item.label}
+              </Link>
+            ))}
+            <span className="h-4 w-px bg-border" aria-hidden />
+            {adminNavItems.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
                 activeProps={{ className: "text-foreground font-medium" }}
                 className="transition-colors hover:text-foreground"
               >
