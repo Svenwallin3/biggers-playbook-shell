@@ -142,7 +142,7 @@ function Index() {
             <div className="flex-1">
               <p className="text-sm font-medium">Sourcing Board</p>
               <p className="text-sm text-muted-foreground">
-                Where our products come from — {allSteps.length > 0 ? "guest questions, answered" : ""}
+                Where our products come from — guest questions, answered
               </p>
             </div>
             <ChevronRight className="size-4 text-muted-foreground" />
