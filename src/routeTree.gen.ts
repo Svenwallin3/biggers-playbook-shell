@@ -10,14 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApprovalsRouteImport } from './routes/approvals'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SourcingBoardRouteImport } from './routes/sourcing-board'
+import { Route as SuggestRouteImport } from './routes/suggest'
+import { Route as AdminContentRouteImport } from './routes/admin.content'
+import { Route as AdminGapsRouteImport } from './routes/admin.gaps'
 import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApprovalsRoute = ApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -35,6 +44,21 @@ const SourcingBoardRoute = SourcingBoardRouteImport.update({
   path: '/sourcing-board',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuggestRoute = SuggestRouteImport.update({
+  id: '/suggest',
+  path: '/suggest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminContentRoute = AdminContentRouteImport.update({
+  id: '/admin/content',
+  path: '/admin/content',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminGapsRoute = AdminGapsRouteImport.update({
+  id: '/admin/gaps',
+  path: '/admin/gaps',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ModulesModuleIdRoute = ModulesModuleIdRouteImport.update({
   id: '/modules/$moduleId',
   path: '/modules/$moduleId',
@@ -43,46 +67,83 @@ const ModulesModuleIdRoute = ModulesModuleIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/approvals': typeof ApprovalsRoute
   '/login': typeof LoginRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
+  '/suggest': typeof SuggestRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/approvals': typeof ApprovalsRoute
   '/login': typeof LoginRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
+  '/suggest': typeof SuggestRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/approvals': typeof ApprovalsRoute
   '/login': typeof LoginRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
+  '/suggest': typeof SuggestRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/login' | '/search' | '/sourcing-board' | '/modules/$moduleId'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/search' | '/sourcing-board' | '/modules/$moduleId'
-  id:
-    | '__root__'
     | '/'
+    | '/approvals'
     | '/login'
     | '/search'
     | '/sourcing-board'
+    | '/suggest'
+    | '/admin/content'
+    | '/admin/gaps'
+    | '/modules/$moduleId'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/approvals'
+    | '/login'
+    | '/search'
+    | '/sourcing-board'
+    | '/suggest'
+    | '/admin/content'
+    | '/admin/gaps'
+    | '/modules/$moduleId'
+  id:
+    | '__root__'
+    | '/'
+    | '/approvals'
+    | '/login'
+    | '/search'
+    | '/sourcing-board'
+    | '/suggest'
+    | '/admin/content'
+    | '/admin/gaps'
     | '/modules/$moduleId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApprovalsRoute: typeof ApprovalsRoute
   LoginRoute: typeof LoginRoute
   SearchRoute: typeof SearchRoute
   SourcingBoardRoute: typeof SourcingBoardRoute
+  SuggestRoute: typeof SuggestRoute
+  AdminContentRoute: typeof AdminContentRoute
+  AdminGapsRoute: typeof AdminGapsRoute
   ModulesModuleIdRoute: typeof ModulesModuleIdRoute
 }
 
@@ -93,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/approvals': {
+      id: '/approvals'
+      path: '/approvals'
+      fullPath: '/approvals'
+      preLoaderRoute: typeof ApprovalsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -116,6 +184,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourcingBoardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/suggest': {
+      id: '/suggest'
+      path: '/suggest'
+      fullPath: '/suggest'
+      preLoaderRoute: typeof SuggestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/content': {
+      id: '/admin/content'
+      path: '/admin/content'
+      fullPath: '/admin/content'
+      preLoaderRoute: typeof AdminContentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/gaps': {
+      id: '/admin/gaps'
+      path: '/admin/gaps'
+      fullPath: '/admin/gaps'
+      preLoaderRoute: typeof AdminGapsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/modules/$moduleId': {
       id: '/modules/$moduleId'
       path: '/modules/$moduleId'
@@ -128,9 +217,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApprovalsRoute: ApprovalsRoute,
   LoginRoute: LoginRoute,
   SearchRoute: SearchRoute,
   SourcingBoardRoute: SourcingBoardRoute,
+  SuggestRoute: SuggestRoute,
+  AdminContentRoute: AdminContentRoute,
+  AdminGapsRoute: AdminGapsRoute,
   ModulesModuleIdRoute: ModulesModuleIdRoute,
 }
 export const routeTree = rootRouteImport
