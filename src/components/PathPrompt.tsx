@@ -20,7 +20,8 @@ export function PathPrompt() {
   const { employee, refreshEmployee } = useAuth();
   const [busy, setBusy] = useState(false);
 
-  const open = Boolean(employee && !employee.path);
+  // Only floor staff must pick a track — managers/owners can leave path null.
+  const open = Boolean(employee && !employee.path && employee.auth_tier === "staff");
 
   async function choose(path: "market" | "kitchen") {
     if (!employee) return;
