@@ -14,6 +14,7 @@ import { Route as ApprovalsRouteImport } from './routes/approvals'
 import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MergeToolRouteImport } from './routes/merge-tool'
+import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SourcingBoardRouteImport } from './routes/sourcing-board'
 import { Route as SuggestRouteImport } from './routes/suggest'
@@ -44,6 +45,11 @@ const LoginRoute = LoginRouteImport.update({
 const MergeToolRoute = MergeToolRouteImport.update({
   id: '/merge-tool',
   path: '/merge-tool',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreviewRoute = PreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SearchRoute = SearchRouteImport.update({
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/compliance': typeof ComplianceRoute
   '/login': typeof LoginRoute
   '/merge-tool': typeof MergeToolRoute
+  '/preview': typeof PreviewRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/compliance': typeof ComplianceRoute
   '/login': typeof LoginRoute
   '/merge-tool': typeof MergeToolRoute
+  '/preview': typeof PreviewRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/compliance': typeof ComplianceRoute
   '/login': typeof LoginRoute
   '/merge-tool': typeof MergeToolRoute
+  '/preview': typeof PreviewRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/login'
     | '/merge-tool'
+    | '/preview'
     | '/search'
     | '/sourcing-board'
     | '/suggest'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/login'
     | '/merge-tool'
+    | '/preview'
     | '/search'
     | '/sourcing-board'
     | '/suggest'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/login'
     | '/merge-tool'
+    | '/preview'
     | '/search'
     | '/sourcing-board'
     | '/suggest'
@@ -165,6 +177,7 @@ export interface RootRouteChildren {
   ComplianceRoute: typeof ComplianceRoute
   LoginRoute: typeof LoginRoute
   MergeToolRoute: typeof MergeToolRoute
+  PreviewRoute: typeof PreviewRoute
   SearchRoute: typeof SearchRoute
   SourcingBoardRoute: typeof SourcingBoardRoute
   SuggestRoute: typeof SuggestRoute
@@ -208,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: '/merge-tool'
       fullPath: '/merge-tool'
       preLoaderRoute: typeof MergeToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preview': {
+      id: '/preview'
+      path: '/preview'
+      fullPath: '/preview'
+      preLoaderRoute: typeof PreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -261,6 +281,7 @@ const rootRouteChildren: RootRouteChildren = {
   ComplianceRoute: ComplianceRoute,
   LoginRoute: LoginRoute,
   MergeToolRoute: MergeToolRoute,
+  PreviewRoute: PreviewRoute,
   SearchRoute: SearchRoute,
   SourcingBoardRoute: SourcingBoardRoute,
   SuggestRoute: SuggestRoute,
@@ -271,13 +292,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
