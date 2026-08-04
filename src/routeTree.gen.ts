@@ -18,6 +18,7 @@ import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SourcingBoardRouteImport } from './routes/sourcing-board'
 import { Route as SuggestRouteImport } from './routes/suggest'
+import { Route as TeamRouteImport } from './routes/team'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as AdminGapsRouteImport } from './routes/admin.gaps'
 import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
@@ -67,6 +68,11 @@ const SuggestRoute = SuggestRouteImport.update({
   path: '/suggest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TeamRoute = TeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminContentRoute = AdminContentRouteImport.update({
   id: '/admin/content',
   path: '/admin/content',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
+  '/team': typeof TeamRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
+  '/team': typeof TeamRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
+  '/team': typeof TeamRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sourcing-board'
     | '/suggest'
+    | '/team'
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sourcing-board'
     | '/suggest'
+    | '/team'
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sourcing-board'
     | '/suggest'
+    | '/team'
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
@@ -181,6 +193,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SourcingBoardRoute: typeof SourcingBoardRoute
   SuggestRoute: typeof SuggestRoute
+  TeamRoute: typeof TeamRoute
   AdminContentRoute: typeof AdminContentRoute
   AdminGapsRoute: typeof AdminGapsRoute
   ModulesModuleIdRoute: typeof ModulesModuleIdRoute
@@ -251,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuggestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/team': {
+      id: '/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof TeamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/content': {
       id: '/admin/content'
       path: '/admin/content'
@@ -285,6 +305,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SourcingBoardRoute: SourcingBoardRoute,
   SuggestRoute: SuggestRoute,
+  TeamRoute: TeamRoute,
   AdminContentRoute: AdminContentRoute,
   AdminGapsRoute: AdminGapsRoute,
   ModulesModuleIdRoute: ModulesModuleIdRoute,
