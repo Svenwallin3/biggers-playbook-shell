@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import type { ContentStatus } from "@/data/mockTraining";
+import type { ContentStatus } from "@/lib/training.queries";
 
 export function StepStatusBadge({ status }: { status: ContentStatus }) {
   if (status === "ready") return null;
