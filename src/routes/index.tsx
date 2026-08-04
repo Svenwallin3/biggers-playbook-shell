@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
+import { AskAssistant } from "@/components/training/AskAssistant";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -92,7 +93,11 @@ function Index() {
           Welcome back, {(employee.full_name ?? employee.email).split(" ")[0]}
         </h1>
 
-        <Link to="/search" className="mt-5 block">
+        <div className="mt-5">
+          <AskAssistant />
+        </div>
+
+        <Link to="/search" className="mt-3 block">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
