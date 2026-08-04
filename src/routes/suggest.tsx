@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,13 +12,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { modules, steps } from "@/data/mockTraining";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Link } from "@tanstack/react-router";
+import { contentTreeQueryOptions } from "@/lib/admin.queries";
 
 export const Route = createFileRoute("/suggest")({
   head: () => ({
@@ -40,7 +44,41 @@ export const Route = createFileRoute("/suggest")({
 });
 
 function SuggestPage() {
-  const { isManagerOrOwner, loading } = useAuth();
+  const { isManagerOrOwner, loading, employee } = useAuth();
+  const treeQuery = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
+
+  const [stepId, setStepId] = useState("");
+  const [what, setWhat] = useState("");
+  const [how, setHow] = useState("");
+  const [know, setKnow] = useState("");
+  const [nudged, setNudged] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const steps = (treeQuery.data?.steps ?? []).filter((s) => !s.is_deleted);
+  const modules = (treeQuery.data?.modules ?? []).filter((m) => !m.is_deleted);
+  const selectedStep = steps.find((s) => s.id === stepId);
+  const thin = how.trim() === "" || know.trim() === "";
+
+  const submit = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("suggestion_queue").insert({
+        step_id: stepId,
+        module_id: selectedStep?.module_id ?? null,
+        submitted_by: employee!.id,
+        field_what: what.trim(),
+        field_how: how.trim() || null,
+        field_how_you_know: know.trim() || null,
+        status: "pending",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setSubmitted(true);
+      toast.success("Suggestion sent to the Owner approval queue.");
+    },
+    onError: (error: Error) =>
+      toast.error("Couldn't submit that suggestion", { description: error.message }),
+  });
 
   if (loading) return null;
 
@@ -51,9 +89,8 @@ function SuggestPage() {
           <CardHeader>
             <CardTitle>Spotted something off?</CardTitle>
             <CardDescription>
-              Suggestions are submitted by managers. As staff, use the Flag action on any
-              training step — it routes straight to your manager, who can turn it into a
-              suggestion.
+              Suggestions are submitted by managers. As staff, use the Flag action on any training
+              step — it routes straight to your manager, who can turn it into a suggestion.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -66,39 +103,32 @@ function SuggestPage() {
     );
   }
 
-  const [stepId, setStepId] = useState(steps[0]!.id);
-  const [what, setWhat] = useState("");
-  const [how, setHow] = useState("");
-  const [know, setKnow] = useState("");
-  const [nudged, setNudged] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
-  const thin = how.trim() === "" || know.trim() === "";
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!stepId) {
+      toast.error("Pick the step this is about first.");
+      return;
+    }
     if (what.trim() === "") {
-      toast.error("Tell us which step this is about first.");
+      toast.error("Tell us what the step is first.");
       return;
     }
     if (thin && !nudged) {
       setNudged(true);
       return;
     }
-    setSubmitted(true);
-    toast.success("Suggestion sent to the Owner approval queue.");
+    submit.mutate();
   }
 
   if (submitted) {
-    const step = steps.find((s) => s.id === stepId);
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Suggestion submitted</CardTitle>
             <CardDescription>
-              Your suggestion for “{step?.title}” is in the Owner approval queue. Nothing changes in
-              the training content until it's approved.
+              Your suggestion for “{selectedStep?.title}” is in the Owner approval queue. Nothing
+              changes in the training content until it&apos;s approved.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -125,8 +155,8 @@ function SuggestPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Suggest a change</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Managers can suggest a change to any step, company-wide. An Owner approves before anything
-          goes live.
+          Managers can suggest a change to any step, company-wide — Market, Kitchen, or Universal. An
+          Owner approves before anything goes live.
         </p>
       </div>
 
@@ -135,20 +165,33 @@ function SuggestPage() {
           <CardContent className="space-y-5 pt-6">
             <div className="space-y-2">
               <Label>Which step?</Label>
-              <Select value={stepId} onValueChange={setStepId}>
+              <Select value={stepId} onValueChange={setStepId} disabled={treeQuery.isPending}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue
+                    placeholder={treeQuery.isPending ? "Loading content…" : "Pick a step"}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {modules.map((m) => (
-                    <SelectGroupItems key={m.id} moduleId={m.id} label={m.title} />
+                    <SelectGroup key={m.id}>
+                      <SelectLabel>
+                        {m.track?.name} · {m.name}
+                      </SelectLabel>
+                      {steps
+                        .filter((s) => s.module_id === m.id)
+                        .map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.title}
+                          </SelectItem>
+                        ))}
+                    </SelectGroup>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="what">1. What's the step?</Label>
+              <Label htmlFor="what">1. What&apos;s the step?</Label>
               <Input
                 id="what"
                 value={what}
@@ -171,7 +214,7 @@ function SuggestPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="know">3. How do you know it's done right?</Label>
+              <Label htmlFor="know">3. How do you know it&apos;s done right?</Label>
               <Textarea
                 id="know"
                 value={know}
@@ -193,22 +236,10 @@ function SuggestPage() {
           </CardContent>
         </Card>
 
-        <Button type="submit">Submit suggestion</Button>
+        <Button type="submit" disabled={submit.isPending}>
+          {submit.isPending ? "Submitting…" : "Submit suggestion"}
+        </Button>
       </form>
     </div>
-  );
-}
-
-function SelectGroupItems({ moduleId, label }: { moduleId: string; label: string }) {
-  const moduleSteps = steps.filter((s) => s.moduleId === moduleId);
-  return (
-    <>
-      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">{label}</div>
-      {moduleSteps.map((s) => (
-        <SelectItem key={s.id} value={s.id}>
-          {s.title}
-        </SelectItem>
-      ))}
-    </>
   );
 }
