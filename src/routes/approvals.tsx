@@ -33,7 +33,7 @@ export const Route = createFileRoute("/approvals")({
 });
 
 /** The approved body a suggestion becomes when it goes live. */
-export function suggestedBody(s: SuggestionWithContext) {
+function suggestedBody(s: SuggestionWithContext) {
   const parts = [s.field_how?.trim() || s.field_what.trim()];
   if (s.field_how_you_know?.trim()) {
     parts.push(`Done right when: ${s.field_how_you_know.trim()}`);
