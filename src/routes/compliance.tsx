@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -10,27 +12,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  blockLabels,
-  certExpiryState,
-  certHolders,
-  kitchenSchedule,
-  type ShiftBlock,
-} from "@/data/mockCompliance";
+import { useAuth } from "@/hooks/useAuth";
+import { assignmentsQueryOptions } from "@/lib/admin.queries";
 
 export const Route = createFileRoute("/compliance")({
   head: () => ({
     meta: [
-      { title: "Compliance & Staffing — Biggers Training" },
+      { title: "Restricted Training — Biggers Training" },
       {
         name: "description",
         content:
-          "CFPM and ServSafe certification holders with expiry dates, cross-referenced against the weekday production and weekend service kitchen schedule.",
+          "Read-only view of restricted, assignable training modules at Biggers Market and each employee's completion status.",
       },
-      { property: "og:title", content: "Compliance & Staffing — Biggers Training" },
+      { property: "og:title", content: "Restricted Training — Biggers Training" },
       {
         property: "og:description",
-        content: "Certified coverage check for every day of the Biggers Kitchen schedule.",
+        content: "Who is assigned to restricted modules, and how far along they are.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -39,130 +36,103 @@ export const Route = createFileRoute("/compliance")({
   component: CompliancePage,
 });
 
-function holder(id: string) {
-  return certHolders.find((c) => c.id === id);
-}
-
-function ExpiryBadge({ expires }: { expires: string }) {
-  const state = certExpiryState(expires);
-  if (state === "expired") return <Badge variant="destructive">Expired</Badge>;
-  if (state === "expiring") return <Badge variant="secondary">Expires soon</Badge>;
-  return <Badge variant="outline">Current</Badge>;
-}
-
 function CompliancePage() {
-  const blocks: ShiftBlock[] = ["weekday_production", "weekend_service"];
+  const { isManagerOrOwner, loading } = useAuth();
+  const query = useQuery({ ...assignmentsQueryOptions(), enabled: isManagerOrOwner });
 
-  const days = kitchenSchedule.map((d) => {
-    const staff = d.staffIds.map(holder).filter(Boolean) as NonNullable<
-      ReturnType<typeof holder>
-    >[];
-    const cfpm = staff.filter((s) => s.cert === "CFPM" && certExpiryState(s.expires) !== "expired");
-    return { ...d, staff, cfpm };
-  });
+  if (loading) return null;
+  if (!isManagerOrOwner) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          This view is for managers and owners.
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const uncovered = days.filter((d) => d.cfpm.length === 0);
+  const rows = query.data?.rows ?? [];
+  const completion = query.data?.completion;
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Compliance &amp; staffing</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Restricted training</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          NC requires a current CFPM on-site during all Kitchen operating hours. This checks the
-          schedule against who actually holds one.
+          Read-only. Shows assignable modules (forklift, alcohol receiving, and similar) and how far
+          each assigned employee has gotten. Certified Food Protection Manager (CFPM) and ServSafe
+          coverage is tracked manually outside the app for now.
         </p>
       </div>
 
-      {uncovered.length > 0 ? (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="py-4 text-sm">
-            <span className="font-medium">No certified CFPM coverage on: </span>
-            {uncovered.map((d) => d.day).join(", ")}. Fix the schedule before those shifts run.
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="py-4 text-sm">
-            Every scheduled day has at least one current CFPM on-site.
-          </CardContent>
-        </Card>
-      )}
-
-      {blocks.map((block) => (
-        <Card key={block}>
-          <CardHeader>
-            <CardTitle className="text-base">{blockLabels[block]}</CardTitle>
-            <CardDescription>Scheduled kitchen staff and certified coverage.</CardDescription>
-          </CardHeader>
-          <CardContent className="px-0 pb-0">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Assignments</CardTitle>
+          <CardDescription>
+            {rows.length} active assignment{rows.length === 1 ? "" : "s"}.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {query.isPending ? (
+            <p className="text-sm text-muted-foreground">Loading assignments…</p>
+          ) : rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No restricted modules have been assigned yet.
+            </p>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Day</TableHead>
-                  <TableHead>Scheduled</TableHead>
-                  <TableHead>CFPM on-site</TableHead>
-                  <TableHead className="text-right">Coverage</TableHead>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Module</TableHead>
+                  <TableHead>Track</TableHead>
+                  <TableHead>Due</TableHead>
+                  <TableHead>Progress</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {days
-                  .filter((d) => d.block === block)
-                  .map((d) => (
-                    <TableRow key={d.day} className={d.cfpm.length === 0 ? "bg-destructive/5" : undefined}>
-                      <TableCell className="font-medium">{d.day}</TableCell>
+                {rows.map((row) => {
+                  const c = completion?.get(row.id) ?? { done: 0, total: 0 };
+                  const pct = c.total ? Math.round((c.done / c.total) * 100) : 0;
+                  const complete = c.total > 0 && c.done === c.total;
+                  const overdue = !complete && !!row.due_date && row.due_date < today;
+                  return (
+                    <TableRow key={row.id}>
+                      <TableCell className="font-medium">
+                        {row.employee?.full_name ?? row.employee?.email ?? "Unknown"}
+                      </TableCell>
+                      <TableCell>{row.module?.name ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {d.staff.map((s) => s.name).join(", ") || "Nobody scheduled"}
+                        {row.module?.track?.name ?? "—"}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {d.cfpm.map((s) => s.name).join(", ") || "—"}
+                        {row.due_date ? new Date(row.due_date).toLocaleDateString() : "—"}
                       </TableCell>
-                      <TableCell className="text-right">
-                        {d.cfpm.length === 0 ? (
-                          <Badge variant="destructive">No coverage</Badge>
+                      <TableCell className="w-[180px]">
+                        <div className="flex items-center gap-2">
+                          <Progress value={pct} className="h-2" />
+                          <span className="text-xs text-muted-foreground">
+                            {c.done}/{c.total}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {complete ? (
+                          <Badge>Certified</Badge>
+                        ) : overdue ? (
+                          <Badge variant="destructive">Overdue</Badge>
                         ) : (
-                          <Badge variant="outline">Covered</Badge>
+                          <Badge variant="secondary">In progress</Badge>
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  );
+                })}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      ))}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Certification holders</CardTitle>
-          <CardDescription>CFPM and ServSafe Food Handler, with expiry dates.</CardDescription>
-        </CardHeader>
-        <CardContent className="px-0 pb-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Certification</TableHead>
-                <TableHead>Number</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead className="text-right">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {certHolders.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.role}</TableCell>
-                  <TableCell>{c.cert}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.certNumber}</TableCell>
-                  <TableCell className="text-muted-foreground">{c.expires}</TableCell>
-                  <TableCell className="text-right">
-                    <ExpiryBadge expires={c.expires} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          )}
         </CardContent>
       </Card>
     </div>

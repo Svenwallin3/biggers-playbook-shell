@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -10,7 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
-import { modules, steps, stepTypeLabels } from "@/data/mockTraining";
+import { useAuth } from "@/hooks/useAuth";
+import { stepTypeLabels, type ContentStatus } from "@/lib/training.queries";
+import { contentTreeQueryOptions } from "@/lib/admin.queries";
 
 export const Route = createFileRoute("/admin/gaps")({
   head: () => ({
@@ -19,12 +23,12 @@ export const Route = createFileRoute("/admin/gaps")({
       {
         name: "description",
         content:
-          "Admin dashboard listing every training step that isn't finished yet, with its status, notes, and owning module.",
+          "Live view of every Biggers Market training step that isn't finished yet, grouped by content status and filterable by track and module.",
       },
       { property: "og:title", content: "Content Gaps — Biggers Training" },
       {
         property: "og:description",
-        content: "Every unfinished Biggers Market training step in one place.",
+        content: "Track which training steps still need content, restructuring, or are blocked.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -33,124 +37,152 @@ export const Route = createFileRoute("/admin/gaps")({
   component: GapsPage,
 });
 
+const statusOrder: ContentStatus[] = ["blocked", "missing", "needs_restructuring"];
+const statusLabels: Record<ContentStatus, string> = {
+  ready: "Ready",
+  needs_restructuring: "Needs restructuring",
+  missing: "Missing",
+  blocked: "Blocked",
+};
+
 function GapsPage() {
-  const [track, setTrack] = useState("all");
+  const { isManagerOrOwner, loading } = useAuth();
+  const treeQuery = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
+  const [trackId, setTrackId] = useState("all");
   const [moduleId, setModuleId] = useState("all");
 
-  const gaps = useMemo(
-    () =>
-      steps
-        .filter((s) => s.content_status !== "ready")
-        .map((s) => ({ step: s, module: modules.find((m) => m.id === s.moduleId)! }))
-        .filter((g) => (track === "all" ? true : g.module.track === track))
-        .filter((g) => (moduleId === "all" ? true : g.module.id === moduleId)),
-    [track, moduleId],
-  );
+  if (loading) return null;
+  if (!isManagerOrOwner) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          The content gaps dashboard is for managers and owners.
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const moduleOptions = modules.filter((m) => track === "all" || m.track === track);
+  const tracks = treeQuery.data?.tracks ?? [];
+  const modules = (treeQuery.data?.modules ?? []).filter((m) => !m.is_deleted);
+  const steps = (treeQuery.data?.steps ?? []).filter((s) => !s.is_deleted);
 
-  const counts = {
-    needs_restructuring: gaps.filter((g) => g.step.content_status === "needs_restructuring").length,
-    missing: gaps.filter((g) => g.step.content_status === "missing").length,
-    blocked: gaps.filter((g) => g.step.content_status === "blocked").length,
-  };
+  const visibleModules = modules.filter((m) => trackId === "all" || m.track_id === trackId);
+  const gaps = steps
+    .filter((s) => s.content_status !== "ready")
+    .map((s) => ({ step: s, module: modules.find((m) => m.id === s.module_id) }))
+    .filter((row) => row.module)
+    .filter((row) => trackId === "all" || row.module!.track_id === trackId)
+    .filter((row) => moduleId === "all" || row.module!.id === moduleId);
+
+  const readyCount = steps.filter((s) => s.content_status === "ready").length;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Content gaps</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Admin-only. Every step that isn't marked ready, and what's holding it up.
+          Live from the database — this updates the moment a step&apos;s content status changes
+          anywhere else in the app.
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <div className="w-52">
-          <Select
-            value={track}
-            onValueChange={(v) => {
-              setTrack(v);
-              setModuleId("all");
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="All tracks" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All tracks</SelectItem>
-              {[...new Set(modules.map((m) => m.track))].map((t) => (
-                <SelectItem key={t} value={t}>
-                  {modules.find((m) => m.track === t)?.trackLabel}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-64">
-          <Select value={moduleId} onValueChange={setModuleId}>
-            <SelectTrigger>
-              <SelectValue placeholder="All modules" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All modules</SelectItem>
-              {moduleOptions.map((m) => (
-                <SelectItem key={m.id} value={m.id}>
-                  {m.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-        <Badge variant="secondary">{counts.needs_restructuring} being refined</Badge>
-        <Badge variant="outline">{counts.missing} missing</Badge>
-        <Badge variant="outline">{counts.blocked} blocked</Badge>
-      </div>
-
-      {gaps.length === 0 ? (
+      <div className="grid gap-3 sm:grid-cols-4">
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No gaps in this filter — everything here is marked ready.
+          <CardContent className="pt-6">
+            <p className="text-2xl font-semibold">{readyCount}</p>
+            <p className="text-xs text-muted-foreground">Ready</p>
           </CardContent>
         </Card>
-      ) : (
-        <div className="space-y-4">
-          {gaps.map(({ step, module: mod }) => (
-            <Card key={step.id}>
-              <CardHeader>
-                <div className="flex flex-wrap items-center gap-2">
-                  <CardTitle className="text-base">{step.title}</CardTitle>
+        {statusOrder.map((status) => (
+          <Card key={status}>
+            <CardContent className="pt-6">
+              <p className="text-2xl font-semibold">
+                {steps.filter((s) => s.content_status === status).length}
+              </p>
+              <p className="text-xs text-muted-foreground">{statusLabels[status]}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <Select
+          value={trackId}
+          onValueChange={(v) => {
+            setTrackId(v);
+            setModuleId("all");
+          }}
+        >
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="All tracks" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All tracks</SelectItem>
+            {tracks.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={moduleId} onValueChange={setModuleId}>
+          <SelectTrigger className="w-[240px]">
+            <SelectValue placeholder="All modules" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All modules</SelectItem>
+            {visibleModules.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {treeQuery.isPending ? (
+        <p className="text-sm text-muted-foreground">Loading content…</p>
+      ) : null}
+
+      {!treeQuery.isPending && gaps.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            No gaps in this filter — every step here is marked ready.
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <div className="space-y-3">
+        {gaps.map(({ step, module }) => (
+          <Card key={step.id}>
+            <CardHeader className="pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle className="text-base">
+                  <Link to="/admin/content" className="hover:underline">
+                    {step.title}
+                  </Link>
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{stepTypeLabels[step.step_type]}</Badge>
                   <StepStatusBadge status={step.content_status} />
-                  <Badge variant="outline" className="text-[11px]">
-                    {step.content_status}
-                  </Badge>
                 </div>
-                <CardDescription>
-                  {mod.trackLabel} ·{" "}
-                  <Link
-                    to="/modules/$moduleId"
-                    params={{ moduleId: mod.id }}
-                    search={{ step: undefined }}
-                    className="underline underline-offset-2"
-                  >
-                    {mod.title}
-                  </Link>{" "}
-                  · {stepTypeLabels[step.step_type]} · {step.location_tag}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm">
-                  {step.content_notes ?? (
-                    <span className="text-muted-foreground">No notes recorded yet.</span>
-                  )}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+              </div>
+              <CardDescription>
+                {module!.track?.name} · {module!.name}
+                {step.location_tag ? ` · ${step.location_tag}` : ""}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  {statusLabels[step.content_status]}:
+                </span>{" "}
+                {step.content_notes ?? "No admin note recorded yet."}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
