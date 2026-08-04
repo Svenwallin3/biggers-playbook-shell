@@ -1,18 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Mail, ShoppingBasket, UtensilsCrossed } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Mail } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { findPossibleDuplicate } from "@/lib/signup.functions";
 
 const title = "Sign in — Biggers Training Platform";
 const description = "Magic-link sign in for Biggers Market staff training.";
@@ -31,9 +29,61 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { session } = useAuth();
+  const checkDuplicate = useServerFn(findPossibleDuplicate);
+
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [sent, setSent] = useState(false);
-  const [pathPrompt, setPathPrompt] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [duplicate, setDuplicate] = useState<{ fullName: string; maskedEmail: string } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (session) navigate({ to: "/", replace: true });
+  }, [session, navigate]);
+
+  async function sendLink() {
+    setBusy(true);
+    setError(null);
+    const { error: sendError } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: window.location.origin,
+        ...(fullName.trim() ? { data: { full_name: fullName.trim() } } : {}),
+      },
+    });
+    setBusy(false);
+    if (sendError) {
+      setError(sendError.message);
+      return;
+    }
+    setDuplicate(null);
+    setSent(true);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) return;
+    setBusy(true);
+    setError(null);
+    try {
+      if (fullName.trim().length > 1) {
+        const result = await checkDuplicate({ data: { fullName, email } });
+        if (result.match) {
+          setDuplicate(result.match);
+          setBusy(false);
+          return;
+        }
+      }
+    } catch {
+      // Duplicate check is advisory only — never block sign-in on it.
+    }
+    setBusy(false);
+    await sendLink();
+  }
 
   return (
     <div className="mx-auto max-w-md py-10">
@@ -49,64 +99,62 @@ function LoginPage() {
               <Mail className="mx-auto size-8 text-primary" />
               <p className="text-sm font-medium">Check your email</p>
               <p className="text-sm text-muted-foreground">
-                We sent a sign-in link to {email || "your inbox"}.
+                We sent a sign-in link to {email}. Open it on this device and you&apos;ll stay
+                signed in.
               </p>
-              <Button className="w-full" onClick={() => setPathPrompt(true)}>
-                Continue (demo)
+              <Button variant="ghost" className="w-full" onClick={() => setSent(false)}>
+                Use a different email
               </Button>
             </div>
+          ) : duplicate ? (
+            <div className="space-y-4">
+              <Alert>
+                <AlertTitle>Is this you?</AlertTitle>
+                <AlertDescription>
+                  We already have an account for <strong>{duplicate.fullName}</strong> under{" "}
+                  {duplicate.maskedEmail}. If that&apos;s you, sign in with that email so your
+                  training progress stays in one place.
+                </AlertDescription>
+              </Alert>
+              <div className="flex flex-col gap-2">
+                <Button variant="outline" onClick={() => setDuplicate(null)}>
+                  That&apos;s me — use my other email
+                </Button>
+                <Button onClick={sendLink} disabled={busy}>
+                  Not me — send my link
+                </Button>
+              </div>
+            </div>
           ) : (
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setSent(true);
-              }}
-            >
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <div className="space-y-2">
+                <Label htmlFor="name">Your full name</Label>
+                <Input
+                  id="name"
+                  placeholder="Jordan Fields"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Work email</Label>
                 <Input
                   id="email"
                   type="email"
+                  required
                   placeholder="you@biggersmarket.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Send magic link
+              {error ? <p className="text-sm text-destructive">{error}</p> : null}
+              <Button type="submit" className="w-full" disabled={busy}>
+                {busy ? "Sending…" : "Send magic link"}
               </Button>
             </form>
           )}
         </CardContent>
       </Card>
-
-      <Dialog open={pathPrompt} onOpenChange={setPathPrompt}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Which side are you training on?</DialogTitle>
-            <DialogDescription>
-              This sets your training path. A manager can change it later.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              { label: "Markets", icon: ShoppingBasket },
-              { label: "Kitchen", icon: UtensilsCrossed },
-            ].map(({ label, icon: Icon }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => navigate({ to: "/" })}
-                className="flex flex-col items-center gap-2 rounded-lg border border-border px-4 py-6 text-sm font-medium transition-colors hover:border-primary hover:bg-accent"
-              >
-                <Icon className="size-6 text-primary" />
-                {label}
-              </button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

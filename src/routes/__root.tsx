@@ -12,6 +12,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppLayout } from "../components/AppLayout";
 import { Toaster } from "../components/ui/sonner";
+import { AuthProvider } from "../hooks/useAuth";
 
 function NotFoundComponent() {
   return (
@@ -127,7 +128,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render inside AppLayout's <Outlet />. */}
-      <AppLayout />
+      <AuthProvider>
+        <AppLayout />
+      </AuthProvider>
       <Toaster />
     </QueryClientProvider>
   );
