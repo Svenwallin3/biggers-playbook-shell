@@ -3,9 +3,15 @@ import { CheckCircle2, Clapperboard, Image as ImageIcon, ListChecks, UserCheck }
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StepStatusBadge } from "./StepStatusBadge";
-import { stepTypeLabels, type Step } from "@/data/mockTraining";
+import {
+  bodyLines,
+  stepTypeLabels,
+  trainerSignoffTypes,
+  type QuizRow,
+  type StepRow,
+} from "@/lib/training.queries";
 
-function ComingSoon({ step, isAdmin }: { step: Step; isAdmin: boolean }) {
+function ComingSoon({ step, isAdmin }: { step: StepRow; isAdmin: boolean }) {
   return (
     <Card className="border-dashed bg-muted/40">
       <CardContent className="space-y-2 py-10 text-center">
@@ -24,8 +30,8 @@ function ComingSoon({ step, isAdmin }: { step: Step; isAdmin: boolean }) {
   );
 }
 
-function Body({ lines }: { lines: string[] | undefined }) {
-  if (!lines?.length) return null;
+function Body({ lines }: { lines: string[] }) {
+  if (!lines.length) return null;
   return (
     <ol className="space-y-3">
       {lines.map((line, i) => (
@@ -40,8 +46,17 @@ function Body({ lines }: { lines: string[] | undefined }) {
   );
 }
 
-export function StepRenderer({ step, isAdmin = false }: { step: Step; isAdmin?: boolean }) {
+export function StepRenderer({
+  step,
+  quizzes = [],
+  isAdmin = false,
+}: {
+  step: StepRow;
+  quizzes?: QuizRow[];
+  isAdmin?: boolean;
+}) {
   const unavailable = step.content_status === "missing" || step.content_status === "blocked";
+  const lines = bodyLines(step);
 
   return (
     <div className="space-y-4">
@@ -67,10 +82,18 @@ export function StepRenderer({ step, isAdmin = false }: { step: Step; isAdmin?: 
           {step.step_type === "photo" ? (
             <Card>
               <CardContent className="space-y-3 py-6">
-                <div className="flex h-48 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                  <ImageIcon className="size-8" />
-                </div>
-                <p className="text-sm text-muted-foreground">{step.photoCaption}</p>
+                {step.media_url ? (
+                  <img
+                    src={step.media_url}
+                    alt={step.title}
+                    loading="lazy"
+                    className="max-h-72 w-full rounded-md object-cover"
+                  />
+                ) : (
+                  <div className="flex h-48 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <ImageIcon className="size-8" />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ) : null}
@@ -81,38 +104,42 @@ export function StepRenderer({ step, isAdmin = false }: { step: Step; isAdmin?: 
                 <div className="flex h-48 items-center justify-center rounded-md bg-muted text-muted-foreground">
                   <Clapperboard className="size-8" />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Short skill clip{step.videoLength ? ` — ${step.videoLength}` : ""}
-                </p>
+                <p className="text-sm text-muted-foreground">Short skill clip</p>
               </CardContent>
             </Card>
           ) : null}
 
-          {step.step_type === "quiz" && step.quiz ? (
-            <Card>
-              <CardContent className="space-y-4 py-6">
-                <p className="flex items-start gap-2 text-sm font-medium">
-                  <ListChecks className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  {step.quiz.question}
-                </p>
-                <div className="space-y-2">
-                  {step.quiz.options.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      className="w-full rounded-md border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+          {step.step_type === "quiz" && quizzes.length ? (
+            <div className="space-y-4">
+              {quizzes.map((quiz) => (
+                <Card key={quiz.id}>
+                  <CardContent className="space-y-4 py-6">
+                    <p className="flex items-start gap-2 text-sm font-medium">
+                      <ListChecks className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                      {quiz.question}
+                    </p>
+                    <div className="space-y-2">
+                      {(Array.isArray(quiz.options) ? (quiz.options as unknown[]) : []).map(
+                        (option, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            className="w-full rounded-md border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+                          >
+                            {String(option)}
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : null}
 
-          <Body lines={step.body} />
+          <Body lines={lines} />
 
-          {step.step_type === "doing_signoff" || step.step_type === "supervised_live_practice" ? (
+          {trainerSignoffTypes.includes(step.step_type) ? (
             <Card className="border-primary/30 bg-primary/5">
               <CardContent className="flex flex-wrap items-center justify-between gap-3 py-5">
                 <p className="flex items-center gap-2 text-sm">
@@ -120,9 +147,6 @@ export function StepRenderer({ step, isAdmin = false }: { step: Step; isAdmin?: 
                   {step.step_type === "doing_signoff"
                     ? "Certification happens when your trainer signs off."
                     : "Day 4 is live practice with real customers, supervised."}
-                  {step.signoffBy ? (
-                    <span className="text-muted-foreground">Sign-off: {step.signoffBy}</span>
-                  ) : null}
                 </p>
                 <Button size="sm" variant="secondary" disabled>
                   <CheckCircle2 className="size-4" />
