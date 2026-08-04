@@ -12,10 +12,17 @@ import {
 } from "@/lib/training.queries";
 
 function ComingSoon({ step, isAdmin }: { step: StepRow; isAdmin: boolean }) {
+  const blocked = step.content_status === "blocked";
   return (
-    <Card className="border-dashed bg-muted/40">
-      <CardContent className="space-y-2 py-10 text-center">
-        <p className="text-sm font-medium text-foreground">Content coming soon</p>
+    <Card
+      className={
+        blocked ? "border-dashed border-destructive/30 bg-destructive-soft/40" : "border-dashed bg-info-soft/50"
+      }
+    >
+      <CardContent className="space-y-2 py-8 text-center">
+        <p className={`font-display text-sm font-semibold ${blocked ? "text-destructive" : "text-info"}`}>
+          {blocked ? "Blocked — not ready yet" : "Content coming soon"}
+        </p>
         <p className="mx-auto max-w-md text-sm text-muted-foreground">
           This step is part of your training, but the material isn&apos;t finished yet. Your trainer
           will walk you through it in person until it is.
@@ -36,7 +43,7 @@ function Body({ lines }: { lines: string[] }) {
     <ol className="space-y-3">
       {lines.map((line, i) => (
         <li key={i} className="flex gap-3 text-sm leading-relaxed">
-          <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-secondary text-[11px] font-semibold text-secondary-foreground">
+          <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/12 text-[11px] font-semibold text-primary">
             {i + 1}
           </span>
           <span>{line}</span>
@@ -61,20 +68,20 @@ export function StepRenderer({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary-foreground">
           {stepTypeLabels[step.step_type]}
         </span>
         <StepStatusBadge status={step.content_status} />
       </div>
 
-      <h2 className="text-xl font-semibold tracking-tight">{step.title}</h2>
+      <h2 className="font-display text-2xl font-semibold tracking-tight">{step.title}</h2>
 
       {unavailable ? (
         <ComingSoon step={step} isAdmin={isAdmin} />
       ) : (
         <div className="space-y-4">
           {step.content_status === "needs_restructuring" ? (
-            <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+            <p className="rounded-md border border-warning/35 bg-warning-soft px-3 py-2 text-xs font-medium text-warning">
               This step is being refined. The instructions below are accurate but may change.
             </p>
           ) : null}
@@ -140,10 +147,10 @@ export function StepRenderer({
           <Body lines={lines} />
 
           {trainerSignoffTypes.includes(step.step_type) ? (
-            <Card className="border-primary/30 bg-primary/5">
+            <Card className="border-accent/35 bg-accent/8">
               <CardContent className="flex flex-wrap items-center justify-between gap-3 py-5">
                 <p className="flex items-center gap-2 text-sm">
-                  <UserCheck className="size-4 text-primary" />
+                  <UserCheck className="size-4 text-accent" />
                   {step.step_type === "doing_signoff"
                     ? "Certification happens when your trainer signs off."
                     : "Day 4 is live practice with real customers, supervised."}

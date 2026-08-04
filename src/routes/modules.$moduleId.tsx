@@ -86,29 +86,29 @@ function ModulePage() {
         <Link to="/" className="text-xs text-muted-foreground hover:underline">
           ← Today&apos;s training
         </Link>
-        <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
           {mod.track?.name}
           {mod.sub_path ? ` · ${mod.sub_path}` : ""}
           {mod.day_assignment ? ` · Day ${mod.day_assignment}` : ""}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight">{mod.name}</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">{mod.name}</h1>
         {mod.description ? (
           <p className="mt-1 text-sm text-muted-foreground">{mod.description}</p>
         ) : null}
       </div>
 
-      <div className="grid gap-8 md:grid-cols-[240px_1fr]">
-        <nav className="space-y-1">
+      <div className="grid gap-8 md:grid-cols-[248px_1fr]">
+        <nav className="space-y-0.5 rounded-lg border border-border bg-surface/60 p-2">
           {steps.map((s) => (
             <Link
               key={s.id}
               to="/modules/$moduleId"
               params={{ moduleId }}
               search={{ step: s.id }}
-              className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
+              className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
                 active && s.id === active.id
-                  ? "bg-secondary font-medium text-secondary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  ? "bg-card font-semibold text-foreground shadow-xs ring-1 ring-primary/25"
+                  : "text-muted-foreground hover:bg-card/70 hover:text-foreground"
               }`}
             >
               <span className="shrink-0">{s.sequence_order}.</span>
