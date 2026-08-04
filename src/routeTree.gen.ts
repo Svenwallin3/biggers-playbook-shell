@@ -14,9 +14,11 @@ import { Route as ApprovalsRouteImport } from './routes/approvals'
 import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MergeToolRouteImport } from './routes/merge-tool'
+import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SourcingBoardRouteImport } from './routes/sourcing-board'
 import { Route as SuggestRouteImport } from './routes/suggest'
+import { Route as TeamRouteImport } from './routes/team'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as AdminGapsRouteImport } from './routes/admin.gaps'
 import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
@@ -46,6 +48,11 @@ const MergeToolRoute = MergeToolRouteImport.update({
   path: '/merge-tool',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PreviewRoute = PreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -59,6 +66,11 @@ const SourcingBoardRoute = SourcingBoardRouteImport.update({
 const SuggestRoute = SuggestRouteImport.update({
   id: '/suggest',
   path: '/suggest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TeamRoute = TeamRouteImport.update({
+  id: '/team',
+  path: '/team',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminContentRoute = AdminContentRouteImport.update({
@@ -83,9 +95,11 @@ export interface FileRoutesByFullPath {
   '/compliance': typeof ComplianceRoute
   '/login': typeof LoginRoute
   '/merge-tool': typeof MergeToolRoute
+  '/preview': typeof PreviewRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
+  '/team': typeof TeamRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
@@ -96,9 +110,11 @@ export interface FileRoutesByTo {
   '/compliance': typeof ComplianceRoute
   '/login': typeof LoginRoute
   '/merge-tool': typeof MergeToolRoute
+  '/preview': typeof PreviewRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
+  '/team': typeof TeamRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
@@ -110,9 +126,11 @@ export interface FileRoutesById {
   '/compliance': typeof ComplianceRoute
   '/login': typeof LoginRoute
   '/merge-tool': typeof MergeToolRoute
+  '/preview': typeof PreviewRoute
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
+  '/team': typeof TeamRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
@@ -125,9 +143,11 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/login'
     | '/merge-tool'
+    | '/preview'
     | '/search'
     | '/sourcing-board'
     | '/suggest'
+    | '/team'
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
@@ -138,9 +158,11 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/login'
     | '/merge-tool'
+    | '/preview'
     | '/search'
     | '/sourcing-board'
     | '/suggest'
+    | '/team'
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
@@ -151,9 +173,11 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/login'
     | '/merge-tool'
+    | '/preview'
     | '/search'
     | '/sourcing-board'
     | '/suggest'
+    | '/team'
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
@@ -165,9 +189,11 @@ export interface RootRouteChildren {
   ComplianceRoute: typeof ComplianceRoute
   LoginRoute: typeof LoginRoute
   MergeToolRoute: typeof MergeToolRoute
+  PreviewRoute: typeof PreviewRoute
   SearchRoute: typeof SearchRoute
   SourcingBoardRoute: typeof SourcingBoardRoute
   SuggestRoute: typeof SuggestRoute
+  TeamRoute: typeof TeamRoute
   AdminContentRoute: typeof AdminContentRoute
   AdminGapsRoute: typeof AdminGapsRoute
   ModulesModuleIdRoute: typeof ModulesModuleIdRoute
@@ -210,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MergeToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/preview': {
+      id: '/preview'
+      path: '/preview'
+      fullPath: '/preview'
+      preLoaderRoute: typeof PreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
@@ -229,6 +262,13 @@ declare module '@tanstack/react-router' {
       path: '/suggest'
       fullPath: '/suggest'
       preLoaderRoute: typeof SuggestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/team': {
+      id: '/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof TeamRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/content': {
@@ -261,9 +301,11 @@ const rootRouteChildren: RootRouteChildren = {
   ComplianceRoute: ComplianceRoute,
   LoginRoute: LoginRoute,
   MergeToolRoute: MergeToolRoute,
+  PreviewRoute: PreviewRoute,
   SearchRoute: SearchRoute,
   SourcingBoardRoute: SourcingBoardRoute,
   SuggestRoute: SuggestRoute,
+  TeamRoute: TeamRoute,
   AdminContentRoute: AdminContentRoute,
   AdminGapsRoute: AdminGapsRoute,
   ModulesModuleIdRoute: ModulesModuleIdRoute,
@@ -271,13 +313,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

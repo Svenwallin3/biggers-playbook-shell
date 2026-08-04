@@ -20,10 +20,12 @@ export function AppLayout() {
     "/compliance",
     "/merge-tool",
     "/suggest",
+    "/team",
   ].some((p) => pathname.startsWith(p));
 
   const managerItems = isManagerOrOwner
     ? [
+        { label: "Preview Training", to: "/preview" as const },
         { label: "Suggest", to: "/suggest" as const },
         { label: "Approvals", to: "/approvals" as const },
         { label: "Content", to: "/admin/content" as const },
@@ -35,6 +37,7 @@ export function AppLayout() {
         { label: "Gaps", to: "/admin/gaps" as const },
         { label: "Compliance", to: "/compliance" as const },
         { label: "Merge", to: "/merge-tool" as const },
+        { label: "Team", to: "/team" as const },
       ]
     : [];
 
