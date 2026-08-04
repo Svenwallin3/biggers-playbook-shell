@@ -387,6 +387,7 @@ export type Database = {
       }
       sourcing_board_entries: {
         Row: {
+          category: string | null
           created_at: string
           deleted_at: string | null
           deleted_by: string | null
@@ -396,11 +397,13 @@ export type Database = {
           notes: string | null
           product: string
           region: string | null
+          seasonality: string | null
           since_date: string | null
           supplier: string | null
           updated_at: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
@@ -410,11 +413,13 @@ export type Database = {
           notes?: string | null
           product: string
           region?: string | null
+          seasonality?: string | null
           since_date?: string | null
           supplier?: string | null
           updated_at?: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
@@ -424,6 +429,7 @@ export type Database = {
           notes?: string | null
           product?: string
           region?: string | null
+          seasonality?: string | null
           since_date?: string | null
           supplier?: string | null
           updated_at?: string
