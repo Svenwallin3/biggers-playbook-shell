@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { Check, ChevronsUpDown, Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -18,15 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -121,7 +112,15 @@ function SourcingBoardPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null); // null = closed, "new" = create
   const [form, setForm] = useState<FormState>(blank);
+  const [query, setQuery] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return entries;
+    return entries.filter((e) => e.product.toLowerCase().includes(q));
+  }, [entries, query]);
 
   function openNew() {
     setForm(blank);
@@ -131,6 +130,8 @@ function SourcingBoardPage() {
   function openEntry(entry: SourcingRow) {
     setForm(toForm(entry));
     setEditingId(entry.id);
+    setPickerOpen(false);
+    setQuery("");
   }
 
   const save = useMutation({
@@ -182,43 +183,46 @@ function SourcingBoardPage() {
         </div>
         {canEdit ? (
           <div className="flex items-center gap-2">
-            <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" aria-expanded={pickerOpen}>
-                  Find a product
-                  <ChevronsUpDown className="ml-2 size-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72 p-0" align="end">
-                <Command>
-                  <CommandInput placeholder="Type to filter products…" />
-                  <CommandList>
-                    <CommandEmpty>No product found.</CommandEmpty>
-                    <CommandGroup>
-                      {entries.map((entry) => (
-                        <CommandItem
-                          key={entry.id}
-                          value={entry.product}
-                          onSelect={() => {
-                            setPickerOpen(false);
-                            openEntry(entry);
+            <div className="relative w-72">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                aria-label="Find a product"
+                className="pl-8"
+                placeholder="Find a product…"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPickerOpen(true);
+                }}
+                onFocus={() => setPickerOpen(true)}
+                onBlur={() => {
+                  blurTimer.current = setTimeout(() => setPickerOpen(false), 120);
+                }}
+              />
+              {pickerOpen ? (
+                <ul className="absolute z-50 mt-1 max-h-72 w-full overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                  {matches.length ? (
+                    matches.map((entry) => (
+                      <li key={entry.id}>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                          onMouseDown={() => {
+                            if (blurTimer.current) clearTimeout(blurTimer.current);
                           }}
+                          onClick={() => openEntry(entry)}
                         >
                           <CategoryDot value={entry.category} />
-                          <span className="ml-2 flex-1">{entry.product}</span>
-                          <Check
-                            className={cn(
-                              "size-4",
-                              editingId === entry.id ? "opacity-100" : "opacity-0",
-                            )}
-                          />
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+                          <span className="flex-1 truncate">{entry.product}</span>
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-2 py-1.5 text-sm text-muted-foreground">No product found.</li>
+                  )}
+                </ul>
+              ) : null}
+            </div>
             <Button onClick={openNew}>
               <Plus className="mr-1.5 size-4" />
               Add product
