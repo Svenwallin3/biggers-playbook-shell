@@ -678,6 +678,10 @@ export type Database = {
         Returns: boolean
       }
       is_manager_or_owner: { Args: never; Returns: boolean }
+      merge_employees: {
+        Args: { _duplicate: string; _primary: string }
+        Returns: undefined
+      }
       my_department: {
         Args: never
         Returns: Database["public"]["Enums"]["department"]

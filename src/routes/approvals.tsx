@@ -1,12 +1,15 @@
-import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { mockSuggestions, type Suggestion } from "@/data/mockSuggestions";
-import { moduleById } from "@/data/mockTraining";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { bodyLines } from "@/lib/training.queries";
+import { suggestionsQueryOptions, type SuggestionWithContext } from "@/lib/admin.queries";
 
 export const Route = createFileRoute("/approvals")({
   head: () => ({
@@ -29,19 +32,73 @@ export const Route = createFileRoute("/approvals")({
   component: ApprovalsPage,
 });
 
-function ApprovalsPage() {
-  const [decisions, setDecisions] = useState<Record<string, "approved" | "rejected">>({});
+/** The approved body a suggestion becomes when it goes live. */
+function suggestedBody(s: SuggestionWithContext) {
+  const parts = [s.field_how?.trim() || s.field_what.trim()];
+  if (s.field_how_you_know?.trim()) {
+    parts.push(`Done right when: ${s.field_how_you_know.trim()}`);
+  }
+  return parts.filter(Boolean).join("\n");
+}
 
-  function decide(s: Suggestion, decision: "approved" | "rejected") {
-    setDecisions((d) => ({ ...d, [s.id]: decision }));
-    toast.success(
-      decision === "approved"
-        ? `Approved — “${s.stepTitle}” would update on save.`
-        : `Rejected — ${s.submittedBy} will be notified.`,
+function ApprovalsPage() {
+  const { employee, loading } = useAuth();
+  const queryClient = useQueryClient();
+  const isOwner = employee?.auth_tier === "owner";
+  const pendingQuery = useQuery({ ...suggestionsQueryOptions("pending"), enabled: isOwner });
+
+  const decide = useMutation({
+    mutationFn: async (input: { s: SuggestionWithContext; decision: "approved" | "rejected" }) => {
+      const { s, decision } = input;
+      if (decision === "approved" && s.step) {
+        // Applying the edit fires the steps version trigger, so the prior
+        // content is captured in version_history automatically.
+        const { error: stepError } = await supabase
+          .from("steps")
+          .update({
+            title: s.field_what.trim() || s.step.title,
+            content_body: suggestedBody(s),
+            content_status: "ready",
+          })
+          .eq("id", s.step.id);
+        if (stepError) throw stepError;
+      }
+      const { error } = await supabase
+        .from("suggestion_queue")
+        .update({
+          status: decision,
+          reviewed_by: employee!.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", s.id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ["suggestions"] });
+      void queryClient.invalidateQueries({ queryKey: ["content-tree"] });
+      void queryClient.invalidateQueries({ queryKey: ["module"] });
+      toast.success(
+        vars.decision === "approved"
+          ? "Approved — the step is live and the previous version is logged."
+          : "Rejected — content untouched, the suggestion is kept on record.",
+      );
+    },
+    onError: (error: Error) => toast.error("Couldn't record that", { description: error.message }),
+  });
+
+  if (loading) return null;
+
+  if (!isOwner) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          The approval queue is Owner-only.
+        </CardContent>
+      </Card>
     );
   }
 
-  const pending = mockSuggestions.filter((s) => !decisions[s.id]);
+  const pending = pendingQuery.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -53,7 +110,14 @@ function ApprovalsPage() {
         </p>
       </div>
 
-      {pending.length === 0 ? (
+      {pendingQuery.isPending ? (
+        <p className="text-sm text-muted-foreground">Loading suggestions…</p>
+      ) : null}
+      {pendingQuery.isError ? (
+        <p className="text-sm text-destructive">Couldn&apos;t load the queue.</p>
+      ) : null}
+
+      {!pendingQuery.isPending && pending.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
             Nothing pending. Queue is clear.
@@ -62,25 +126,22 @@ function ApprovalsPage() {
       ) : null}
 
       <div className="space-y-5">
-        {mockSuggestions.map((s) => {
-          const decision = decisions[s.id];
-          const mod = moduleById(s.moduleId);
+        {pending.map((s) => {
+          const current = bodyLines({ content_body: s.step?.content_body ?? null });
+          const isFlag = s.field_what.startsWith("FLAG:");
           return (
-            <Card key={s.id} className={decision ? "opacity-60" : undefined}>
+            <Card key={s.id}>
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle className="text-base">{s.stepTitle}</CardTitle>
-                  {decision ? (
-                    <Badge variant={decision === "approved" ? "default" : "outline"}>
-                      {decision === "approved" ? "Approved" : "Rejected"}
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary">Pending</Badge>
-                  )}
+                  <CardTitle className="text-base">{s.step?.title ?? s.field_what}</CardTitle>
+                  <Badge variant={isFlag ? "outline" : "secondary"}>
+                    {isFlag ? "Staff flag" : "Pending"}
+                  </Badge>
                 </div>
                 <CardDescription>
-                  {mod?.trackLabel} · {mod?.title} — submitted by {s.submittedBy} ({s.submittedRole}
-                  ) on {s.submittedOn}
+                  {s.step?.module?.track?.name} · {s.step?.module?.name} — submitted by{" "}
+                  {s.submitter?.full_name ?? s.submitter?.email ?? "unknown"} (
+                  {s.submitter?.auth_tier}) on {new Date(s.created_at).toLocaleDateString()}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -89,13 +150,17 @@ function ApprovalsPage() {
                     <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Current
                     </p>
-                    <ul className="space-y-1 text-sm">
-                      {s.currentBody.map((line, i) => (
-                        <li key={i} className="text-muted-foreground">
-                          {i + 1}. {line}
-                        </li>
-                      ))}
-                    </ul>
+                    {current.length ? (
+                      <ul className="space-y-1 text-sm">
+                        {current.map((line, i) => (
+                          <li key={i} className="text-muted-foreground">
+                            {i + 1}. {line}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No content on this step yet.</p>
+                    )}
                   </div>
                   <div className="rounded-md border border-primary/40 bg-primary/5 p-3">
                     <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -103,36 +168,41 @@ function ApprovalsPage() {
                     </p>
                     <dl className="space-y-2 text-sm">
                       <div>
-                        <dt className="text-xs text-muted-foreground">What's the step</dt>
-                        <dd>{s.whatIsTheStep}</dd>
+                        <dt className="text-xs text-muted-foreground">What&apos;s the step</dt>
+                        <dd>{s.field_what}</dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-muted-foreground">How it's done</dt>
-                        <dd>{s.howIsItDone}</dd>
+                        <dt className="text-xs text-muted-foreground">How it&apos;s done</dt>
+                        <dd>{s.field_how ?? "—"}</dd>
                       </div>
                       <div>
                         <dt className="text-xs text-muted-foreground">
-                          How you know it's done right
+                          How you know it&apos;s done right
                         </dt>
-                        <dd>{s.howDoYouKnow}</dd>
+                        <dd>{s.field_how_you_know ?? "—"}</dd>
                       </div>
                     </dl>
                   </div>
                 </div>
 
-                {!decision ? (
-                  <>
-                    <Separator />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => decide(s, "approved")}>
-                        Approve
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => decide(s, "rejected")}>
-                        Reject
-                      </Button>
-                    </div>
-                  </>
-                ) : null}
+                <Separator />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={decide.isPending || !s.step}
+                    onClick={() => decide.mutate({ s, decision: "approved" })}
+                  >
+                    Approve &amp; publish
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={decide.isPending}
+                    onClick={() => decide.mutate({ s, decision: "rejected" })}
+                  >
+                    Reject
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           );
