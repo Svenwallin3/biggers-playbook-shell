@@ -15,6 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { modules, steps } from "@/data/mockTraining";
+import { useAuth } from "@/hooks/useAuth";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/suggest")({
   head: () => ({
@@ -38,6 +40,32 @@ export const Route = createFileRoute("/suggest")({
 });
 
 function SuggestPage() {
+  const { isManagerOrOwner, loading } = useAuth();
+
+  if (loading) return null;
+
+  if (!isManagerOrOwner) {
+    return (
+      <div className="mx-auto max-w-lg py-10">
+        <Card>
+          <CardHeader>
+            <CardTitle>Spotted something off?</CardTitle>
+            <CardDescription>
+              Suggestions are submitted by managers. As staff, use the Flag action on any
+              training step — it routes straight to your manager, who can turn it into a
+              suggestion.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link to="/">Back to today&apos;s training</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const [stepId, setStepId] = useState(steps[0]!.id);
   const [what, setWhat] = useState("");
   const [how, setHow] = useState("");
