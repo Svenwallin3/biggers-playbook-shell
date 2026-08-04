@@ -52,7 +52,7 @@ function LoginPage() {
       email,
       options: {
         emailRedirectTo: window.location.origin,
-        data: fullName ? { full_name: fullName } : undefined,
+        ...(fullName.trim() ? { data: { full_name: fullName.trim() } } : {}),
       },
     });
     setBusy(false);

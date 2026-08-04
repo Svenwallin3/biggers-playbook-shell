@@ -9,25 +9,25 @@ function normalize(value: string) {
 function distance(a: string, b: string) {
   const m = a.length;
   const n = b.length;
-  const prev = Array.from({ length: n + 1 }, (_, i) => i);
-  const cur = new Array<number>(n + 1).fill(0);
+  const prev: number[] = Array.from({ length: n + 1 }, (_, i) => i);
+  const cur: number[] = new Array<number>(n + 1).fill(0);
   for (let i = 1; i <= m; i++) {
     cur[0] = i;
     for (let j = 1; j <= n; j++) {
       cur[j] = Math.min(
-        prev[j] + 1,
-        cur[j - 1] + 1,
-        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+        (prev[j] ?? 0) + 1,
+        (cur[j - 1] ?? 0) + 1,
+        (prev[j - 1] ?? 0) + (a[i - 1] === b[j - 1] ? 0 : 1),
       );
     }
-    for (let j = 0; j <= n; j++) prev[j] = cur[j];
+    for (let j = 0; j <= n; j++) prev[j] = cur[j] ?? 0;
   }
-  return prev[n];
+  return prev[n] ?? 0;
 }
 
 function maskEmail(email: string) {
   const [user, domain] = email.split("@");
-  if (!domain) return "•••";
+  if (!domain || !user) return "•••";
   const head = user.slice(0, 2);
   return `${head}${"•".repeat(Math.max(user.length - 2, 1))}@${domain}`;
 }
