@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, Lock } from "lucide-react";
+import { Eye } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { StepRenderer } from "@/components/training/StepRenderer";
@@ -117,7 +117,6 @@ function PreviewPage() {
                         : "text-muted-foreground hover:bg-card/70 hover:text-foreground"
                     }`}
                   >
-                    {i > 0 ? <Lock className="size-3 shrink-0 opacity-50" aria-hidden /> : null}
                     <span className="min-w-0 flex-1 truncate">
                       {m.day_assignment ? `Day ${m.day_assignment} · ` : ""}
                       {m.name}
