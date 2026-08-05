@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX IF NOT EXISTS steps_module_title_key ON public.steps (module_id, title);
+CREATE UNIQUE INDEX IF NOT EXISTS quiz_bank_step_sequence_key ON public.quiz_bank (step_id, sequence_order);
