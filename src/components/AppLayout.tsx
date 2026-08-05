@@ -21,10 +21,12 @@ export function AppLayout() {
     "/merge-tool",
     "/suggest",
     "/team",
+    "/training-queue",
   ].some((p) => pathname.startsWith(p));
 
   const managerItems = isManagerOrOwner
     ? [
+        { label: "Training Queue", to: "/training-queue" as const },
         { label: "Preview Training", to: "/preview" as const },
         { label: "Suggest", to: "/suggest" as const },
         { label: "Approvals", to: "/approvals" as const },

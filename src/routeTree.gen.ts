@@ -19,6 +19,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as SourcingBoardRouteImport } from './routes/sourcing-board'
 import { Route as SuggestRouteImport } from './routes/suggest'
 import { Route as TeamRouteImport } from './routes/team'
+import { Route as TrainingQueueRouteImport } from './routes/training-queue'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as AdminGapsRouteImport } from './routes/admin.gaps'
 import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
@@ -73,6 +74,11 @@ const TeamRoute = TeamRouteImport.update({
   path: '/team',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrainingQueueRoute = TrainingQueueRouteImport.update({
+  id: '/training-queue',
+  path: '/training-queue',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminContentRoute = AdminContentRouteImport.update({
   id: '/admin/content',
   path: '/admin/content',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
   '/team': typeof TeamRoute
+  '/training-queue': typeof TrainingQueueRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
   '/team': typeof TeamRoute
+  '/training-queue': typeof TrainingQueueRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
   '/team': typeof TeamRoute
+  '/training-queue': typeof TrainingQueueRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/sourcing-board'
     | '/suggest'
     | '/team'
+    | '/training-queue'
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/sourcing-board'
     | '/suggest'
     | '/team'
+    | '/training-queue'
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/sourcing-board'
     | '/suggest'
     | '/team'
+    | '/training-queue'
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
@@ -194,6 +206,7 @@ export interface RootRouteChildren {
   SourcingBoardRoute: typeof SourcingBoardRoute
   SuggestRoute: typeof SuggestRoute
   TeamRoute: typeof TeamRoute
+  TrainingQueueRoute: typeof TrainingQueueRoute
   AdminContentRoute: typeof AdminContentRoute
   AdminGapsRoute: typeof AdminGapsRoute
   ModulesModuleIdRoute: typeof ModulesModuleIdRoute
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TeamRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/training-queue': {
+      id: '/training-queue'
+      path: '/training-queue'
+      fullPath: '/training-queue'
+      preLoaderRoute: typeof TrainingQueueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/content': {
       id: '/admin/content'
       path: '/admin/content'
@@ -306,6 +326,7 @@ const rootRouteChildren: RootRouteChildren = {
   SourcingBoardRoute: SourcingBoardRoute,
   SuggestRoute: SuggestRoute,
   TeamRoute: TeamRoute,
+  TrainingQueueRoute: TrainingQueueRoute,
   AdminContentRoute: AdminContentRoute,
   AdminGapsRoute: AdminGapsRoute,
   ModulesModuleIdRoute: ModulesModuleIdRoute,
@@ -313,13 +334,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
