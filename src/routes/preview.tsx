@@ -106,7 +106,7 @@ function PreviewPage() {
         <div className="grid gap-8 md:grid-cols-[248px_1fr]">
           <div className="space-y-4">
             <nav className="space-y-1 rounded-lg border border-border bg-surface/60 p-2">
-              {modules.map((m, i) => (
+              {modules.map((m) => (
                 <div key={m.id}>
                   <Link
                     to="/preview"
