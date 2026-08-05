@@ -14,6 +14,95 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { assignmentsQueryOptions } from "@/lib/admin.queries";
+import { signoffBacklogQueryOptions } from "@/lib/backlog.queries";
+
+const departmentLabels: Record<string, string> = {
+  universal: "Unassigned / Universal",
+  market: "Market",
+  kitchen: "Kitchen",
+  delivery: "Delivery",
+};
+
+function SignoffBacklogSection() {
+  const query = useQuery(signoffBacklogQueryOptions());
+  const data = query.data;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Overdue sign-off backlog</CardTitle>
+        <CardDescription>
+          Trainer sign-offs and Day 4 supervised practice steps an employee has been waiting on for
+          more than 48 hours, grouped by department. Pattern view — not a per-person alert.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {query.isPending ? (
+          <p className="text-sm text-muted-foreground">Loading backlog…</p>
+        ) : query.isError ? (
+          <p className="text-sm text-destructive">Couldn&apos;t load the sign-off backlog.</p>
+        ) : !data || data.totalOverdue === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No sign-offs have been waiting longer than 48 hours.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm">
+              <span className="font-semibold">{data.totalOverdue}</span> overdue sign-off
+              {data.totalOverdue === 1 ? "" : "s"} across {data.groups.length} department
+              {data.groups.length === 1 ? "" : "s"}.
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Manager(s)</TableHead>
+                  <TableHead>Overdue sign-offs</TableHead>
+                  <TableHead>Longest wait</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.groups.map((group) => {
+                  const days = group.longest
+                    ? Math.floor(group.longest.hoursWaiting / 24)
+                    : 0;
+                  return (
+                    <TableRow key={group.department}>
+                      <TableCell className="font-medium">
+                        {departmentLabels[group.department] ?? group.department}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {group.managers.length ? group.managers.join(", ") : "No manager assigned"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={group.overdueCount >= 3 ? "destructive" : "secondary"}>
+                          {group.overdueCount}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {group.longest ? (
+                          <>
+                            {days >= 1
+                              ? `${days} day${days === 1 ? "" : "s"}`
+                              : `${Math.round(group.longest.hoursWaiting)} hours`}{" "}
+                            — {group.longest.employee.full_name ?? group.longest.employee.email} ·{" "}
+                            {group.longest.step.title}
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export const Route = createFileRoute("/compliance")({
   head: () => ({
@@ -37,7 +126,7 @@ export const Route = createFileRoute("/compliance")({
 });
 
 function CompliancePage() {
-  const { isManagerOrOwner, loading } = useAuth();
+  const { isManagerOrOwner, isOwner, loading } = useAuth();
   const query = useQuery({ ...assignmentsQueryOptions(), enabled: isManagerOrOwner });
 
   if (loading) return null;
@@ -65,6 +154,8 @@ function CompliancePage() {
           coverage is tracked manually outside the app for now.
         </p>
       </div>
+
+      {isOwner ? <SignoffBacklogSection /> : null}
 
       <Card>
         <CardHeader>
