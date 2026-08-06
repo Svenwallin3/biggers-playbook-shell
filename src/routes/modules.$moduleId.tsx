@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
+import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { StepRenderer } from "@/components/training/StepRenderer";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
@@ -86,17 +87,16 @@ function ModulePage() {
         <Link to="/" className="text-xs text-muted-foreground hover:underline">
           ← Today&apos;s training
         </Link>
-        <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-          {mod.track?.name}
-          {mod.sub_path ? ` · ${mod.sub_path}` : ""}
-          {mod.day_assignment ? ` · Day ${mod.day_assignment}` : ""}
-        </p>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">{mod.name}</h1>
-        {mod.description ? (
-          <p className="mt-4 rounded-lg border border-accent/35 bg-accent/8 px-5 py-4 font-display text-lg font-semibold leading-snug tracking-tight text-foreground">
-            {mod.description}
-          </p>
-        ) : null}
+        <div className="mt-2">
+          <ModuleHeader
+            as="h1"
+            trackName={mod.track?.name}
+            subPath={mod.sub_path}
+            dayAssignment={mod.day_assignment}
+            name={mod.name}
+            description={mod.description}
+          />
+        </div>
       </div>
 
       <div className="grid gap-8 md:grid-cols-[248px_1fr]">
