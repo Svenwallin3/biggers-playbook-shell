@@ -23,6 +23,9 @@ import { Route as TrainingQueueRouteImport } from './routes/training-queue'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as AdminGapsRouteImport } from './routes/admin.gaps'
 import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
+import { Route as ReferenceChecklistsRouteImport } from './routes/reference.checklists'
+import { Route as ReferencePresentationRouteImport } from './routes/reference.presentation'
+import { Route as ReferenceSopsRouteImport } from './routes/reference.sops'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +97,21 @@ const ModulesModuleIdRoute = ModulesModuleIdRouteImport.update({
   path: '/modules/$moduleId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReferenceChecklistsRoute = ReferenceChecklistsRouteImport.update({
+  id: '/reference/checklists',
+  path: '/reference/checklists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReferencePresentationRoute = ReferencePresentationRouteImport.update({
+  id: '/reference/presentation',
+  path: '/reference/presentation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReferenceSopsRoute = ReferenceSopsRouteImport.update({
+  id: '/reference/sops',
+  path: '/reference/sops',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +128,9 @@ export interface FileRoutesByFullPath {
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
+  '/reference/checklists': typeof ReferenceChecklistsRoute
+  '/reference/presentation': typeof ReferencePresentationRoute
+  '/reference/sops': typeof ReferenceSopsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,6 +147,9 @@ export interface FileRoutesByTo {
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
+  '/reference/checklists': typeof ReferenceChecklistsRoute
+  '/reference/presentation': typeof ReferencePresentationRoute
+  '/reference/sops': typeof ReferenceSopsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,6 +167,9 @@ export interface FileRoutesById {
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
+  '/reference/checklists': typeof ReferenceChecklistsRoute
+  '/reference/presentation': typeof ReferencePresentationRoute
+  '/reference/sops': typeof ReferenceSopsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,6 +188,9 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
+    | '/reference/checklists'
+    | '/reference/presentation'
+    | '/reference/sops'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,6 +207,9 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
+    | '/reference/checklists'
+    | '/reference/presentation'
+    | '/reference/sops'
   id:
     | '__root__'
     | '/'
@@ -193,6 +226,9 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/gaps'
     | '/modules/$moduleId'
+    | '/reference/checklists'
+    | '/reference/presentation'
+    | '/reference/sops'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -210,6 +246,9 @@ export interface RootRouteChildren {
   AdminContentRoute: typeof AdminContentRoute
   AdminGapsRoute: typeof AdminGapsRoute
   ModulesModuleIdRoute: typeof ModulesModuleIdRoute
+  ReferenceChecklistsRoute: typeof ReferenceChecklistsRoute
+  ReferencePresentationRoute: typeof ReferencePresentationRoute
+  ReferenceSopsRoute: typeof ReferenceSopsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -312,6 +351,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModulesModuleIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reference/checklists': {
+      id: '/reference/checklists'
+      path: '/reference/checklists'
+      fullPath: '/reference/checklists'
+      preLoaderRoute: typeof ReferenceChecklistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reference/presentation': {
+      id: '/reference/presentation'
+      path: '/reference/presentation'
+      fullPath: '/reference/presentation'
+      preLoaderRoute: typeof ReferencePresentationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reference/sops': {
+      id: '/reference/sops'
+      path: '/reference/sops'
+      fullPath: '/reference/sops'
+      preLoaderRoute: typeof ReferenceSopsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -330,17 +390,10 @@ const rootRouteChildren: RootRouteChildren = {
   AdminContentRoute: AdminContentRoute,
   AdminGapsRoute: AdminGapsRoute,
   ModulesModuleIdRoute: ModulesModuleIdRoute,
+  ReferenceChecklistsRoute: ReferenceChecklistsRoute,
+  ReferencePresentationRoute: ReferencePresentationRoute,
+  ReferenceSopsRoute: ReferenceSopsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

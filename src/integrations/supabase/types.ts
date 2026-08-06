@@ -213,6 +213,69 @@ export type Database = {
           },
         ]
       }
+      presentation_reference_entries: {
+        Row: {
+          category: string
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          department: string | null
+          id: string
+          is_deleted: boolean
+          item_name: string
+          location_tag: string | null
+          photo_url: string | null
+          portion_note: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department?: string | null
+          id?: string
+          is_deleted?: boolean
+          item_name: string
+          location_tag?: string | null
+          photo_url?: string | null
+          portion_note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department?: string | null
+          id?: string
+          is_deleted?: boolean
+          item_name?: string
+          location_tag?: string | null
+          photo_url?: string | null
+          portion_note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_reference_entries_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentation_reference_entries_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       progress_records: {
         Row: {
           completed_at: string | null
@@ -385,6 +448,75 @@ export type Database = {
           },
         ]
       }
+      reference_documents: {
+        Row: {
+          content_notes: string | null
+          content_status: Database["public"]["Enums"]["content_status"]
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          departments: string[]
+          document_type: Database["public"]["Enums"]["reference_document_type"]
+          id: string
+          is_deleted: boolean
+          location_tag: string | null
+          sections: Json
+          sub_category: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content_notes?: string | null
+          content_status?: Database["public"]["Enums"]["content_status"]
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          departments?: string[]
+          document_type: Database["public"]["Enums"]["reference_document_type"]
+          id?: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          sections?: Json
+          sub_category?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content_notes?: string | null
+          content_status?: Database["public"]["Enums"]["content_status"]
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          departments?: string[]
+          document_type?: Database["public"]["Enums"]["reference_document_type"]
+          id?: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          sections?: Json
+          sub_category?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reference_documents_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reference_documents_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sourcing_board_entries: {
         Row: {
           category: string | null
@@ -461,6 +593,7 @@ export type Database = {
           step_type: Database["public"]["Enums"]["step_type"]
           title: string
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           content_body?: string | null
@@ -478,6 +611,7 @@ export type Database = {
           step_type?: Database["public"]["Enums"]["step_type"]
           title: string
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           content_body?: string | null
@@ -495,6 +629,7 @@ export type Database = {
           step_type?: Database["public"]["Enums"]["step_type"]
           title?: string
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -522,6 +657,7 @@ export type Database = {
           field_what: string
           id: string
           module_id: string | null
+          reference_document_id: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: Database["public"]["Enums"]["suggestion_status"]
@@ -537,6 +673,7 @@ export type Database = {
           field_what: string
           id?: string
           module_id?: string | null
+          reference_document_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["suggestion_status"]
@@ -552,6 +689,7 @@ export type Database = {
           field_what?: string
           id?: string
           module_id?: string | null
+          reference_document_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["suggestion_status"]
@@ -565,6 +703,13 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestion_queue_reference_document_id_fkey"
+            columns: ["reference_document_id"]
+            isOneToOne: false
+            referencedRelation: "reference_documents"
             referencedColumns: ["id"]
           },
           {
@@ -703,6 +848,7 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "signed_off"
+      reference_document_type: "checklist" | "sop"
       step_type:
         | "text"
         | "photo"
@@ -848,6 +994,7 @@ export const Constants = {
         "completed",
         "signed_off",
       ],
+      reference_document_type: ["checklist", "sop"],
       step_type: [
         "text",
         "photo",

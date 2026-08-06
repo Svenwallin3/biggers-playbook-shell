@@ -114,7 +114,11 @@ function TrainingQueuePage() {
                     </div>
                   </div>
                   <Button asChild size="sm" variant="secondary">
-                    <Link to="/modules/$moduleId" params={{ moduleId: entry.module!.id }}>
+                    <Link
+                      to="/modules/$moduleId"
+                      params={{ moduleId: entry.module!.id }}
+                      search={{ step: entry.step?.id }}
+                    >
                       Open module
                     </Link>
                   </Button>
