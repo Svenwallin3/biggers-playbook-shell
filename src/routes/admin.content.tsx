@@ -36,6 +36,7 @@ import {
   contentStatusOptions,
   stepTypeOptions,
 } from "@/components/admin/ContentCreateDialogs";
+import { ModuleEditPanel, TrackEditPanel } from "@/components/admin/EntityEditPanels";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/training.queries";
@@ -77,13 +78,22 @@ function ContentEditorPage() {
   const queryClient = useQueryClient();
   const treeQuery = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
 
-  const [selectedId, setSelectedId] = useState<string>("");
+  const [selection, setSelection] = useState<{
+    kind: "step" | "module" | "track";
+    id: string;
+  }>({ kind: "step", id: "" });
+  const selectedId = selection.kind === "step" ? selection.id : "";
+  const setSelectedId = (id: string) => setSelection({ kind: "step", id });
   const [draft, setDraft] = useState<Draft | null>(null);
 
   const tracks = treeQuery.data?.tracks ?? [];
   const modules = treeQuery.data?.modules ?? [];
   const steps = treeQuery.data?.steps ?? [];
   const step = steps.find((s) => s.id === selectedId);
+  const selectedModule =
+    selection.kind === "module" ? modules.find((m) => m.id === selection.id) : undefined;
+  const selectedTrack =
+    selection.kind === "track" ? tracks.find((t) => t.id === selection.id) : undefined;
   const stepModule = modules.find((m) => m.id === step?.module_id);
   const historyQuery = useQuery(versionHistoryQueryOptions("steps", selectedId || undefined));
 
@@ -104,8 +114,8 @@ function ContentEditorPage() {
   const canCreateTrack = employee?.auth_tier === "owner" || employee?.auth_tier === "manager";
 
   useEffect(() => {
-    if (!selectedId && steps.length) setSelectedId(steps[0]!.id);
-  }, [steps, selectedId]);
+    if (!selection.id && steps.length) setSelectedId(steps[0]!.id);
+  }, [steps, selection.id]);
 
   useEffect(() => {
     if (!step) return;
@@ -220,18 +230,32 @@ function ContentEditorPage() {
           <NewTrackDialog disabled={!canCreateTrack} onCreated={() => undefined} />
           {tracks.map((track) => (
             <div key={track.id}>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {track.name}
-              </p>
+              <button
+                type="button"
+                onClick={() => setSelection({ kind: "track", id: track.id })}
+                className={`mb-2 w-full rounded px-2 py-1 text-left text-xs font-medium uppercase tracking-wide transition-colors hover:bg-muted ${
+                  selection.kind === "track" && selection.id === track.id
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground"
+                }`}
+              >
+                <span className={track.is_deleted ? "line-through" : undefined}>{track.name}</span>
+              </button>
               <div className="space-y-3">
                 {modules
                   .filter((m) => m.track_id === track.id)
                   .map((m) => (
                     <div key={m.id}>
-                      <p className="text-sm font-medium">
-                        {m.name}
+                      <button
+                        type="button"
+                        onClick={() => setSelection({ kind: "module", id: m.id })}
+                        className={`w-full rounded px-2 py-1 text-left text-sm font-medium transition-colors hover:bg-muted ${
+                          selection.kind === "module" && selection.id === m.id ? "bg-muted" : ""
+                        }`}
+                      >
+                        <span className={m.is_deleted ? "line-through" : undefined}>{m.name}</span>
                         {m.is_deleted ? " (hidden)" : ""}
-                      </p>
+                      </button>
                       <ul className="mt-1 space-y-0.5 border-l border-border pl-3">
                         {steps
                           .filter((s) => s.module_id === m.id)
@@ -277,6 +301,21 @@ function ContentEditorPage() {
         </nav>
 
         <div className="space-y-6">
+          {selectedTrack ? (
+            <TrackEditPanel
+              track={selectedTrack}
+              canEdit={canEditDepartment(selectedTrack.department)}
+              employeeId={employee?.id}
+            />
+          ) : null}
+          {selectedModule ? (
+            <ModuleEditPanel
+              module={selectedModule}
+              trackName={selectedModule.track?.name}
+              canEdit={canEditDepartment(selectedModule.track?.department)}
+              employeeId={employee?.id}
+            />
+          ) : null}
           {step && draft ? (
             <Card>
               <CardHeader>
@@ -434,6 +473,7 @@ function ContentEditorPage() {
             </Card>
           ) : null}
 
+          {selection.kind === "step" ? (
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Version history</CardTitle>
@@ -483,6 +523,7 @@ function ContentEditorPage() {
               )}
             </CardContent>
           </Card>
+          ) : null}
         </div>
       </div>
     </div>
