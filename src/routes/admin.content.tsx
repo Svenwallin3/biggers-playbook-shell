@@ -77,6 +77,7 @@ interface Draft {
   content_body: string;
   content_notes: string;
   location_tag: string;
+  video_url: string;
 }
 
 function ContentEditorPage() {
@@ -115,6 +116,7 @@ function ContentEditorPage() {
       content_body: step.content_body ?? "",
       content_notes: step.content_notes ?? "",
       location_tag: step.location_tag ?? "",
+      video_url: step.video_url ?? "",
     });
   }, [step?.id, step?.updated_at]);
 
@@ -137,6 +139,7 @@ function ContentEditorPage() {
           content_body: draft!.content_body.trim() || null,
           content_notes: draft!.content_notes.trim() || null,
           location_tag: draft!.location_tag.trim() || null,
+          video_url: draft!.video_url.trim() || null,
         })
         .eq("id", selectedId);
       if (error) throw error;
@@ -350,6 +353,21 @@ function ContentEditorPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="loc">Location tag</Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="video">Video link (YouTube)</Label>
+                  <Input
+                    id="video"
+                    value={draft.video_url}
+                    maxLength={300}
+                    disabled={!canEdit}
+                    onChange={(e) => patch({ video_url: e.target.value })}
+                    placeholder="https://www.youtube.com/watch?v=…"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Input
                     id="loc"
                     value={draft.location_tag}
