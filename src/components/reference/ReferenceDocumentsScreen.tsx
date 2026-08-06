@@ -7,6 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { VideoEmbed } from "@/components/VideoEmbed";
 import { LineItemEditor } from "@/components/reference/LineItemEditor";
+import { AddSectionButton } from "@/components/reference/AddSectionButton";
+import { NewDocumentDialog } from "@/components/reference/NewDocumentDialog";
+import { SectionBodyEditor } from "@/components/reference/SectionBodyEditor";
 import { useAuth } from "@/hooks/useAuth";
 import {
   docSections,
@@ -68,8 +71,9 @@ function Detail({
 
       {sections.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No sections in this document yet.
+          <CardContent className="space-y-3 py-10 text-center text-sm text-muted-foreground">
+            <p>No sections in this document yet.</p>
+            {isManagerOrOwner ? <AddSectionButton doc={doc} /> : null}
           </CardContent>
         </Card>
       ) : (
@@ -79,8 +83,12 @@ function Detail({
               <CardContent className="space-y-4 py-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h2 className="font-display text-base font-semibold">{section.title}</h2>
-                  {documentType === "checklist" && isManagerOrOwner ? (
-                    <LineItemEditor doc={doc} sectionIndex={i} />
+                  {isManagerOrOwner ? (
+                    documentType === "checklist" ? (
+                      <LineItemEditor doc={doc} sectionIndex={i} />
+                    ) : (
+                      <SectionBodyEditor doc={doc} sectionIndex={i} />
+                    )
                   ) : null}
                 </div>
 
@@ -120,6 +128,11 @@ function Detail({
               </CardContent>
             </Card>
           ))}
+          {isManagerOrOwner ? (
+            <div className="flex justify-start">
+              <AddSectionButton doc={doc} />
+            </div>
+          ) : null}
         </div>
       )}
     </div>
@@ -163,13 +176,19 @@ export function ReferenceDocumentsScreen({
           <p className="mt-1 text-sm text-muted-foreground">{blurb}</p>
         </div>
         {isManagerOrOwner ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAllDepartments((v) => !v)}
-          >
-            {showAllDepartments ? "My department only" : "Show all departments"}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAllDepartments((v) => !v)}
+            >
+              {showAllDepartments ? "My department only" : "Show all departments"}
+            </Button>
+            <NewDocumentDialog
+              documentType={documentType}
+              label={documentType === "checklist" ? "Checklist" : "SOP"}
+            />
+          </div>
         ) : null}
       </div>
 
@@ -186,6 +205,14 @@ export function ReferenceDocumentsScreen({
               {heading} for your department haven&apos;t been added yet. They&apos;ll show up here
               as soon as an owner loads them.
             </p>
+            {isManagerOrOwner ? (
+              <div className="flex justify-center pt-1">
+                <NewDocumentDialog
+                  documentType={documentType}
+                  label={documentType === "checklist" ? "Checklist" : "SOP"}
+                />
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       ) : (
