@@ -208,24 +208,6 @@ export async function submitNewDocumentSuggestion(input: {
   if (error) throw error;
 }
 
-export async function createPresentationEntryLegacy(input: {
-  category: string;
-  itemName: string;
-  portionNote: string | null;
-  department: string | null;
-  updatedBy: string | null;
-}) {
-  const { error } = await supabase.from("presentation_reference_entries").insert({
-    category: input.category,
-    item_name: input.itemName,
-    portion_note: input.portionNote,
-    department: input.department,
-    photo_url: null,
-    updated_by: input.updatedBy,
-  });
-  if (error) throw error;
-}
-
 export async function updatePresentationEntry(input: {
   id: string;
   category: string;
