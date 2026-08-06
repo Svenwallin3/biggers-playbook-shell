@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { searchQueryOptions, stepTypeLabels } from "@/lib/training.queries";
+import { sharedLabel } from "@/lib/reference.queries";
 
 const title = "Search training — Biggers Training Platform";
 const description = "Search every module, step, and sourcing entry at Biggers Market.";
@@ -142,6 +143,59 @@ function SearchPage() {
                     </p>
                     {entry.notes ? (
                       <p className="mt-1 text-sm text-muted-foreground">{entry.notes}</p>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              ))}
+            </section>
+          ) : null}
+
+          {results?.referenceDocs.length ? (
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Reference Library
+              </h2>
+              {results.referenceDocs.map((doc) => (
+                <Card key={doc.id}>
+                  <CardContent className="py-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        to={doc.document_type === "checklist" ? "/reference/checklists" : "/reference/sops"}
+                        className="text-sm font-medium hover:underline"
+                      >
+                        {doc.title}
+                      </Link>
+                      <StepStatusBadge status={doc.content_status} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {[
+                        doc.document_type === "checklist" ? "Checklist" : "SOP",
+                        doc.sub_category,
+                        sharedLabel(doc.departments),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </section>
+          ) : null}
+
+          {results?.presentation.length ? (
+            <section className="space-y-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Portioning &amp; Presentation
+              </h2>
+              {results.presentation.map((entry) => (
+                <Card key={entry.id}>
+                  <CardContent className="py-4">
+                    <Link to="/reference/presentation" className="text-sm font-medium hover:underline">
+                      {entry.item_name}
+                    </Link>
+                    <p className="text-xs text-muted-foreground">{entry.category}</p>
+                    {entry.portion_note ? (
+                      <p className="mt-1 text-sm text-muted-foreground">{entry.portion_note}</p>
                     ) : null}
                   </CardContent>
                 </Card>
