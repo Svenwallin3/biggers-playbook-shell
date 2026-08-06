@@ -29,6 +29,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
+import {
+  NewModuleDialog,
+  NewStepDialog,
+  NewTrackDialog,
+  contentStatusOptions,
+  stepTypeOptions,
+} from "@/components/admin/ContentCreateDialogs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/training.queries";
@@ -54,21 +61,6 @@ export const Route = createFileRoute("/admin/content")({
   }),
   component: ContentEditorPage,
 });
-
-const stepTypeOptions: StepType[] = [
-  "text",
-  "photo",
-  "video",
-  "quiz",
-  "doing_signoff",
-  "supervised_live_practice",
-];
-const contentStatusOptions: ContentStatus[] = [
-  "ready",
-  "needs_restructuring",
-  "missing",
-  "blocked",
-];
 
 interface Draft {
   title: string;
