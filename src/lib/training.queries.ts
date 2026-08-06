@@ -209,7 +209,7 @@ export function searchQueryOptions(term: string) {
           .from("reference_documents")
           .select("*")
           .eq("is_deleted", false)
-          .or(`title.ilike.${like},sub_category.ilike.${like},sections.cs.${like}`)
+          .or(`title.ilike.${like},sub_category.ilike.${like}`)
           .limit(15),
         supabase
           .from("presentation_reference_entries")
