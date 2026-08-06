@@ -95,6 +95,14 @@ function ContentEditorPage() {
       !!stepModule?.track &&
       stepModule.track.department === employee.department_scope);
 
+  // Same rule, applied to the row being created into (RLS enforces it too).
+  const canEditDepartment = (department: string | null | undefined) =>
+    employee?.auth_tier === "owner" ||
+    (employee?.auth_tier === "manager" &&
+      !!department &&
+      department === employee.department_scope);
+  const canCreateTrack = employee?.auth_tier === "owner" || employee?.auth_tier === "manager";
+
   useEffect(() => {
     if (!selectedId && steps.length) setSelectedId(steps[0]!.id);
   }, [steps, selectedId]);
