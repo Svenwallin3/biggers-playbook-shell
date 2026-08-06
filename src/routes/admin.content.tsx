@@ -352,10 +352,6 @@ function ContentEditorPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="loc">Location tag</Label>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="video">Video link (YouTube)</Label>
                   <Input
                     id="video"
@@ -368,6 +364,7 @@ function ContentEditorPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="loc">Location tag</Label>
                   <Input
                     id="loc"
                     value={draft.location_tag}
