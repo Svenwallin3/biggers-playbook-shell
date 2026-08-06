@@ -156,6 +156,76 @@ export async function createPresentationEntry(input: {
   if (error) throw error;
 }
 
+export const departmentOptions = ["universal", "market", "kitchen", "delivery"] as const;
+
+/** Owner-only direct create (reference_documents insert RLS is owner-tier). */
+export async function createReferenceDocument(input: {
+  documentType: ReferenceDocumentType;
+  title: string;
+  subCategory: string | null;
+  departments: string[];
+  updatedBy: string | null;
+}) {
+  const { error } = await supabase.from("reference_documents").insert({
+    document_type: input.documentType,
+    title: input.title,
+    sub_category: input.subCategory,
+    departments: input.departments,
+    sections: [],
+    content_status: "missing",
+    updated_by: input.updatedBy,
+  });
+  if (error) throw error;
+}
+
+/**
+ * Manager path for a brand-new document: no row to point at yet, so
+ * reference_document_id stays null and the proposal lives in field_what.
+ */
+export async function submitNewDocumentSuggestion(input: {
+  documentType: ReferenceDocumentType;
+  submittedBy: string;
+  title: string;
+  subCategory: string | null;
+  departments: string[];
+  howYouKnow: string | null;
+}) {
+  const label = input.documentType === "checklist" ? "checklist" : "SOP";
+  const what = [
+    `New ${label}: ${input.title}`,
+    input.subCategory ? `Group: ${input.subCategory}` : null,
+    `Departments: ${input.departments.map(departmentLabel).join(", ") || "—"}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const { error } = await supabase.from("suggestion_queue").insert({
+    submitted_by: input.submittedBy,
+    field_what: what,
+    field_how: null,
+    field_how_you_know: input.howYouKnow,
+    status: "pending",
+  });
+  if (error) throw error;
+}
+
+export async function createPresentationEntryLegacy(input: {
+  category: string;
+  itemName: string;
+  portionNote: string | null;
+  department: string | null;
+  updatedBy: string | null;
+}) {
+  const { error } = await supabase.from("presentation_reference_entries").insert({
+    category: input.category,
+    item_name: input.itemName,
+    portion_note: input.portionNote,
+    department: input.department,
+    photo_url: null,
+    updated_by: input.updatedBy,
+  });
+  if (error) throw error;
+}
+
 export async function updatePresentationEntry(input: {
   id: string;
   category: string;
