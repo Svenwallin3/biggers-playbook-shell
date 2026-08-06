@@ -113,7 +113,7 @@ export async function saveReferenceSections(input: {
   const { error } = await supabase
     .from("reference_documents")
     .update({
-      sections: input.sections as unknown as Database["public"]["Tables"]["reference_documents"]["Update"]["sections"],
+      sections: input.sections as unknown as Database["public"]["Tables"]["reference_documents"]["Row"]["sections"],
       updated_by: input.updatedBy,
     })
     .eq("id", input.documentId);
