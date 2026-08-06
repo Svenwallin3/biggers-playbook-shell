@@ -9,6 +9,9 @@ export type StepRow = Database["public"]["Tables"]["steps"]["Row"];
 export type QuizRow = Database["public"]["Tables"]["quiz_bank"]["Row"];
 export type ProgressRow = Database["public"]["Tables"]["progress_records"]["Row"];
 export type SourcingRow = Database["public"]["Tables"]["sourcing_board_entries"]["Row"];
+export type ReferenceDocRow = Database["public"]["Tables"]["reference_documents"]["Row"];
+export type PresentationRow =
+  Database["public"]["Tables"]["presentation_reference_entries"]["Row"];
 export type StepType = Database["public"]["Enums"]["step_type"];
 export type ContentStatus = Database["public"]["Enums"]["content_status"];
 export type Department = Database["public"]["Enums"]["department"];
@@ -171,6 +174,8 @@ export type SearchResults = {
   modules: (ModuleRow & { track: TrackRow })[];
   steps: (StepRow & { module: ModuleRow | null })[];
   sourcing: SourcingRow[];
+  referenceDocs: ReferenceDocRow[];
+  presentation: PresentationRow[];
 };
 
 export function searchQueryOptions(term: string) {
@@ -181,7 +186,7 @@ export function searchQueryOptions(term: string) {
     queryFn: async (): Promise<SearchResults> => {
       const like = `%${trimmed.replace(/[%_]/g, "")}%`;
 
-      const [moduleRes, stepRes, sourcingRes] = await Promise.all([
+      const [moduleRes, stepRes, sourcingRes, referenceRes, presentationRes] = await Promise.all([
         supabase
           .from("modules")
           .select("*, track:tracks(*)")
@@ -200,16 +205,32 @@ export function searchQueryOptions(term: string) {
           .eq("is_deleted", false)
           .or(`product.ilike.${like},supplier.ilike.${like},region.ilike.${like},notes.ilike.${like}`)
           .limit(15),
+        supabase
+          .from("reference_documents")
+          .select("*")
+          .eq("is_deleted", false)
+          .or(`title.ilike.${like},sub_category.ilike.${like},sections.cs.${like}`)
+          .limit(15),
+        supabase
+          .from("presentation_reference_entries")
+          .select("*")
+          .eq("is_deleted", false)
+          .or(`item_name.ilike.${like},category.ilike.${like},portion_note.ilike.${like}`)
+          .limit(15),
       ]);
 
       if (moduleRes.error) throw moduleRes.error;
       if (stepRes.error) throw stepRes.error;
       if (sourcingRes.error) throw sourcingRes.error;
+      if (referenceRes.error) throw referenceRes.error;
+      if (presentationRes.error) throw presentationRes.error;
 
       return {
         modules: (moduleRes.data ?? []) as SearchResults["modules"],
         steps: (stepRes.data ?? []) as SearchResults["steps"],
         sourcing: sourcingRes.data ?? [],
+        referenceDocs: referenceRes.data ?? [],
+        presentation: presentationRes.data ?? [],
       };
     },
   });
