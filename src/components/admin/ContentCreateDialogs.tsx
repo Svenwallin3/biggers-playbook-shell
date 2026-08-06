@@ -71,7 +71,7 @@ function CreateDialog({
   title: string;
   description: string;
   trigger: ReactNode;
-  disabled?: boolean;
+  disabled?: boolean | undefined;
   children: ReactNode;
   onSubmit: () => Promise<string>;
   onCreated: (id: string) => void;
@@ -124,7 +124,7 @@ export function NewTrackDialog({
   disabled,
   onCreated,
 }: {
-  disabled?: boolean;
+  disabled?: boolean | undefined;
   onCreated: (trackId: string) => void;
 }) {
   const empty = {
@@ -236,7 +236,7 @@ export function NewModuleDialog({
 }: {
   trackId: string;
   nextSequence: number;
-  disabled?: boolean;
+  disabled?: boolean | undefined;
   onCreated: (moduleId: string) => void;
 }) {
   const empty = {
@@ -379,7 +379,7 @@ export function NewStepDialog({
 }: {
   moduleId: string;
   nextSequence: number;
-  disabled?: boolean;
+  disabled?: boolean | undefined;
   onCreated: (stepId: string) => void;
 }) {
   const empty = {
