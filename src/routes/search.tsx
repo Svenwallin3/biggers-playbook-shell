@@ -28,7 +28,11 @@ function SearchPage() {
   const query = useQuery(searchQueryOptions(term));
   const results = query.data;
   const count =
-    (results?.modules.length ?? 0) + (results?.steps.length ?? 0) + (results?.sourcing.length ?? 0);
+    (results?.modules.length ?? 0) +
+    (results?.steps.length ?? 0) +
+    (results?.sourcing.length ?? 0) +
+    (results?.referenceDocs.length ?? 0) +
+    (results?.presentation.length ?? 0);
 
   return (
     <div className="space-y-6">
