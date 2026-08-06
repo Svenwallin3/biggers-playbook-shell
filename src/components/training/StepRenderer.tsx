@@ -3,6 +3,7 @@ import { CheckCircle2, Clapperboard, Image as ImageIcon, ListChecks, UserCheck }
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StepStatusBadge } from "./StepStatusBadge";
+import { VideoEmbed, youTubeId } from "@/components/VideoEmbed";
 import {
   bodyLines,
   stepTypeLabels,
@@ -108,12 +109,20 @@ export function StepRenderer({
           {step.step_type === "video" ? (
             <Card>
               <CardContent className="space-y-3 py-6">
-                <div className="flex h-48 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                  <Clapperboard className="size-8" />
-                </div>
+                {youTubeId(step.video_url) ? (
+                  <VideoEmbed url={step.video_url} title={step.title} />
+                ) : (
+                  <div className="flex h-48 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <Clapperboard className="size-8" />
+                  </div>
+                )}
                 <p className="text-sm text-muted-foreground">Short skill clip</p>
               </CardContent>
             </Card>
+          ) : null}
+
+          {step.step_type !== "video" ? (
+            <VideoEmbed url={step.video_url} title={step.title} />
           ) : null}
 
           {step.step_type === "quiz" && quizzes.length ? (
