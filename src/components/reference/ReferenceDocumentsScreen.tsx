@@ -205,6 +205,14 @@ export function ReferenceDocumentsScreen({
               {heading} for your department haven&apos;t been added yet. They&apos;ll show up here
               as soon as an owner loads them.
             </p>
+            {isManagerOrOwner ? (
+              <div className="flex justify-center pt-1">
+                <NewDocumentDialog
+                  documentType={documentType}
+                  label={documentType === "checklist" ? "Checklist" : "SOP"}
+                />
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       ) : (
