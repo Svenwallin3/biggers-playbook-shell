@@ -135,7 +135,7 @@ function SearchPage() {
               {results.sourcing.map((entry) => (
                 <Card key={entry.id}>
                   <CardContent className="py-4">
-                    <Link to="/sourcing-board" className="text-sm font-medium hover:underline">
+                    <Link to="/reference/sourcing" className="text-sm font-medium hover:underline">
                       {entry.product}
                     </Link>
                     <p className="text-xs text-muted-foreground">

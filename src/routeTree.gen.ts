@@ -15,6 +15,7 @@ import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MergeToolRouteImport } from './routes/merge-tool'
 import { Route as PreviewRouteImport } from './routes/preview'
+import { Route as ReferenceRouteImport } from './routes/reference'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SourcingBoardRouteImport } from './routes/sourcing-board'
 import { Route as SuggestRouteImport } from './routes/suggest'
@@ -23,9 +24,11 @@ import { Route as TrainingQueueRouteImport } from './routes/training-queue'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as AdminGapsRouteImport } from './routes/admin.gaps'
 import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
+import { Route as ReferenceIndexRouteImport } from './routes/reference.index'
 import { Route as ReferenceChecklistsRouteImport } from './routes/reference.checklists'
 import { Route as ReferencePresentationRouteImport } from './routes/reference.presentation'
 import { Route as ReferenceSopsRouteImport } from './routes/reference.sops'
+import { Route as ReferenceSourcingRouteImport } from './routes/reference.sourcing'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -55,6 +58,11 @@ const MergeToolRoute = MergeToolRouteImport.update({
 const PreviewRoute = PreviewRouteImport.update({
   id: '/preview',
   path: '/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReferenceRoute = ReferenceRouteImport.update({
+  id: '/reference',
+  path: '/reference',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SearchRoute = SearchRouteImport.update({
@@ -97,20 +105,30 @@ const ModulesModuleIdRoute = ModulesModuleIdRouteImport.update({
   path: '/modules/$moduleId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReferenceIndexRoute = ReferenceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ReferenceRoute,
+} as any)
 const ReferenceChecklistsRoute = ReferenceChecklistsRouteImport.update({
-  id: '/reference/checklists',
-  path: '/reference/checklists',
-  getParentRoute: () => rootRouteImport,
+  id: '/checklists',
+  path: '/checklists',
+  getParentRoute: () => ReferenceRoute,
 } as any)
 const ReferencePresentationRoute = ReferencePresentationRouteImport.update({
-  id: '/reference/presentation',
-  path: '/reference/presentation',
-  getParentRoute: () => rootRouteImport,
+  id: '/presentation',
+  path: '/presentation',
+  getParentRoute: () => ReferenceRoute,
 } as any)
 const ReferenceSopsRoute = ReferenceSopsRouteImport.update({
-  id: '/reference/sops',
-  path: '/reference/sops',
-  getParentRoute: () => rootRouteImport,
+  id: '/sops',
+  path: '/sops',
+  getParentRoute: () => ReferenceRoute,
+} as any)
+const ReferenceSourcingRoute = ReferenceSourcingRouteImport.update({
+  id: '/sourcing',
+  path: '/sourcing',
+  getParentRoute: () => ReferenceRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -120,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/merge-tool': typeof MergeToolRoute
   '/preview': typeof PreviewRoute
+  '/reference': typeof ReferenceRouteWithChildren
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
@@ -131,6 +150,8 @@ export interface FileRoutesByFullPath {
   '/reference/checklists': typeof ReferenceChecklistsRoute
   '/reference/presentation': typeof ReferencePresentationRoute
   '/reference/sops': typeof ReferenceSopsRoute
+  '/reference/sourcing': typeof ReferenceSourcingRoute
+  '/reference/': typeof ReferenceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -150,6 +171,8 @@ export interface FileRoutesByTo {
   '/reference/checklists': typeof ReferenceChecklistsRoute
   '/reference/presentation': typeof ReferencePresentationRoute
   '/reference/sops': typeof ReferenceSopsRoute
+  '/reference/sourcing': typeof ReferenceSourcingRoute
+  '/reference': typeof ReferenceIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -159,6 +182,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/merge-tool': typeof MergeToolRoute
   '/preview': typeof PreviewRoute
+  '/reference': typeof ReferenceRouteWithChildren
   '/search': typeof SearchRoute
   '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
@@ -170,6 +194,8 @@ export interface FileRoutesById {
   '/reference/checklists': typeof ReferenceChecklistsRoute
   '/reference/presentation': typeof ReferencePresentationRoute
   '/reference/sops': typeof ReferenceSopsRoute
+  '/reference/sourcing': typeof ReferenceSourcingRoute
+  '/reference/': typeof ReferenceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -180,6 +206,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/merge-tool'
     | '/preview'
+    | '/reference'
     | '/search'
     | '/sourcing-board'
     | '/suggest'
@@ -191,6 +218,8 @@ export interface FileRouteTypes {
     | '/reference/checklists'
     | '/reference/presentation'
     | '/reference/sops'
+    | '/reference/sourcing'
+    | '/reference/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -210,6 +239,8 @@ export interface FileRouteTypes {
     | '/reference/checklists'
     | '/reference/presentation'
     | '/reference/sops'
+    | '/reference/sourcing'
+    | '/reference'
   id:
     | '__root__'
     | '/'
@@ -218,6 +249,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/merge-tool'
     | '/preview'
+    | '/reference'
     | '/search'
     | '/sourcing-board'
     | '/suggest'
@@ -229,6 +261,8 @@ export interface FileRouteTypes {
     | '/reference/checklists'
     | '/reference/presentation'
     | '/reference/sops'
+    | '/reference/sourcing'
+    | '/reference/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -238,6 +272,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MergeToolRoute: typeof MergeToolRoute
   PreviewRoute: typeof PreviewRoute
+  ReferenceRoute: typeof ReferenceRouteWithChildren
   SearchRoute: typeof SearchRoute
   SourcingBoardRoute: typeof SourcingBoardRoute
   SuggestRoute: typeof SuggestRoute
@@ -246,9 +281,6 @@ export interface RootRouteChildren {
   AdminContentRoute: typeof AdminContentRoute
   AdminGapsRoute: typeof AdminGapsRoute
   ModulesModuleIdRoute: typeof ModulesModuleIdRoute
-  ReferenceChecklistsRoute: typeof ReferenceChecklistsRoute
-  ReferencePresentationRoute: typeof ReferencePresentationRoute
-  ReferenceSopsRoute: typeof ReferenceSopsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -293,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/preview'
       fullPath: '/preview'
       preLoaderRoute: typeof PreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reference': {
+      id: '/reference'
+      path: '/reference'
+      fullPath: '/reference'
+      preLoaderRoute: typeof ReferenceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -351,29 +390,63 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModulesModuleIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reference/': {
+      id: '/reference/'
+      path: '/'
+      fullPath: '/reference/'
+      preLoaderRoute: typeof ReferenceIndexRouteImport
+      parentRoute: typeof ReferenceRoute
+    }
     '/reference/checklists': {
       id: '/reference/checklists'
-      path: '/reference/checklists'
+      path: '/checklists'
       fullPath: '/reference/checklists'
       preLoaderRoute: typeof ReferenceChecklistsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ReferenceRoute
     }
     '/reference/presentation': {
       id: '/reference/presentation'
-      path: '/reference/presentation'
+      path: '/presentation'
       fullPath: '/reference/presentation'
       preLoaderRoute: typeof ReferencePresentationRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ReferenceRoute
     }
     '/reference/sops': {
       id: '/reference/sops'
-      path: '/reference/sops'
+      path: '/sops'
       fullPath: '/reference/sops'
       preLoaderRoute: typeof ReferenceSopsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ReferenceRoute
+    }
+    '/reference/sourcing': {
+      id: '/reference/sourcing'
+      path: '/sourcing'
+      fullPath: '/reference/sourcing'
+      preLoaderRoute: typeof ReferenceSourcingRouteImport
+      parentRoute: typeof ReferenceRoute
     }
   }
 }
+
+interface ReferenceRouteChildren {
+  ReferenceChecklistsRoute: typeof ReferenceChecklistsRoute
+  ReferencePresentationRoute: typeof ReferencePresentationRoute
+  ReferenceSopsRoute: typeof ReferenceSopsRoute
+  ReferenceSourcingRoute: typeof ReferenceSourcingRoute
+  ReferenceIndexRoute: typeof ReferenceIndexRoute
+}
+
+const ReferenceRouteChildren: ReferenceRouteChildren = {
+  ReferenceChecklistsRoute: ReferenceChecklistsRoute,
+  ReferencePresentationRoute: ReferencePresentationRoute,
+  ReferenceSopsRoute: ReferenceSopsRoute,
+  ReferenceSourcingRoute: ReferenceSourcingRoute,
+  ReferenceIndexRoute: ReferenceIndexRoute,
+}
+
+const ReferenceRouteWithChildren = ReferenceRoute._addFileChildren(
+  ReferenceRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -382,6 +455,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MergeToolRoute: MergeToolRoute,
   PreviewRoute: PreviewRoute,
+  ReferenceRoute: ReferenceRouteWithChildren,
   SearchRoute: SearchRoute,
   SourcingBoardRoute: SourcingBoardRoute,
   SuggestRoute: SuggestRoute,
@@ -390,20 +464,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminContentRoute: AdminContentRoute,
   AdminGapsRoute: AdminGapsRoute,
   ModulesModuleIdRoute: ModulesModuleIdRoute,
-  ReferenceChecklistsRoute: ReferenceChecklistsRoute,
-  ReferencePresentationRoute: ReferencePresentationRoute,
-  ReferenceSopsRoute: ReferenceSopsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

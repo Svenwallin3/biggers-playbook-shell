@@ -7,14 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 const baseNavItems = [
   { label: "Today", to: "/" as const },
   { label: "Search", to: "/search" as const },
-  { label: "Sourcing Board", to: "/sourcing-board" as const },
-];
-
-// Reference Library — readable by every tier; each screen gates its own edit actions.
-const referenceNavItems = [
-  { label: "Checklists", to: "/reference/checklists" as const },
-  { label: "SOPs", to: "/reference/sops" as const },
-  { label: "Portioning", to: "/reference/presentation" as const },
 ];
 
 export function AppLayout() {
@@ -83,20 +75,16 @@ export function AppLayout() {
                 {item.label}
               </Link>
             ))}
-            <span className="mx-1 h-4 w-px bg-border" aria-hidden />
-            <span className="pl-0.5 pr-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-              Reference
-            </span>
-            {referenceNavItems.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                activeProps={{ className: "bg-secondary text-secondary-foreground font-semibold" }}
-                className="rounded-md px-2.5 py-1.5 text-[13px] transition-colors hover:bg-secondary/60 hover:text-foreground"
-              >
-                {item.label}
-              </Link>
-            ))}
+            <Link
+              to="/reference"
+              className={`rounded-md px-2.5 py-1.5 transition-colors hover:bg-secondary/60 hover:text-foreground ${
+                pathname.startsWith("/reference")
+                  ? "bg-secondary text-secondary-foreground font-semibold"
+                  : ""
+              }`}
+            >
+              Reference Guides
+            </Link>
             {privilegedItems.length > 0 ? (
               <span className="mx-1 h-4 w-px bg-border" aria-hidden />
             ) : null}

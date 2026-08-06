@@ -254,7 +254,7 @@ function Index() {
         })}
       </section>
 
-      <Link to="/sourcing-board" className="block">
+      <Link to="/reference/sourcing" className="block">
         <Card className="border-accent/30 bg-accent/8 transition-colors hover:border-accent">
           <CardContent className="flex items-center gap-3 py-4">
             <Compass className="size-5 text-accent" />
