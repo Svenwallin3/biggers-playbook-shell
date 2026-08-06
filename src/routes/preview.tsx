@@ -4,6 +4,7 @@ import { Eye } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { StepRenderer } from "@/components/training/StepRenderer";
+import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { previewTrackQueryOptions, previewTracksQueryOptions } from "@/lib/preview.queries";
@@ -154,19 +155,14 @@ function PreviewPage() {
 
           <div className="space-y-6">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                {activeTrack?.name}
-                {activeModule.sub_path ? ` · ${activeModule.sub_path}` : ""}
-                {activeModule.day_assignment ? ` · Day ${activeModule.day_assignment}` : ""}
-              </p>
-              <h2 className="font-display text-2xl font-semibold tracking-tight">
-                {activeModule.name}
-              </h2>
-              {activeModule.description ? (
-                <p className="mt-4 rounded-lg border border-accent/35 bg-accent/8 px-5 py-4 font-display text-lg font-semibold leading-snug tracking-tight text-foreground">
-                  {activeModule.description}
-                </p>
-              ) : null}
+              <ModuleHeader
+                as="h2"
+                trackName={activeTrack?.name}
+                subPath={activeModule.sub_path}
+                dayAssignment={activeModule.day_assignment}
+                name={activeModule.name}
+                description={activeModule.description}
+              />
             </div>
             <StepRenderer
               step={activeStep}
