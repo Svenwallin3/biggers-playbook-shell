@@ -217,6 +217,7 @@ function ContentEditorPage() {
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <nav className="space-y-5">
+          <NewTrackDialog disabled={!canCreateTrack} onCreated={() => undefined} />
           {tracks.map((track) => (
             <div key={track.id}>
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -251,9 +252,25 @@ function ContentEditorPage() {
                               </button>
                             </li>
                           ))}
+                        <li>
+                          <NewStepDialog
+                            moduleId={m.id}
+                            nextSequence={
+                              steps.filter((s) => s.module_id === m.id).length + 1
+                            }
+                            disabled={!canEditDepartment(track.department)}
+                            onCreated={(id) => setSelectedId(id)}
+                          />
+                        </li>
                       </ul>
                     </div>
                   ))}
+                <NewModuleDialog
+                  trackId={track.id}
+                  nextSequence={modules.filter((m) => m.track_id === track.id).length + 1}
+                  disabled={!canEditDepartment(track.department)}
+                  onCreated={() => undefined}
+                />
               </div>
             </div>
           ))}
