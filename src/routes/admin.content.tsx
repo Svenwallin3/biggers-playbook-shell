@@ -473,6 +473,7 @@ function ContentEditorPage() {
             </Card>
           ) : null}
 
+          {selection.kind === "step" ? (
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Version history</CardTitle>
@@ -522,6 +523,7 @@ function ContentEditorPage() {
               )}
             </CardContent>
           </Card>
+          ) : null}
         </div>
       </div>
     </div>
