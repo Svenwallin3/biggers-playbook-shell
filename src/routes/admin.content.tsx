@@ -29,6 +29,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
+import {
+  NewModuleDialog,
+  NewStepDialog,
+  NewTrackDialog,
+  contentStatusOptions,
+  stepTypeOptions,
+} from "@/components/admin/ContentCreateDialogs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/training.queries";
@@ -54,21 +61,6 @@ export const Route = createFileRoute("/admin/content")({
   }),
   component: ContentEditorPage,
 });
-
-const stepTypeOptions: StepType[] = [
-  "text",
-  "photo",
-  "video",
-  "quiz",
-  "doing_signoff",
-  "supervised_live_practice",
-];
-const contentStatusOptions: ContentStatus[] = [
-  "ready",
-  "needs_restructuring",
-  "missing",
-  "blocked",
-];
 
 interface Draft {
   title: string;
@@ -102,6 +94,14 @@ function ContentEditorPage() {
     (employee?.auth_tier === "manager" &&
       !!stepModule?.track &&
       stepModule.track.department === employee.department_scope);
+
+  // Same rule, applied to the row being created into (RLS enforces it too).
+  const canEditDepartment = (department: string | null | undefined) =>
+    employee?.auth_tier === "owner" ||
+    (employee?.auth_tier === "manager" &&
+      !!department &&
+      department === employee.department_scope);
+  const canCreateTrack = employee?.auth_tier === "owner" || employee?.auth_tier === "manager";
 
   useEffect(() => {
     if (!selectedId && steps.length) setSelectedId(steps[0]!.id);
@@ -217,6 +217,7 @@ function ContentEditorPage() {
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <nav className="space-y-5">
+          <NewTrackDialog disabled={!canCreateTrack} onCreated={() => undefined} />
           {tracks.map((track) => (
             <div key={track.id}>
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -251,9 +252,25 @@ function ContentEditorPage() {
                               </button>
                             </li>
                           ))}
+                        <li>
+                          <NewStepDialog
+                            moduleId={m.id}
+                            nextSequence={
+                              steps.filter((s) => s.module_id === m.id).length + 1
+                            }
+                            disabled={!canEditDepartment(track.department)}
+                            onCreated={(id) => setSelectedId(id)}
+                          />
+                        </li>
                       </ul>
                     </div>
                   ))}
+                <NewModuleDialog
+                  trackId={track.id}
+                  nextSequence={modules.filter((m) => m.track_id === track.id).length + 1}
+                  disabled={!canEditDepartment(track.department)}
+                  onCreated={() => undefined}
+                />
               </div>
             </div>
           ))}
