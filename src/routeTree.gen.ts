@@ -16,7 +16,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as MergeToolRouteImport } from './routes/merge-tool'
 import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as SearchRouteImport } from './routes/search'
-import { Route as SourcingBoardRouteImport } from './routes/sourcing-board'
 import { Route as SuggestRouteImport } from './routes/suggest'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as TrainingQueueRouteImport } from './routes/training-queue'
@@ -26,6 +25,7 @@ import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
 import { Route as ReferenceChecklistsRouteImport } from './routes/reference.checklists'
 import { Route as ReferencePresentationRouteImport } from './routes/reference.presentation'
 import { Route as ReferenceSopsRouteImport } from './routes/reference.sops'
+import { Route as ReferenceSourcingRouteImport } from './routes/reference.sourcing'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -60,11 +60,6 @@ const PreviewRoute = PreviewRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SourcingBoardRoute = SourcingBoardRouteImport.update({
-  id: '/sourcing-board',
-  path: '/sourcing-board',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SuggestRoute = SuggestRouteImport.update({
@@ -112,6 +107,11 @@ const ReferenceSopsRoute = ReferenceSopsRouteImport.update({
   path: '/reference/sops',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReferenceSourcingRoute = ReferenceSourcingRouteImport.update({
+  id: '/reference/sourcing',
+  path: '/reference/sourcing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -121,7 +121,6 @@ export interface FileRoutesByFullPath {
   '/merge-tool': typeof MergeToolRoute
   '/preview': typeof PreviewRoute
   '/search': typeof SearchRoute
-  '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
   '/team': typeof TeamRoute
   '/training-queue': typeof TrainingQueueRoute
@@ -131,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/reference/checklists': typeof ReferenceChecklistsRoute
   '/reference/presentation': typeof ReferencePresentationRoute
   '/reference/sops': typeof ReferenceSopsRoute
+  '/reference/sourcing': typeof ReferenceSourcingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -140,7 +140,6 @@ export interface FileRoutesByTo {
   '/merge-tool': typeof MergeToolRoute
   '/preview': typeof PreviewRoute
   '/search': typeof SearchRoute
-  '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
   '/team': typeof TeamRoute
   '/training-queue': typeof TrainingQueueRoute
@@ -150,6 +149,7 @@ export interface FileRoutesByTo {
   '/reference/checklists': typeof ReferenceChecklistsRoute
   '/reference/presentation': typeof ReferencePresentationRoute
   '/reference/sops': typeof ReferenceSopsRoute
+  '/reference/sourcing': typeof ReferenceSourcingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -160,7 +160,6 @@ export interface FileRoutesById {
   '/merge-tool': typeof MergeToolRoute
   '/preview': typeof PreviewRoute
   '/search': typeof SearchRoute
-  '/sourcing-board': typeof SourcingBoardRoute
   '/suggest': typeof SuggestRoute
   '/team': typeof TeamRoute
   '/training-queue': typeof TrainingQueueRoute
@@ -170,6 +169,7 @@ export interface FileRoutesById {
   '/reference/checklists': typeof ReferenceChecklistsRoute
   '/reference/presentation': typeof ReferencePresentationRoute
   '/reference/sops': typeof ReferenceSopsRoute
+  '/reference/sourcing': typeof ReferenceSourcingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -181,7 +181,6 @@ export interface FileRouteTypes {
     | '/merge-tool'
     | '/preview'
     | '/search'
-    | '/sourcing-board'
     | '/suggest'
     | '/team'
     | '/training-queue'
@@ -191,6 +190,7 @@ export interface FileRouteTypes {
     | '/reference/checklists'
     | '/reference/presentation'
     | '/reference/sops'
+    | '/reference/sourcing'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -200,7 +200,6 @@ export interface FileRouteTypes {
     | '/merge-tool'
     | '/preview'
     | '/search'
-    | '/sourcing-board'
     | '/suggest'
     | '/team'
     | '/training-queue'
@@ -210,6 +209,7 @@ export interface FileRouteTypes {
     | '/reference/checklists'
     | '/reference/presentation'
     | '/reference/sops'
+    | '/reference/sourcing'
   id:
     | '__root__'
     | '/'
@@ -219,7 +219,6 @@ export interface FileRouteTypes {
     | '/merge-tool'
     | '/preview'
     | '/search'
-    | '/sourcing-board'
     | '/suggest'
     | '/team'
     | '/training-queue'
@@ -229,6 +228,7 @@ export interface FileRouteTypes {
     | '/reference/checklists'
     | '/reference/presentation'
     | '/reference/sops'
+    | '/reference/sourcing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -239,7 +239,6 @@ export interface RootRouteChildren {
   MergeToolRoute: typeof MergeToolRoute
   PreviewRoute: typeof PreviewRoute
   SearchRoute: typeof SearchRoute
-  SourcingBoardRoute: typeof SourcingBoardRoute
   SuggestRoute: typeof SuggestRoute
   TeamRoute: typeof TeamRoute
   TrainingQueueRoute: typeof TrainingQueueRoute
@@ -249,6 +248,7 @@ export interface RootRouteChildren {
   ReferenceChecklistsRoute: typeof ReferenceChecklistsRoute
   ReferencePresentationRoute: typeof ReferencePresentationRoute
   ReferenceSopsRoute: typeof ReferenceSopsRoute
+  ReferenceSourcingRoute: typeof ReferenceSourcingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -300,13 +300,6 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sourcing-board': {
-      id: '/sourcing-board'
-      path: '/sourcing-board'
-      fullPath: '/sourcing-board'
-      preLoaderRoute: typeof SourcingBoardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/suggest': {
@@ -372,6 +365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReferenceSopsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reference/sourcing': {
+      id: '/reference/sourcing'
+      path: '/reference/sourcing'
+      fullPath: '/reference/sourcing'
+      preLoaderRoute: typeof ReferenceSourcingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -383,7 +383,6 @@ const rootRouteChildren: RootRouteChildren = {
   MergeToolRoute: MergeToolRoute,
   PreviewRoute: PreviewRoute,
   SearchRoute: SearchRoute,
-  SourcingBoardRoute: SourcingBoardRoute,
   SuggestRoute: SuggestRoute,
   TeamRoute: TeamRoute,
   TrainingQueueRoute: TrainingQueueRoute,
@@ -393,6 +392,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReferenceChecklistsRoute: ReferenceChecklistsRoute,
   ReferencePresentationRoute: ReferencePresentationRoute,
   ReferenceSopsRoute: ReferenceSopsRoute,
+  ReferenceSourcingRoute: ReferenceSourcingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
