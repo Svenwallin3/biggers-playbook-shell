@@ -93,7 +93,9 @@ function ModulePage() {
         </p>
         <h1 className="font-display text-3xl font-semibold tracking-tight">{mod.name}</h1>
         {mod.description ? (
-          <p className="mt-1 text-sm text-muted-foreground">{mod.description}</p>
+          <p className="mt-4 rounded-lg border border-accent/35 bg-accent/8 px-5 py-4 font-display text-lg font-semibold leading-snug tracking-tight text-foreground">
+            {mod.description}
+          </p>
         ) : null}
       </div>
 
