@@ -162,6 +162,11 @@ function PreviewPage() {
               <h2 className="font-display text-2xl font-semibold tracking-tight">
                 {activeModule.name}
               </h2>
+              {activeModule.description ? (
+                <p className="mt-4 rounded-lg border border-accent/35 bg-accent/8 px-5 py-4 font-display text-lg font-semibold leading-snug tracking-tight text-foreground">
+                  {activeModule.description}
+                </p>
+              ) : null}
             </div>
             <StepRenderer
               step={activeStep}
