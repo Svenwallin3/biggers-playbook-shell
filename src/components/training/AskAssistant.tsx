@@ -119,7 +119,7 @@ export function AskAssistant() {
                 source.kind === "sourcing" ? (
                   <Link
                     key={source.ref}
-                    to="/sourcing-board"
+                    to="/reference/sourcing"
                     className="flex items-center gap-2 text-sm text-primary hover:underline"
                   >
                     <Compass className="size-3.5" />

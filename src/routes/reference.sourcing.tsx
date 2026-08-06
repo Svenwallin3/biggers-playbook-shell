@@ -33,7 +33,7 @@ import { sourcingQueryOptions, type SourcingRow } from "@/lib/training.queries";
 const title = "Sourcing Board — Biggers Training Platform";
 const description = "Where Biggers Market ingredients and products come from.";
 
-export const Route = createFileRoute("/sourcing-board")({
+export const Route = createFileRoute("/reference/sourcing")({
   head: () => ({
     meta: [
       { title },
