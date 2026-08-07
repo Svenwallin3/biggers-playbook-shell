@@ -1,12 +1,23 @@
+import { useState } from "react";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { ChevronDown, Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 
-const baseNavItems = [
-  { label: "Today", to: "/" as const },
-  { label: "Search", to: "/search" as const },
-];
+type NavItem = { label: string; to: string };
+
+const linkClass =
+  "rounded-md px-2.5 py-1.5 transition-colors hover:bg-secondary/60 hover:text-foreground";
+const activeClass = "bg-secondary text-secondary-foreground font-semibold";
 
 export function AppLayout() {
   const { session, employee, tier, isManagerOrOwner, isOwner, signOut } = useAuth();
@@ -22,26 +33,78 @@ export function AppLayout() {
     "/training-queue",
   ].some((p) => pathname.startsWith(p));
 
-  const managerItems = isManagerOrOwner
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const baseItems: NavItem[] = [
+    { label: "Today", to: "/" },
+    { label: "Search", to: "/search" },
+    { label: "Reference Guides", to: "/reference" },
+  ];
+
+  const contentItems: NavItem[] = isManagerOrOwner
     ? [
-        { label: "Training Queue", to: "/training-queue" as const },
-        { label: "Preview Training", to: "/preview" as const },
-        { label: "Suggest", to: "/suggest" as const },
-        { label: "Approvals", to: "/approvals" as const },
-        { label: "Content", to: "/admin/content" as const },
+        { label: "Suggest", to: "/suggest" },
+        { label: "Approvals", to: "/approvals" },
+        { label: "Content", to: "/admin/content" },
+        { label: "Preview Training", to: "/preview" },
+        ...(isOwner ? [{ label: "Gaps", to: "/admin/gaps" }] : []),
       ]
     : [];
 
-  const ownerItems = isOwner
+  const adminItems: NavItem[] = isOwner
     ? [
-        { label: "Gaps", to: "/admin/gaps" as const },
-        { label: "Compliance", to: "/compliance" as const },
-        { label: "Merge", to: "/merge-tool" as const },
-        { label: "Team", to: "/team" as const },
+        { label: "Team", to: "/team" },
+        { label: "Compliance", to: "/compliance" },
+        { label: "Merge", to: "/merge-tool" },
       ]
     : [];
 
-  const privilegedItems = [...managerItems, ...ownerItems];
+  const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
+  const groupActive = (items: NavItem[]) => items.some((i) => isActive(i.to));
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate({ to: "/login", replace: true });
+  };
+
+  const NavDropdown = ({ label, items }: { label: string; items: NavItem[] }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={`flex items-center gap-1 ${linkClass} ${groupActive(items) ? activeClass : ""}`}
+      >
+        {label}
+        <ChevronDown className="size-3.5" aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {items.map((item) => (
+          <DropdownMenuItem key={item.to} asChild>
+            <Link to={item.to} className={isActive(item.to) ? "font-semibold" : ""}>
+              {item.label}
+            </Link>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const MobileGroup = ({ label, items }: { label: string; items: NavItem[] }) =>
+    items.length ? (
+      <div className="space-y-0.5">
+        <p className="px-2.5 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        {items.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            onClick={() => setMobileOpen(false)}
+            className={`block ${linkClass} ${isActive(item.to) ? activeClass : ""}`}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
+    ) : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -51,80 +114,128 @@ export function AppLayout() {
             isAdminScreen ? "max-w-7xl" : "max-w-5xl"
           }`}
         >
-          <Link to="/" className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+                  <Menu className="size-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 overflow-y-auto">
+                <SheetTitle className="px-2.5 font-display text-base">Biggers Training</SheetTitle>
+                <nav className="mt-2 flex flex-col px-2 pb-6 text-sm text-muted-foreground">
+                  {baseItems.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setMobileOpen(false)}
+                      className={`block ${linkClass} ${isActive(item.to) ? activeClass : ""}`}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                  {isManagerOrOwner ? (
+                    <Link
+                      to="/training-queue"
+                      onClick={() => setMobileOpen(false)}
+                      className={`block ${linkClass} ${
+                        isActive("/training-queue") ? activeClass : ""
+                      }`}
+                    >
+                      Training Queue
+                    </Link>
+                  ) : null}
+                  <MobileGroup label="Content" items={contentItems} />
+                  <MobileGroup label="Admin" items={adminItems} />
+                  <div className="mt-4 border-t border-border pt-3">
+                    {session ? (
+                      <>
+                        <p className="px-2.5 text-xs text-muted-foreground">
+                          {employee?.full_name ?? session.user.email}
+                          {tier ? ` · ${tier}` : ""}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setMobileOpen(false);
+                            await handleSignOut();
+                          }}
+                          className={`mt-1 block w-full text-left ${linkClass}`}
+                        >
+                          Sign out
+                        </button>
+                      </>
+                    ) : (
+                      <Link
+                        to="/login"
+                        onClick={() => setMobileOpen(false)}
+                        className={`block ${linkClass}`}
+                      >
+                        Sign in
+                      </Link>
+                    )}
+                  </div>
+                </nav>
+              </SheetContent>
+            </Sheet>
+            <Link to="/" className="flex min-w-0 items-center gap-2">
             <span
               className="flex size-7 items-center justify-center rounded-md bg-primary text-[13px] font-bold text-primary-foreground"
               aria-hidden
             >
               B
             </span>
-            <span className="font-display text-[15px] font-semibold tracking-tight">
-              Biggers Training
-            </span>
-          </Link>
-          <nav className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
-            {baseNavItems.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                activeOptions={{ exact: item.to === "/" }}
-                activeProps={{ className: "bg-secondary text-secondary-foreground font-semibold" }}
-                className="rounded-md px-2.5 py-1.5 transition-colors hover:bg-secondary/60 hover:text-foreground"
-              >
-                {item.label}
-              </Link>
-            ))}
-            <Link
-              to="/reference"
-              className={`rounded-md px-2.5 py-1.5 transition-colors hover:bg-secondary/60 hover:text-foreground ${
-                pathname.startsWith("/reference")
-                  ? "bg-secondary text-secondary-foreground font-semibold"
-                  : ""
-              }`}
-            >
-              Reference Guides
+              <span className="truncate font-display text-[15px] font-semibold tracking-tight">
+                Biggers Training
+              </span>
             </Link>
-            {privilegedItems.length > 0 ? (
-              <span className="mx-1 h-4 w-px bg-border" aria-hidden />
-            ) : null}
-            {privilegedItems.map((item) => (
+          </div>
+          <nav className="hidden flex-wrap items-center gap-1 text-sm text-muted-foreground md:flex">
+            {baseItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
-                activeProps={{ className: "bg-secondary text-secondary-foreground font-semibold" }}
-                className="rounded-md px-2.5 py-1.5 text-[13px] transition-colors hover:bg-secondary/60 hover:text-foreground"
+                className={`${linkClass} ${isActive(item.to) ? activeClass : ""}`}
               >
                 {item.label}
               </Link>
             ))}
+            {isManagerOrOwner ? (
+              <Link
+                to="/training-queue"
+                className={`${linkClass} ${isActive("/training-queue") ? activeClass : ""}`}
+              >
+                Training Queue
+              </Link>
+            ) : null}
+            {contentItems.length ? <NavDropdown label="Content" items={contentItems} /> : null}
+            {adminItems.length ? <NavDropdown label="Admin" items={adminItems} /> : null}
             <span className="mx-1 h-4 w-px bg-border" aria-hidden />
             {session ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">
-                  {employee?.full_name ?? session.user.email}
-                  {tier ? ` · ${tier}` : ""}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={async () => {
-                    await signOut();
-                    navigate({ to: "/login", replace: true });
-                  }}
-                >
-                  Sign out
-                </Button>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger className={`flex items-center gap-1 ${linkClass}`}>
+                  <span className="max-w-40 truncate text-xs">
+                    {employee?.full_name ?? session.user.email}
+                    {tier ? ` · ${tier}` : ""}
+                  </span>
+                  <ChevronDown className="size-3.5" aria-hidden />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuSeparator className="first:hidden" />
+                  <DropdownMenuItem onSelect={() => void handleSignOut()}>
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Link
                 to="/login"
                 activeProps={{ className: "text-foreground font-semibold" }}
-                className="rounded-md px-2.5 py-1.5 transition-colors hover:text-foreground"
+                className={linkClass}
               >
                 Sign in
               </Link>
             )}
-          </nav>
         </div>
       </header>
       <main
