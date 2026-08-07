@@ -821,7 +821,7 @@ export type Database = {
     }
     Functions: {
       can_manage_progress_for: {
-        Args: { _employee_id: string }
+        Args: { _employee_id: string; _step_id: string }
         Returns: boolean
       }
       current_tier: {
