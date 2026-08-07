@@ -46,13 +46,13 @@ export const Route = createFileRoute("/reference/sourcing")({
 });
 
 const CATEGORIES = [
-  { value: "fruit", label: "Fruit", dot: "bg-rose-500" },
-  { value: "vegetable", label: "Vegetable", dot: "bg-emerald-600" },
-  { value: "dairy", label: "Dairy", dot: "bg-sky-500" },
-  { value: "meat", label: "Meat & seafood", dot: "bg-red-700" },
-  { value: "bakery", label: "Bakery", dot: "bg-amber-500" },
-  { value: "pantry", label: "Pantry", dot: "bg-stone-500" },
-  { value: "beverage", label: "Beverage", dot: "bg-violet-500" },
+  { value: "fruit", label: "Fruit", dot: "bg-accent" },
+  { value: "vegetable", label: "Vegetable", dot: "bg-success" },
+  { value: "dairy", label: "Dairy", dot: "bg-info" },
+  { value: "meat", label: "Meat & seafood", dot: "bg-destructive" },
+  { value: "bakery", label: "Bakery", dot: "bg-warning" },
+  { value: "pantry", label: "Pantry", dot: "bg-primary" },
+  { value: "beverage", label: "Beverage", dot: "bg-surface-foreground" },
   { value: "other", label: "Other", dot: "bg-muted-foreground" },
 ] as const;
 
