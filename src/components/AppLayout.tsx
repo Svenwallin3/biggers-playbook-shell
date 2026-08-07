@@ -1,7 +1,6 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
-import { PathPrompt } from "@/components/PathPrompt";
 import { useAuth } from "@/hooks/useAuth";
 
 const baseNavItems = [
@@ -135,7 +134,6 @@ export function AppLayout() {
       >
         <Outlet />
       </main>
-      <PathPrompt />
       <footer className="border-t border-border bg-surface/50">
         <div className="mx-auto w-full max-w-7xl px-6 py-4 text-xs text-muted-foreground">
           Biggers Market — internal tool

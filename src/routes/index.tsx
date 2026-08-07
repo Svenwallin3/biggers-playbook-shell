@@ -4,13 +4,16 @@ import { Check, ChevronRight, Compass, Lock, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { AskAssistant } from "@/components/training/AskAssistant";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
+import { LocationChoice, PathChoice } from "@/components/PathChoice";
 import { useAuth } from "@/hooks/useAuth";
+import type { PlanModule, ProgressRow } from "@/lib/training.queries";
 import {
   planQueryOptions,
   progressQueryOptions,
@@ -36,6 +39,88 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  return <IndexPage />;
+}
+
+/** Simplified Hospitality-only view for a brand-new hire with no path yet. */
+function HospitalityWelcome({
+  module: mod,
+  progressByStep,
+  employeeName,
+}: {
+  module: PlanModule;
+  progressByStep: Map<string, ProgressRow>;
+  employeeName: string;
+}) {
+  const isDone = (stepId: string) => {
+    const r = progressByStep.get(stepId);
+    return r?.status === "completed" || r?.status === "signed_off";
+  };
+  const started = mod.steps.some((s) => progressByStep.get(s.id));
+  const nextStep = mod.steps.find((s) => !isDone(s.id)) ?? mod.steps[0];
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-6 py-6">
+      <div className="space-y-2 text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+          Welcome{employeeName ? `, ${employeeName}` : ""}
+        </p>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">{mod.name}</h1>
+        {mod.description ? (
+          <p className="mx-auto max-w-xl text-sm text-muted-foreground">{mod.description}</p>
+        ) : null}
+      </div>
+
+      <div className="flex justify-center">
+        <Button asChild size="lg" className="h-14 px-10 text-base">
+          <Link
+            to="/modules/$moduleId"
+            params={{ moduleId: mod.id }}
+            search={{ step: nextStep?.id, trainee: undefined }}
+          >
+            {started ? "Continue" : "Begin"}
+          </Link>
+        </Button>
+      </div>
+
+      {started ? (
+        <Card>
+          <CardContent className="py-4">
+            <ul className="divide-y divide-border/70">
+              {mod.steps.map((step) => {
+                const complete = isDone(step.id);
+                return (
+                  <li key={step.id} className="flex items-center gap-3 py-2">
+                    {complete ? (
+                      <Check className="size-4 shrink-0 text-success" />
+                    ) : (
+                      <span className="size-4 shrink-0 rounded-full border border-border" />
+                    )}
+                    <Link
+                      to="/modules/$moduleId"
+                      params={{ moduleId: mod.id }}
+                      search={{ step: step.id, trainee: undefined }}
+                      className={`flex-1 text-sm hover:underline ${
+                        complete ? "text-muted-foreground line-through" : ""
+                      }`}
+                    >
+                      {step.sequence_order}. {step.title}
+                    </Link>
+                    <span className="text-xs text-muted-foreground">
+                      {stepTypeLabels[step.step_type]}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+    </div>
+  );
+}
+
+function IndexPage() {
   const { employee, loading, session } = useAuth();
   const queryClient = useQueryClient();
 
@@ -82,6 +167,30 @@ function Index() {
       progressByStep.get(s.id)?.status === "signed_off",
   ).length;
   const pct = Math.round((done / Math.max(allSteps.length, 1)) * 100);
+
+  // First-login flow: staff start on Hospitality, and only pick a path once it's done.
+  const isStaff = employee.auth_tier === "staff";
+  if (isStaff && !employee.path) {
+    if (planQuery.isPending) {
+      return <p className="text-sm text-muted-foreground">Loading your training…</p>;
+    }
+    const hospitality = modules[0];
+    if (hospitality && allSteps.length > 0 && done === allSteps.length) {
+      return <PathChoice />;
+    }
+    if (hospitality) {
+      return (
+        <HospitalityWelcome
+          module={hospitality}
+          progressByStep={progressByStep}
+          employeeName={(employee.full_name ?? employee.email).split(" ")[0] ?? ""}
+        />
+      );
+    }
+  }
+  if (isStaff && employee.path === "market" && !employee.location_id) {
+    return <LocationChoice />;
+  }
 
   return (
     <div className="space-y-6">
