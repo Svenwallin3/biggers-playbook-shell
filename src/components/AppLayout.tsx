@@ -236,6 +236,7 @@ export function AppLayout() {
                 Sign in
               </Link>
             )}
+          </nav>
         </div>
       </header>
       <main
