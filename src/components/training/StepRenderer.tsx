@@ -52,19 +52,37 @@ function Body({ lines }: { lines: string[] }) {
   if (lines.length >= 2 && pairs.every(Boolean)) {
     return (
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        {(pairs as { label: string; value: string }[]).map((pair, i) => (
-          <div
-            key={i}
-            className="rounded-lg border border-border bg-surface/70 px-4 py-5 text-center shadow-xs"
-          >
-            <p className="font-sans text-2xl font-bold leading-tight text-primary">
-              {pair.value}
-            </p>
-            <p className="mt-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {pair.label}
-            </p>
-          </div>
-        ))}
+        {(pairs as { label: string; value: string }[]).map((pair, i) => {
+          const long = pair.value.length > 28;
+          return (
+            <div
+              key={i}
+              className={`rounded-lg border border-border bg-surface/70 px-4 py-5 shadow-xs ${
+                long ? "text-left" : "text-center"
+              }`}
+            >
+              {long ? (
+                <>
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {pair.label}
+                  </p>
+                  <p className="mt-1.5 font-sans text-base leading-relaxed text-primary">
+                    {pair.value}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-sans text-2xl font-bold leading-tight text-primary">
+                    {pair.value}
+                  </p>
+                  <p className="mt-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {pair.label}
+                  </p>
+                </>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
