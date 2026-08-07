@@ -45,6 +45,41 @@ function departmentsForPath(path: string | null): Department[] {
 
 export type PlanModule = ModuleRow & { track: TrackRow; steps: StepRow[] };
 
+/**
+ * The order Next / the training queue walk steps in.
+ *
+ * Modules must already be in plan order (day, then track/module sequence).
+ * Within each `day_assignment` group, every self-paced step (text/photo/video/quiz)
+ * across all of that day's modules comes first, then that day's trainer-required
+ * steps (sign-off / supervised live practice) collected at the end of the day's
+ * block. Relative order within each half is preserved, and days never interleave.
+ */
+export function getDayGroupedSteps<
+  M extends { id: string; day_assignment: number | null; steps: StepRow[] },
+>(modules: M[]): Array<{ module: M; step: StepRow }> {
+  const groups: Array<{
+    day: number;
+    selfPaced: Array<{ module: M; step: StepRow }>;
+    trainer: Array<{ module: M; step: StepRow }>;
+  }> = [];
+
+  for (const module of modules) {
+    const day = module.day_assignment ?? 99;
+    let group = groups.find((g) => g.day === day);
+    if (!group) {
+      group = { day, selfPaced: [], trainer: [] };
+      groups.push(group);
+    }
+    for (const step of module.steps) {
+      const entry = { module, step };
+      if (trainerSignoffTypes.includes(step.step_type)) group.trainer.push(entry);
+      else group.selfPaced.push(entry);
+    }
+  }
+
+  return groups.flatMap((g) => [...g.selfPaced, ...g.trainer]);
+}
+
 /** Today's plan: the Universal track plus the employee's own path, in onboarding-day order. */
 export function planQueryOptions(path: string | null) {
   const departments = departmentsForPath(path);

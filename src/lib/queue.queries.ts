@@ -3,6 +3,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { EmployeeRow } from "@/lib/admin.queries";
 import {
+  getDayGroupedSteps,
   trainerSignoffTypes,
   type Department,
   type ModuleRow,
@@ -126,17 +127,19 @@ export function trainingQueueQueryOptions(scope: {
         let completed = 0;
         let next: { track: TrackRow; module: ModuleRow; step: StepRow } | null = null;
 
-        for (const m of mods) {
-          const steps = [...(stepsByModule.get(m.id) ?? [])].sort(
+        const withSteps = mods.map((m) => ({
+          ...m,
+          steps: [...(stepsByModule.get(m.id) ?? [])].sort(
             (a, b) => a.sequence_order - b.sequence_order,
-          );
-          for (const step of steps) {
-            total += 1;
-            if (done.has(`${employee.id}:${step.id}`)) {
-              completed += 1;
-            } else if (!next) {
-              next = { track: m.track!, module: m, step };
-            }
+          ),
+        }));
+
+        for (const { module: m, step } of getDayGroupedSteps(withSteps)) {
+          total += 1;
+          if (done.has(`${employee.id}:${step.id}`)) {
+            completed += 1;
+          } else if (!next) {
+            next = { track: m.track!, module: m, step };
           }
         }
 

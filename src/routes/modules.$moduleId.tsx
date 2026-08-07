@@ -10,6 +10,7 @@ import { StepRenderer } from "@/components/training/StepRenderer";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  getDayGroupedSteps,
   moduleQueryOptions,
   planQueryOptions,
   progressQueryOptions,
@@ -80,10 +81,12 @@ function ModulePage() {
     ...planQueryOptions(subjectPath),
     enabled: Boolean(subjectId) && !(isAdmin && trainee && traineeQuery.isPending),
   });
-  // One flat, ordered walk through every step in the plan.
-  const orderedSteps = (planQuery.data ?? []).flatMap((m) =>
-    m.steps.map((s) => ({ moduleId: m.id, stepId: s.id })),
-  );
+  // One flat, ordered walk through every step in the plan: each day's self-paced
+  // steps first, then that day's trainer-required steps.
+  const orderedSteps = getDayGroupedSteps(planQuery.data ?? []).map((entry) => ({
+    moduleId: entry.module.id,
+    stepId: entry.step.id,
+  }));
 
   const progressByStep = new Map(
     (progressQuery.data ?? []).map((record) => [record.step_id, record]),
