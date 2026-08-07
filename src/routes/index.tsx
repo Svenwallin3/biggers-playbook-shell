@@ -39,6 +39,88 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  return <IndexPage />;
+}
+
+/** Simplified Hospitality-only view for a brand-new hire with no path yet. */
+function HospitalityWelcome({
+  module: mod,
+  progressByStep,
+  employeeName,
+}: {
+  module: PlanModule;
+  progressByStep: Map<string, ProgressRow>;
+  employeeName: string;
+}) {
+  const isDone = (stepId: string) => {
+    const r = progressByStep.get(stepId);
+    return r?.status === "completed" || r?.status === "signed_off";
+  };
+  const started = mod.steps.some((s) => progressByStep.get(s.id));
+  const nextStep = mod.steps.find((s) => !isDone(s.id)) ?? mod.steps[0];
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-6 py-6">
+      <div className="space-y-2 text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+          Welcome{employeeName ? `, ${employeeName}` : ""}
+        </p>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">{mod.name}</h1>
+        {mod.description ? (
+          <p className="mx-auto max-w-xl text-sm text-muted-foreground">{mod.description}</p>
+        ) : null}
+      </div>
+
+      <div className="flex justify-center">
+        <Button asChild size="lg" className="h-14 px-10 text-base">
+          <Link
+            to="/modules/$moduleId"
+            params={{ moduleId: mod.id }}
+            search={{ step: nextStep?.id, trainee: undefined }}
+          >
+            {started ? "Continue" : "Begin"}
+          </Link>
+        </Button>
+      </div>
+
+      {started ? (
+        <Card>
+          <CardContent className="py-4">
+            <ul className="divide-y divide-border/70">
+              {mod.steps.map((step) => {
+                const complete = isDone(step.id);
+                return (
+                  <li key={step.id} className="flex items-center gap-3 py-2">
+                    {complete ? (
+                      <Check className="size-4 shrink-0 text-success" />
+                    ) : (
+                      <span className="size-4 shrink-0 rounded-full border border-border" />
+                    )}
+                    <Link
+                      to="/modules/$moduleId"
+                      params={{ moduleId: mod.id }}
+                      search={{ step: step.id, trainee: undefined }}
+                      className={`flex-1 text-sm hover:underline ${
+                        complete ? "text-muted-foreground line-through" : ""
+                      }`}
+                    >
+                      {step.sequence_order}. {step.title}
+                    </Link>
+                    <span className="text-xs text-muted-foreground">
+                      {stepTypeLabels[step.step_type]}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+    </div>
+  );
+}
+
+function IndexPage() {
   const { employee, loading, session } = useAuth();
   const queryClient = useQueryClient();
 
