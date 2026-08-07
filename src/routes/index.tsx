@@ -4,13 +4,16 @@ import { Check, ChevronRight, Compass, Lock, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { AskAssistant } from "@/components/training/AskAssistant";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
+import { LocationChoice, PathChoice } from "@/components/PathChoice";
 import { useAuth } from "@/hooks/useAuth";
+import type { PlanModule, ProgressRow } from "@/lib/training.queries";
 import {
   planQueryOptions,
   progressQueryOptions,
@@ -82,6 +85,30 @@ function Index() {
       progressByStep.get(s.id)?.status === "signed_off",
   ).length;
   const pct = Math.round((done / Math.max(allSteps.length, 1)) * 100);
+
+  // First-login flow: staff start on Hospitality, and only pick a path once it's done.
+  const isStaff = employee.auth_tier === "staff";
+  if (isStaff && !employee.path) {
+    if (planQuery.isPending) {
+      return <p className="text-sm text-muted-foreground">Loading your training…</p>;
+    }
+    const hospitality = modules[0];
+    if (hospitality && allSteps.length > 0 && done === allSteps.length) {
+      return <PathChoice />;
+    }
+    if (hospitality) {
+      return (
+        <HospitalityWelcome
+          module={hospitality}
+          progressByStep={progressByStep}
+          employeeName={(employee.full_name ?? employee.email).split(" ")[0] ?? ""}
+        />
+      );
+    }
+  }
+  if (isStaff && employee.path === "market" && !employee.location_id) {
+    return <LocationChoice />;
+  }
 
   return (
     <div className="space-y-6">
