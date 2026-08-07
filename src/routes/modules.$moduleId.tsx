@@ -17,7 +17,9 @@ import {
 } from "@/lib/training.queries";
 
 export const Route = createFileRoute("/modules/$moduleId")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { step?: string | undefined; trainee?: string | undefined } => ({
     step: typeof search["step"] === "string" ? search["step"] : undefined,
     // Set when a manager opens the module from the training queue for a specific trainee.
     trainee: typeof search["trainee"] === "string" ? search["trainee"] : undefined,
