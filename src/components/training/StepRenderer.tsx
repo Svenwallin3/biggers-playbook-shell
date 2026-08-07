@@ -57,7 +57,7 @@ function Body({ lines }: { lines: string[] }) {
             key={i}
             className="rounded-lg border border-border bg-surface/70 px-4 py-5 text-center shadow-xs"
           >
-            <p className="font-display text-2xl font-bold leading-tight text-primary">
+            <p className="font-sans text-2xl font-bold leading-tight text-primary">
               {pair.value}
             </p>
             <p className="mt-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
