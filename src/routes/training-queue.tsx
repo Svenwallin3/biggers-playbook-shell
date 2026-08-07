@@ -1,12 +1,13 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { trainingQueueQueryOptions, type QueueEntry } from "@/lib/queue.queries";
-import { stepTypeLabels } from "@/lib/training.queries";
+import { signOffStep, stepTypeLabels } from "@/lib/training.queries";
 
 const title = "Training Queue — Biggers Training Platform";
 const description =
@@ -41,12 +42,30 @@ function ProgressNote({ entry }: { entry: QueueEntry }) {
 
 function TrainingQueuePage() {
   const { isManagerOrOwner, isOwner, employee, loading, session } = useAuth();
+  const queryClient = useQueryClient();
   const queueQuery = useQuery({
     ...trainingQueueQueryOptions({
       department: employee?.department_scope ?? null,
       isOwner,
+      locationId: employee?.location_id ?? null,
     }),
     enabled: isManagerOrOwner,
+  });
+
+  const signOff = useMutation({
+    mutationFn: (entry: QueueEntry) =>
+      signOffStep({
+        employeeId: entry.employee.id,
+        stepId: entry.step!.id,
+        signedOffBy: employee!.id,
+        existingId: entry.progressId ?? undefined,
+      }),
+    onSuccess: () => {
+      toast.success("Signed off");
+      void queryClient.invalidateQueries({ queryKey: ["training-queue"] });
+      void queryClient.invalidateQueries({ queryKey: ["progress"] });
+    },
+    onError: (error: Error) => toast.error("Couldn't sign off", { description: error.message }),
   });
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -113,15 +132,24 @@ function TrainingQueuePage() {
                       <ProgressNote entry={entry} />
                     </div>
                   </div>
-                  <Button asChild size="sm" variant="secondary">
-                    <Link
-                      to="/modules/$moduleId"
-                      params={{ moduleId: entry.module!.id }}
-                      search={{ step: entry.step?.id }}
+                  <div className="flex items-center gap-2">
+                    <Button asChild size="sm" variant="secondary">
+                      <Link
+                        to="/modules/$moduleId"
+                        params={{ moduleId: entry.module!.id }}
+                        search={{ step: entry.step?.id, trainee: entry.employee.id }}
+                      >
+                        Open module
+                      </Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={signOff.isPending}
+                      onClick={() => signOff.mutate(entry)}
                     >
-                      Open module
-                    </Link>
-                  </Button>
+                      Sign off
+                    </Button>
+                  </div>
                 </div>
               </li>
             ))}
