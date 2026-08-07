@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -144,6 +145,15 @@ function ModulePage() {
   const nextStep = activeIndex >= 0 ? orderedSteps[activeIndex + 1] : undefined;
   const isLastStep = activeIndex >= 0 && !nextStep;
 
+  // Self-paced material that the trainer also covers hands-on later the same day.
+  const activeDay = mod.day_assignment ?? 99;
+  const dayHasTrainerStep = getDayGroupedSteps(planQuery.data ?? []).some(
+    (entry) =>
+      (entry.module.day_assignment ?? 99) === activeDay &&
+      trainerSignoffTypes.includes(entry.step.step_type),
+  );
+  const showTrainerFollowUp = Boolean(active) && !needsTrainer && dayHasTrainerStep;
+
   const goNext = async () => {
     if (!active) return;
     if (!needsTrainer && !activeComplete && subjectId) {
@@ -210,6 +220,12 @@ function ModulePage() {
               signingOff={signOff.isPending}
               onSignOff={() => signOff.mutate(active.id)}
             />
+          ) : null}
+          {showTrainerFollowUp ? (
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Users className="size-3.5 shrink-0" aria-hidden="true" />
+              Your trainer will also walk through this with you in person later today.
+            </p>
           ) : null}
           {active ? (
             <div className="flex items-center justify-between border-t border-border pt-4">
