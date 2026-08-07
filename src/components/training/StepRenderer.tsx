@@ -40,6 +40,35 @@ function ComingSoon({ step, isAdmin }: { step: StepRow; isAdmin: boolean }) {
 
 function Body({ lines }: { lines: string[] }) {
   if (!lines.length) return null;
+
+  const pairs = lines.map((line) => {
+    const i = line.indexOf(" | ");
+    if (i === -1) return null;
+    const label = line.slice(0, i).trim();
+    const value = line.slice(i + 3).trim();
+    return label && value ? { label, value } : null;
+  });
+
+  if (lines.length >= 2 && pairs.every(Boolean)) {
+    return (
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        {(pairs as { label: string; value: string }[]).map((pair, i) => (
+          <div
+            key={i}
+            className="rounded-lg border border-border bg-surface/70 px-4 py-5 text-center shadow-xs"
+          >
+            <p className="font-display text-2xl font-bold leading-tight text-primary">
+              {pair.value}
+            </p>
+            <p className="mt-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {pair.label}
+            </p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <ol className="space-y-3">
       {lines.map((line, i) => (
