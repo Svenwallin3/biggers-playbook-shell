@@ -58,10 +58,20 @@ export function StepRenderer({
   step,
   quizzes = [],
   isAdmin = false,
+  signedOff = false,
+  canSignOff = false,
+  signingOff = false,
+  onSignOff,
 }: {
   step: StepRow;
   quizzes?: QuizRow[];
   isAdmin?: boolean;
+  /** Already certified by a trainer. */
+  signedOff?: boolean;
+  /** Viewer is a manager/owner allowed to certify this step. */
+  canSignOff?: boolean;
+  signingOff?: boolean;
+  onSignOff?: () => void;
 }) {
   const unavailable = step.content_status === "missing" || step.content_status === "blocked";
   const lines = bodyLines(step);
@@ -164,9 +174,20 @@ export function StepRenderer({
                     ? "Certification happens when your trainer signs off."
                     : "Day 4 is live practice with real customers, supervised."}
                 </p>
-                <Button size="sm" variant="secondary" disabled>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={signedOff || !canSignOff || signingOff}
+                  onClick={onSignOff}
+                >
                   <CheckCircle2 className="size-4" />
-                  Awaiting sign-off
+                  {signedOff
+                    ? "Signed off"
+                    : canSignOff
+                      ? signingOff
+                        ? "Signing off…"
+                        : "Sign off"
+                      : "Awaiting sign-off"}
                 </Button>
               </CardContent>
             </Card>

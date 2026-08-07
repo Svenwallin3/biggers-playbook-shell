@@ -820,6 +820,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_progress_for: {
+        Args: { _employee_id: string }
+        Returns: boolean
+      }
       current_tier: {
         Args: never
         Returns: Database["public"]["Enums"]["auth_tier"]

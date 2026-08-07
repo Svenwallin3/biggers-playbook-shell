@@ -29,6 +29,12 @@ const tiers: AuthTier[] = ["staff", "manager", "owner"];
 const departments: Department[] = ["universal", "market", "kitchen", "delivery"];
 const NONE = "__none__";
 
+/** Market runs two sites; Kitchen and Delivery are single-site, so they stay null. */
+const locations: { value: string; label: string }[] = [
+  { value: "market_street", label: "Market Street" },
+  { value: "carolina_beach_road", label: "Carolina Beach Road" },
+];
+
 const title = "Team — Biggers Training Platform";
 const description = "Owner tool for setting each employee's access tier and department.";
 
@@ -97,6 +103,7 @@ function TeamPage() {
               <TableHead className="w-[150px]">Access tier</TableHead>
               <TableHead className="w-[170px]">Department</TableHead>
               <TableHead className="w-[150px]">Path</TableHead>
+              <TableHead className="w-[190px]">Location</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -164,6 +171,27 @@ function TeamPage() {
                       <SelectItem value="market">market</SelectItem>
                       <SelectItem value="kitchen">kitchen</SelectItem>
                       <SelectItem value="delivery">delivery</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={e.location_id ?? NONE}
+                    disabled={update.isPending}
+                    onValueChange={(v) =>
+                      update.mutate({ id: e.id, patch: { location_id: v === NONE ? null : v } })
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>None</SelectItem>
+                      {locations.map((l) => (
+                        <SelectItem key={l.value} value={l.value}>
+                          {l.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </TableCell>

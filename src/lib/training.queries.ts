@@ -262,3 +262,35 @@ export async function setStepProgress(input: {
   const { error } = await supabase.from("progress_records").insert(payload);
   if (error) throw error;
 }
+
+/** Trainer sign-off: marks a step certified by the acting manager/owner. */
+export async function signOffStep(input: {
+  employeeId: string;
+  stepId: string;
+  signedOffBy: string;
+  existingId?: string | undefined;
+}) {
+  const now = new Date().toISOString();
+  const payload = {
+    employee_id: input.employeeId,
+    step_id: input.stepId,
+    status: "signed_off" as Database["public"]["Enums"]["progress_status"],
+    completed_at: now,
+    signed_off_by: input.signedOffBy,
+    signed_off_at: now,
+  };
+
+  if (input.existingId) {
+    const { error } = await supabase
+      .from("progress_records")
+      .update(payload)
+      .eq("id", input.existingId);
+    if (error) throw error;
+    return;
+  }
+
+  const { error } = await supabase
+    .from("progress_records")
+    .insert({ ...payload, started_at: now });
+  if (error) throw error;
+}

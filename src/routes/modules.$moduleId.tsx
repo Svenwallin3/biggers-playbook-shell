@@ -12,12 +12,15 @@ import {
   moduleQueryOptions,
   progressQueryOptions,
   setStepProgress,
+  signOffStep,
   trainerSignoffTypes,
 } from "@/lib/training.queries";
 
 export const Route = createFileRoute("/modules/$moduleId")({
   validateSearch: (search: Record<string, unknown>) => ({
     step: typeof search["step"] === "string" ? search["step"] : undefined,
+    // Set when a manager opens the module from the training queue for a specific trainee.
+    trainee: typeof search["trainee"] === "string" ? search["trainee"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -41,12 +44,15 @@ export const Route = createFileRoute("/modules/$moduleId")({
 
 function ModulePage() {
   const { moduleId } = Route.useParams();
-  const { step: stepParam } = Route.useSearch();
+  const { step: stepParam, trainee } = Route.useSearch();
   const { employee } = useAuth();
   const queryClient = useQueryClient();
+  const isAdmin = employee?.auth_tier === "manager" || employee?.auth_tier === "owner";
+  // A manager can be standing with the trainee; otherwise these are the viewer's own records.
+  const subjectId = (isAdmin && trainee) || employee?.id;
 
   const moduleQuery = useQuery(moduleQueryOptions(moduleId));
-  const progressQuery = useQuery(progressQueryOptions(employee?.id));
+  const progressQuery = useQuery(progressQueryOptions(subjectId));
 
   const progressByStep = new Map(
     (progressQuery.data ?? []).map((record) => [record.step_id, record]),
@@ -55,13 +61,29 @@ function ModulePage() {
   const toggle = useMutation({
     mutationFn: (input: { stepId: string; completed: boolean }) =>
       setStepProgress({
-        employeeId: employee!.id,
+        employeeId: subjectId!,
         stepId: input.stepId,
         completed: input.completed,
         existingId: progressByStep.get(input.stepId)?.id,
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["progress", employee?.id] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["progress", subjectId] }),
     onError: (error: Error) => toast.error("Couldn't save that", { description: error.message }),
+  });
+
+  const signOff = useMutation({
+    mutationFn: (stepId: string) =>
+      signOffStep({
+        employeeId: subjectId!,
+        stepId,
+        signedOffBy: employee!.id,
+        existingId: progressByStep.get(stepId)?.id,
+      }),
+    onSuccess: () => {
+      toast.success("Signed off");
+      void queryClient.invalidateQueries({ queryKey: ["progress", subjectId] });
+      void queryClient.invalidateQueries({ queryKey: ["training-queue"] });
+    },
+    onError: (error: Error) => toast.error("Couldn't sign off", { description: error.message }),
   });
 
   if (moduleQuery.isPending) {
@@ -79,7 +101,7 @@ function ModulePage() {
   const activeRecord = active ? progressByStep.get(active.id) : undefined;
   const activeComplete =
     activeRecord?.status === "completed" || activeRecord?.status === "signed_off";
-  const isAdmin = employee?.auth_tier === "manager" || employee?.auth_tier === "owner";
+  const activeSignedOff = activeRecord?.status === "signed_off";
 
   return (
     <div className="space-y-6">
@@ -126,6 +148,10 @@ function ModulePage() {
               step={active}
               quizzes={quizzes.filter((q) => q.step_id === active.id)}
               isAdmin={isAdmin}
+              signedOff={activeSignedOff}
+              canSignOff={Boolean(isAdmin && subjectId)}
+              signingOff={signOff.isPending}
+              onSignOff={() => signOff.mutate(active.id)}
             />
           ) : null}
           {active ? (
