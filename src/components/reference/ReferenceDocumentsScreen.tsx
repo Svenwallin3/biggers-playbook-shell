@@ -148,10 +148,13 @@ export function ReferenceDocumentsScreen({
   heading: string;
   blurb: string;
 }) {
-  const { employee, isManagerOrOwner } = useAuth();
+  const { employee, isManagerOrOwner, isOwner } = useAuth();
   const query = useQuery(referenceDocumentsQueryOptions(documentType));
   const [openId, setOpenId] = useState<string | null>(null);
-  const [showAllDepartments, setShowAllDepartments] = useState(false);
+  // Owners have no department_scope, so "my department only" would filter to nothing —
+  // default them to all departments until they explicitly toggle.
+  const [overrideShowAll, setOverrideShowAll] = useState<boolean | null>(null);
+  const showAllDepartments = overrideShowAll ?? isOwner;
 
   const all = query.data ?? [];
   const department = employee?.department_scope ?? null;
@@ -180,7 +183,7 @@ export function ReferenceDocumentsScreen({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowAllDepartments((v) => !v)}
+              onClick={() => setOverrideShowAll(!showAllDepartments)}
             >
               {showAllDepartments ? "My department only" : "Show all departments"}
             </Button>
