@@ -25,6 +25,8 @@ export type QueueEntry = {
   step: StepRow | null;
   /** True when the next step can only be completed with a trainer present. */
   needsTrainer: boolean;
+  /** Progress row id for the next step, when one already exists. */
+  progressId: string | null;
   completed: number;
   total: number;
 };
@@ -33,9 +35,17 @@ export type QueueEntry = {
  * Each active employee's next incomplete step, in track / day / module / step order.
  * Managers see their own department; owners see everyone.
  */
-export function trainingQueueQueryOptions(scope: { department: Department | null; isOwner: boolean }) {
+export function trainingQueueQueryOptions(scope: {
+  department: Department | null;
+  isOwner: boolean;
+  locationId?: string | null;
+}) {
   return queryOptions({
-    queryKey: ["training-queue", scope.isOwner ? "all" : (scope.department ?? "none")],
+    queryKey: [
+      "training-queue",
+      scope.isOwner ? "all" : (scope.department ?? "none"),
+      scope.isOwner ? "all" : (scope.locationId ?? "any"),
+    ],
     queryFn: async (): Promise<QueueEntry[]> => {
       const [employeesRes, tracksRes, modulesRes, stepsRes] = await Promise.all([
         supabase
@@ -57,14 +67,19 @@ export function trainingQueueQueryOptions(scope: { department: Department | null
       if (!scope.isOwner) {
         employees = employees.filter((e) => {
           const depts = departmentsForPath(e.path);
-          return scope.department ? depts.includes(scope.department) : false;
+          if (!scope.department || !depts.includes(scope.department)) return false;
+          // Market runs two sites — a Market manager with a location only sees their own.
+          if (scope.department === "market" && scope.locationId) {
+            return e.location_id === scope.locationId;
+          }
+          return true;
         });
       }
       if (!employees.length) return [];
 
       const { data: progress, error: progressError } = await supabase
         .from("progress_records")
-        .select("employee_id, step_id, status")
+        .select("id, employee_id, step_id, status")
         .in(
           "employee_id",
           employees.map((e) => e.id),
@@ -75,6 +90,9 @@ export function trainingQueueQueryOptions(scope: { department: Department | null
         (progress ?? [])
           .filter((r) => r.status === "completed" || r.status === "signed_off")
           .map((r) => `${r.employee_id}:${r.step_id}`),
+      );
+      const progressIds = new Map(
+        (progress ?? []).map((r) => [`${r.employee_id}:${r.step_id}`, r.id]),
       );
 
       const tracks = tracksRes.data ?? [];
@@ -128,6 +146,7 @@ export function trainingQueueQueryOptions(scope: { department: Department | null
           module: next?.module ?? null,
           step: next?.step ?? null,
           needsTrainer: next ? trainerSignoffTypes.includes(next.step.step_type) : false,
+          progressId: next ? (progressIds.get(`${employee.id}:${next.step.id}`) ?? null) : null,
           completed,
           total,
         };
