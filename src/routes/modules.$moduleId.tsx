@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { StepRenderer } from "@/components/training/StepRenderer";
@@ -10,6 +11,7 @@ import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import {
   moduleQueryOptions,
+  planQueryOptions,
   progressQueryOptions,
   setStepProgress,
   signOffStep,
@@ -49,12 +51,39 @@ function ModulePage() {
   const { step: stepParam, trainee } = Route.useSearch();
   const { employee } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const isAdmin = employee?.auth_tier === "manager" || employee?.auth_tier === "owner";
   // A manager can be standing with the trainee; otherwise these are the viewer's own records.
   const subjectId = (isAdmin && trainee) || employee?.id;
 
   const moduleQuery = useQuery(moduleQueryOptions(moduleId));
   const progressQuery = useQuery(progressQueryOptions(subjectId));
+
+  // When a manager is walking a specific trainee through training, the ordered plan
+  // has to follow that trainee's path, not the manager's.
+  const traineeQuery = useQuery({
+    queryKey: ["employee-path", subjectId],
+    enabled: Boolean(isAdmin && trainee && subjectId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("employees")
+        .select("path")
+        .eq("id", subjectId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.path ?? null;
+    },
+  });
+  const subjectPath =
+    isAdmin && trainee ? (traineeQuery.data ?? null) : (employee?.path ?? null);
+  const planQuery = useQuery({
+    ...planQueryOptions(subjectPath),
+    enabled: Boolean(subjectId) && !(isAdmin && trainee && traineeQuery.isPending),
+  });
+  // One flat, ordered walk through every step in the plan.
+  const orderedSteps = (planQuery.data ?? []).flatMap((m) =>
+    m.steps.map((s) => ({ moduleId: m.id, stepId: s.id })),
+  );
 
   const progressByStep = new Map(
     (progressQuery.data ?? []).map((record) => [record.step_id, record]),
@@ -104,6 +133,29 @@ function ModulePage() {
   const activeComplete =
     activeRecord?.status === "completed" || activeRecord?.status === "signed_off";
   const activeSignedOff = activeRecord?.status === "signed_off";
+  const needsTrainer = active ? trainerSignoffTypes.includes(active.step_type) : false;
+  const blockedOnTrainer = needsTrainer && !activeSignedOff;
+  const activeIndex = active
+    ? orderedSteps.findIndex((s) => s.stepId === active.id)
+    : -1;
+  const nextStep = activeIndex >= 0 ? orderedSteps[activeIndex + 1] : undefined;
+  const isLastStep = activeIndex >= 0 && !nextStep;
+
+  const goNext = async () => {
+    if (!active) return;
+    if (!needsTrainer && !activeComplete && subjectId) {
+      await toggle.mutateAsync({ stepId: active.id, completed: true });
+    }
+    if (nextStep) {
+      void navigate({
+        to: "/modules/$moduleId",
+        params: { moduleId: nextStep.moduleId },
+        search: { step: nextStep.stepId, ...(trainee ? { trainee } : {}) },
+      });
+    } else {
+      void navigate({ to: "/" });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -159,6 +211,7 @@ function ModulePage() {
           {active ? (
             <div className="flex items-center justify-between border-t border-border pt-4">
               <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
+              <div className="flex items-center gap-2">
               <Button
                 size="sm"
                 variant={activeComplete ? "secondary" : "outline"}
@@ -175,6 +228,18 @@ function ModulePage() {
                     ? "Completed — undo"
                     : "Mark complete"}
               </Button>
+                <Button
+                  size="sm"
+                  disabled={blockedOnTrainer || toggle.isPending || planQuery.isPending}
+                  onClick={() => void goNext()}
+                >
+                  {blockedOnTrainer
+                    ? "Waiting on your trainer"
+                    : isLastStep
+                      ? "Finish"
+                      : "Next"}
+                </Button>
+              </div>
             </div>
           ) : null}
         </div>
