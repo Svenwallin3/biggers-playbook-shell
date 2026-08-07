@@ -143,6 +143,7 @@ function ModulePage() {
     ? orderedSteps.findIndex((s) => s.stepId === active.id)
     : -1;
   const nextStep = activeIndex >= 0 ? orderedSteps[activeIndex + 1] : undefined;
+  const prevStep = activeIndex > 0 ? orderedSteps[activeIndex - 1] : undefined;
   const isLastStep = activeIndex >= 0 && !nextStep;
 
   // Self-paced material that the trainer also covers hands-on later the same day.
@@ -168,6 +169,15 @@ function ModulePage() {
     } else {
       void navigate({ to: "/" });
     }
+  };
+
+  const goPrevious = () => {
+    if (!prevStep) return;
+    void navigate({
+      to: "/modules/$moduleId",
+      params: { moduleId: prevStep.moduleId },
+      search: { step: prevStep.stepId, ...(trainee ? { trainee } : {}) },
+    });
   };
 
   return (
@@ -231,22 +241,28 @@ function ModulePage() {
             <div className="flex items-center justify-between border-t border-border pt-4">
               <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
               <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant={activeComplete ? "secondary" : "outline"}
-                disabled={
-                  !employee || trainerSignoffTypes.includes(active.step_type) || toggle.isPending
-                }
-                onClick={() =>
-                  toggle.mutate({ stepId: active.id, completed: !activeComplete })
-                }
-              >
-                {trainerSignoffTypes.includes(active.step_type)
-                  ? "Trainer sign-off required"
-                  : activeComplete
-                    ? "Completed — undo"
-                    : "Mark complete"}
-              </Button>
+                {needsTrainer ? (
+                  <Button size="sm" variant="outline" disabled>
+                    Trainer sign-off required
+                  </Button>
+                ) : activeComplete ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={!employee || toggle.isPending}
+                    onClick={() => toggle.mutate({ stepId: active.id, completed: false })}
+                  >
+                    Completed — undo
+                  </Button>
+                ) : null}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!prevStep || planQuery.isPending}
+                  onClick={goPrevious}
+                >
+                  Previous
+                </Button>
                 <Button
                   size="sm"
                   disabled={blockedOnTrainer || toggle.isPending || planQuery.isPending}
