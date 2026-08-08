@@ -220,6 +220,7 @@ export function ReferenceDocumentsScreen({
   const { employee, isManagerOrOwner, isOwner } = useAuth();
   const query = useQuery(referenceDocumentsQueryOptions(documentType));
   const [openId, setOpenId] = useState<string | null>(null);
+  const [term, setTerm] = useState("");
   // Owners have no department_scope, so "my department only" would filter to nothing —
   // default them to all departments until they explicitly toggle.
   const [overrideShowAll, setOverrideShowAll] = useState<boolean | null>(null);
@@ -227,10 +228,12 @@ export function ReferenceDocumentsScreen({
 
   const all = query.data ?? [];
   const department = employee?.department_scope ?? null;
-  const docs =
+  const scoped =
     isManagerOrOwner && showAllDepartments
       ? all
       : all.filter((d) => visibleToDepartment(d.departments, department));
+  const q = term.trim().toLowerCase();
+  const docs = q ? scoped.filter((d) => d.title.toLowerCase().includes(q)) : scoped;
 
   const openDoc = all.find((d) => d.id === openId) ?? null;
   if (openDoc) {
@@ -264,10 +267,24 @@ export function ReferenceDocumentsScreen({
         ) : null}
       </div>
 
+      {!query.isPending && !query.isError && scoped.length > 0 ? (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            placeholder={`Filter ${heading.toLowerCase()} by title…`}
+            className="h-11 pl-9 text-base"
+          />
+        </div>
+      ) : null}
+
       {query.isPending ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : query.isError ? (
         <p className="text-sm text-destructive">Couldn&apos;t load this library.</p>
+      ) : docs.length === 0 && q ? (
+        <p className="text-sm text-muted-foreground">No {heading.toLowerCase()} match “{term}”.</p>
       ) : docs.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="space-y-2 py-12 text-center">
