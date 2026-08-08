@@ -226,3 +226,20 @@ export async function updatePresentationEntry(input: {
     .eq("id", input.id);
   if (error) throw error;
 }
+
+/** Owner-only soft delete — never a hard delete. Version history trigger logs the change. */
+export async function softDeleteReferenceDocument(input: {
+  id: string;
+  deletedBy: string | null;
+}) {
+  const { error } = await supabase
+    .from("reference_documents")
+    .update({
+      is_deleted: true,
+      deleted_by: input.deletedBy,
+      deleted_at: new Date().toISOString(),
+      updated_by: input.deletedBy,
+    })
+    .eq("id", input.id);
+  if (error) throw error;
+}

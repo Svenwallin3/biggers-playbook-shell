@@ -1,9 +1,27 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, ListChecks } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, ChevronDown, FileText, ListChecks, Search, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { VideoEmbed } from "@/components/VideoEmbed";
 import { LineItemEditor } from "@/components/reference/LineItemEditor";
@@ -17,6 +35,7 @@ import {
   referenceDocumentsQueryOptions,
   sectionLineItems,
   sharedLabel,
+  softDeleteReferenceDocument,
   visibleToDepartment,
   type ReferenceDocumentRow,
   type ReferenceDocumentType,
@@ -41,15 +60,58 @@ function Detail({
   documentType: ReferenceDocumentType;
   onBack: () => void;
 }) {
-  const { isManagerOrOwner } = useAuth();
+  const { employee, isManagerOrOwner, isOwner } = useAuth();
+  const queryClient = useQueryClient();
+  const [deleting, setDeleting] = useState(false);
   const sections = docSections(doc);
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await softDeleteReferenceDocument({ id: doc.id, deletedBy: employee?.id ?? null });
+      await queryClient.invalidateQueries({ queryKey: ["reference-documents", documentType] });
+      toast.success("Deleted. It's hidden from the library but still recoverable.");
+      onBack();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't delete this document.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
-        <ArrowLeft className="size-4" />
-        Back
-      </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
+          <ArrowLeft className="size-4" />
+          Back
+        </Button>
+        {isOwner ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="text-destructive">
+                <Trash2 className="size-4" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete “{doc.title}”?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This hides the document from the library. Nothing is permanently erased — the
+                  record and its version history are kept and can be restored later.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction disabled={deleting} onClick={handleDelete}>
+                  {deleting ? "Deleting…" : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : null}
+      </div>
 
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
@@ -80,18 +142,23 @@ function Detail({
         <div className="space-y-4">
           {sections.map((section, i) => (
             <Card key={i}>
-              <CardContent className="space-y-4 py-6">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="font-display text-base font-semibold">{section.title}</h2>
-                  {isManagerOrOwner ? (
-                    documentType === "checklist" ? (
-                      <LineItemEditor doc={doc} sectionIndex={i} />
-                    ) : (
-                      <SectionBodyEditor doc={doc} sectionIndex={i} />
-                    )
-                  ) : null}
-                </div>
+              <Collapsible defaultOpen>
+                <CardContent className="space-y-4 py-4 sm:py-6">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <CollapsibleTrigger className="group flex min-w-0 flex-1 items-center gap-2 text-left">
+                      <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
+                      <h2 className="font-display text-base font-semibold">{section.title}</h2>
+                    </CollapsibleTrigger>
+                    {isManagerOrOwner ? (
+                      documentType === "checklist" ? (
+                        <LineItemEditor doc={doc} sectionIndex={i} />
+                      ) : (
+                        <SectionBodyEditor doc={doc} sectionIndex={i} />
+                      )
+                    ) : null}
+                  </div>
 
+                  <CollapsibleContent className="space-y-4">
                 {documentType === "checklist" ? (
                   <ol className="space-y-2">
                     {sectionLineItems(section).map((item, idx) => (
@@ -125,7 +192,9 @@ function Detail({
                 ) : null}
 
                 <VideoEmbed url={section.video_url} title={section.title} />
-              </CardContent>
+                  </CollapsibleContent>
+                </CardContent>
+              </Collapsible>
             </Card>
           ))}
           {isManagerOrOwner ? (
@@ -151,6 +220,7 @@ export function ReferenceDocumentsScreen({
   const { employee, isManagerOrOwner, isOwner } = useAuth();
   const query = useQuery(referenceDocumentsQueryOptions(documentType));
   const [openId, setOpenId] = useState<string | null>(null);
+  const [term, setTerm] = useState("");
   // Owners have no department_scope, so "my department only" would filter to nothing —
   // default them to all departments until they explicitly toggle.
   const [overrideShowAll, setOverrideShowAll] = useState<boolean | null>(null);
@@ -158,10 +228,12 @@ export function ReferenceDocumentsScreen({
 
   const all = query.data ?? [];
   const department = employee?.department_scope ?? null;
-  const docs =
+  const scoped =
     isManagerOrOwner && showAllDepartments
       ? all
       : all.filter((d) => visibleToDepartment(d.departments, department));
+  const q = term.trim().toLowerCase();
+  const docs = q ? scoped.filter((d) => d.title.toLowerCase().includes(q)) : scoped;
 
   const openDoc = all.find((d) => d.id === openId) ?? null;
   if (openDoc) {
@@ -195,10 +267,24 @@ export function ReferenceDocumentsScreen({
         ) : null}
       </div>
 
+      {!query.isPending && !query.isError && scoped.length > 0 ? (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            placeholder={`Filter ${heading.toLowerCase()} by title…`}
+            className="h-11 pl-9 text-base"
+          />
+        </div>
+      ) : null}
+
       {query.isPending ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : query.isError ? (
         <p className="text-sm text-destructive">Couldn&apos;t load this library.</p>
+      ) : docs.length === 0 && q ? (
+        <p className="text-sm text-muted-foreground">No {heading.toLowerCase()} match “{term}”.</p>
       ) : docs.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="space-y-2 py-12 text-center">
