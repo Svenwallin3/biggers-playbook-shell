@@ -357,7 +357,7 @@ function IndexPage() {
             key={mod.id}
             className={
               "relative overflow-hidden pl-1.5 " +
-              isActive
+              (isActive
                 ? "border-primary/45 shadow-md ring-1 ring-primary/15"
                 : isFuture
                   ? "border-dashed bg-muted/30 opacity-70"
