@@ -120,9 +120,7 @@ function HospitalityWelcome({
                     >
                       {step.sequence_order}. {step.title}
                     </Link>
-                    <span className="text-xs text-muted-foreground">
-                      {stepTypeLabels[step.step_type]}
-                    </span>
+                    <StepTypeChip type={step.step_type} />
                   </li>
                 );
               })}
@@ -364,9 +362,7 @@ function IndexPage() {
                           <span className={complete ? "text-muted-foreground line-through" : ""}>
                             {step.sequence_order}. {step.title}
                           </span>
-                          <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-secondary-foreground">
-                            {stepTypeLabels[step.step_type]}
-                          </span>
+                          <StepTypeChip type={step.step_type} />
                           <StepStatusBadge status={step.content_status} />
                           {trainerOnly && !complete ? (
                             <span className="text-xs font-medium text-accent">
