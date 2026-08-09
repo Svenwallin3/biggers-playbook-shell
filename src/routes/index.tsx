@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, BookOpen, Check, ChevronRight, Compass, Lock, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  BookOpen,
+  Check,
+  ChevronRight,
+  Compass,
+  Lock,
+  PartyPopper,
+  Search,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +21,9 @@ import { Progress } from "@/components/ui/progress";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { AskAssistant } from "@/components/training/AskAssistant";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
+import { StepTypeChip } from "@/components/training/StepTypeChip";
+import { ProgressRing } from "@/components/training/ProgressRing";
+import { trackTheme } from "@/lib/track-theme";
 import { LocationChoice, PathChoice } from "@/components/PathChoice";
 import { ManagerDailyBrief } from "@/components/manager/ManagerDailyBrief";
 import { ReportDeliveryIssueDialog } from "@/components/sourcing/ReportDeliveryIssueDialog";
@@ -21,7 +33,6 @@ import {
   planQueryOptions,
   progressQueryOptions,
   setStepProgress,
-  stepTypeLabels,
   trainerSignoffTypes,
 } from "@/lib/training.queries";
 
