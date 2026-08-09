@@ -169,6 +169,50 @@ export function NewDocumentDialog({
               ) : null}
             </div>
 
+            {documentType === "checklist" ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="doc-location">Location</Label>
+                <Select value={locationTag} onValueChange={setLocationTag}>
+                  <SelectTrigger id="doc-location">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SHARED}>No specific location (shared)</SelectItem>
+                    {locationOptions.map((l) => (
+                      <SelectItem key={l.value} value={l.value}>
+                        {l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Checklists usually differ by Market location — pick one unless this run is
+                  identical everywhere.
+                </p>
+              </div>
+            ) : (
+              <Collapsible>
+                <CollapsibleTrigger className="text-xs text-muted-foreground underline underline-offset-2">
+                  Location (optional) — {locationTag === SHARED ? "shared" : "set"}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <Select value={locationTag} onValueChange={setLocationTag}>
+                    <SelectTrigger id="doc-location">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SHARED}>No specific location (shared)</SelectItem>
+                      {locationOptions.map((l) => (
+                        <SelectItem key={l.value} value={l.value}>
+                          {l.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
             {!isOwner ? (
               <div className="space-y-1.5">
                 <Label htmlFor="doc-why">How do you know it&apos;s needed?</Label>
