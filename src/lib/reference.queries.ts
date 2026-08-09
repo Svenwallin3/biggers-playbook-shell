@@ -167,6 +167,13 @@ export async function createReferenceDocument(input: {
   locationTag?: string | null;
   updatedBy: string | null;
 }) {
+  documentType: ReferenceDocumentType;
+  title: string;
+  subCategory: string | null;
+  departments: string[];
+  locationTag?: string | null;
+  updatedBy: string | null;
+}) {
   const { error } = await supabase.from("reference_documents").insert({
     document_type: input.documentType,
     title: input.title,
