@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronRight, Compass, Lock, Search } from "lucide-react";
+import { AlertTriangle, BookOpen, Check, ChevronRight, Compass, Lock, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { AskAssistant } from "@/components/training/AskAssistant";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { LocationChoice, PathChoice } from "@/components/PathChoice";
 import { ManagerDailyBrief } from "@/components/manager/ManagerDailyBrief";
+import { ReportDeliveryIssueDialog } from "@/components/sourcing/ReportDeliveryIssueDialog";
 import { useAuth } from "@/hooks/useAuth";
 import type { PlanModule, ProgressRow } from "@/lib/training.queries";
 import {
@@ -124,6 +126,7 @@ function HospitalityWelcome({
 function IndexPage() {
   const { employee, loading, session } = useAuth();
   const queryClient = useQueryClient();
+  const [reportOpen, setReportOpen] = useState(false);
 
   const planQuery = useQuery({ ...planQueryOptions(employee?.path ?? null), enabled: !!employee });
   const progressQuery = useQuery(progressQueryOptions(employee?.id));
@@ -228,7 +231,18 @@ function IndexPage() {
           </div>
           <Progress value={pct} className="h-2.5" />
         </div>
+
+        <Button
+          variant="outline"
+          className="mt-5 w-full justify-center sm:w-auto"
+          onClick={() => setReportOpen(true)}
+        >
+          <AlertTriangle className="mr-1.5 size-4" />
+          Report a delivery issue
+        </Button>
       </section>
+
+      <ReportDeliveryIssueDialog open={reportOpen} onOpenChange={setReportOpen} />
 
       <section className="space-y-4">
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -364,6 +378,21 @@ function IndexPage() {
           );
         })}
       </section>
+
+      <Link to="/training-library" className="block">
+        <Card className="border-primary/30 bg-primary/8 transition-colors hover:border-primary">
+          <CardContent className="flex items-center gap-3 py-4">
+            <BookOpen className="size-5 text-primary" />
+            <div className="flex-1">
+              <p className="font-display text-sm font-semibold">Browse all training</p>
+              <p className="text-sm text-muted-foreground">
+                Revisit any module you can see — refreshers, any time
+              </p>
+            </div>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </CardContent>
+        </Card>
+      </Link>
 
       <Link to="/reference/sourcing" className="block">
         <Card className="border-accent/30 bg-accent/8 transition-colors hover:border-accent">
