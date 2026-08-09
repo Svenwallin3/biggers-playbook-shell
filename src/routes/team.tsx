@@ -25,9 +25,14 @@ import type { Database } from "@/integrations/supabase/types";
 
 type AuthTier = Database["public"]["Enums"]["auth_tier"];
 type Department = Database["public"]["Enums"]["department"];
+type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
 
 const tiers: AuthTier[] = ["staff", "manager", "owner"];
 const gmTiers: AuthTier[] = ["staff", "manager"];
+const statuses: { value: EmployeeStatus; label: string }[] = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+];
 const departments: Department[] = ["universal", "market", "kitchen", "delivery"];
 const NONE = "__none__";
 
@@ -119,6 +124,7 @@ function TeamPage() {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead className="w-[150px]">Access tier</TableHead>
+              <TableHead className="w-[140px]">Status</TableHead>
               {isOwner ? (
                 <>
                   <TableHead className="w-[150px]">General Manager</TableHead>
@@ -154,6 +160,29 @@ function TeamPage() {
                       {(isOwner ? tiers : gmTiers).map((t) => (
                         <SelectItem key={t} value={t}>
                           {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={e.status}
+                    disabled={update.isPending || e.status === "merged"}
+                    onValueChange={(v) =>
+                      update.mutate({ id: e.id, patch: { status: v as EmployeeStatus } })
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {e.status === "merged" ? (
+                        <SelectItem value="merged">Merged</SelectItem>
+                      ) : null}
+                      {statuses.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>
+                          {s.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
