@@ -24,7 +24,7 @@ Take cues from produce-market signage and chalkboard menus — Biggers-native, n
 - Keep terracotta/mustard strictly for blocked/refining states so status stays legible.
 
 ### Layout and component changes (no functionality changes)
-- **Dashboard**: one large green "Up next" hero card with the step title in display type, a progress ring, and one big orange button. Everything else (browse training, report an issue, reference) drops to smaller secondary tiles below. Buttons get real labels ("Continue Day 1: Hospitality" instead of generic verbs).
+- **Dashboard**: while training is still in progress, one large green "Up next" hero card with the step title in display type, a progress ring, and one big orange button. Once training is complete the hero card is replaced by a compact "Training complete" state, and browse/refresher tiles take the top slot. Everything else (browse training, report an issue, reference) drops to smaller secondary tiles below. Buttons get real labels ("Continue Day 1: Hospitality" instead of generic verbs).
 - **Progress**: add a track progress bar to the dashboard and a "Step 3 of 9" indicator plus segmented day markers inside the module viewer.
 - **Module viewer**: sticky header with module name + progress, larger step titles, clearer separation between the step body and the trainer sign-off block (sign-off becomes a distinctly colored, full-width band, since it's the certification moment).
 - **Step type chips**: replace the small gray uppercase label with colored icon chips (read / photo / watch / quiz / trainer sign-off), so scanning a module reads at a glance.
