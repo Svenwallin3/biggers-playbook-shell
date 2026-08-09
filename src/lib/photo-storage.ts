@@ -70,7 +70,7 @@ export async function uploadPhoto(file: File, folder: string): Promise<string> {
   const path = `${folder}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage
     .from(PHOTO_BUCKET)
-    .upload(prepared, folder ? path : path, { cacheControl: "3600", upsert: false });
+    .upload(path, prepared, { cacheControl: "3600", upsert: false });
   if (error) throw error;
   return path;
 }
