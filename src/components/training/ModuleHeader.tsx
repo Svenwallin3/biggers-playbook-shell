@@ -1,3 +1,5 @@
+import { trackTheme } from "@/lib/track-theme";
+
 type ModuleHeaderProps = {
   trackName: string | null | undefined;
   subPath?: string | null;
@@ -17,6 +19,7 @@ export function ModuleHeader({
   as = "h1",
 }: ModuleHeaderProps) {
   const Heading = as;
+  const theme = trackTheme(trackName);
   const titleClass =
     as === "h1"
       ? "font-display text-3xl font-semibold tracking-tight"
@@ -24,7 +27,9 @@ export function ModuleHeader({
 
   return (
     <>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+      <p
+        className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${theme.label}`}
+      >
         {trackName}
         {subPath ? ` · ${subPath}` : ""}
         {dayAssignment ? ` · Day ${dayAssignment}` : ""}
