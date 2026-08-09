@@ -1,17 +1,28 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, BookOpen, Check, ChevronRight, Compass, Lock, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  BookOpen,
+  Check,
+  ChevronRight,
+  Compass,
+  Lock,
+  PartyPopper,
+  Search,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { AskAssistant } from "@/components/training/AskAssistant";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
+import { StepTypeChip } from "@/components/training/StepTypeChip";
+import { ProgressRing } from "@/components/training/ProgressRing";
+import { trackTheme } from "@/lib/track-theme";
 import { LocationChoice, PathChoice } from "@/components/PathChoice";
 import { ManagerDailyBrief } from "@/components/manager/ManagerDailyBrief";
 import { ReportDeliveryIssueDialog } from "@/components/sourcing/ReportDeliveryIssueDialog";
@@ -21,7 +32,6 @@ import {
   planQueryOptions,
   progressQueryOptions,
   setStepProgress,
-  stepTypeLabels,
   trainerSignoffTypes,
 } from "@/lib/training.queries";
 
@@ -109,9 +119,7 @@ function HospitalityWelcome({
                     >
                       {step.sequence_order}. {step.title}
                     </Link>
-                    <span className="text-xs text-muted-foreground">
-                      {stepTypeLabels[step.step_type]}
-                    </span>
+                    <StepTypeChip type={step.step_type} />
                   </li>
                 );
               })}
@@ -171,6 +179,18 @@ function IndexPage() {
       progressByStep.get(s.id)?.status === "signed_off",
   ).length;
   const pct = Math.round((done / Math.max(allSteps.length, 1)) * 100);
+  const trainingComplete = allSteps.length > 0 && done === allSteps.length;
+  // The single "one thing to do next" across the whole ordered plan.
+  const upNext = (() => {
+    for (const mod of modules) {
+      for (const step of mod.steps) {
+        const record = progressByStep.get(step.id);
+        if (record?.status === "completed" || record?.status === "signed_off") continue;
+        return { module: mod, step };
+      }
+    }
+    return null;
+  })();
 
   // First-login flow: staff start on Hospitality, and only pick a path once it's done.
   const isStaff = employee.auth_tier === "staff";
@@ -199,47 +219,104 @@ function IndexPage() {
   return (
     <div className="space-y-6">
       {employee.auth_tier !== "staff" ? <ManagerDailyBrief employee={employee} /> : null}
-      <section className="rounded-xl border border-border bg-linear-to-br from-primary/12 via-card to-accent/10 px-6 py-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-          {employee.path ? `${employee.path} path` : "Path not set"} · {employee.auth_tier}
-        </p>
-        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">
-          Welcome back, {(employee.full_name ?? employee.email).split(" ")[0]}
-        </h1>
+      {upNext && !trainingComplete ? (
+        <section className="overflow-hidden rounded-2xl bg-linear-to-br from-hero to-hero-edge text-hero-foreground shadow-md">
+          <div className="flex flex-wrap items-start justify-between gap-6 px-6 py-7 sm:px-8">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-bright">
+                Up next · {upNext.module.track.name}
+                {upNext.module.day_assignment ? ` · Day ${upNext.module.day_assignment}` : ""}
+              </p>
+              <h1 className="mt-2 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+                {upNext.step.title}
+              </h1>
+              <p className="mt-2 text-sm text-hero-foreground/75">
+                {upNext.module.name} · step {upNext.step.sequence_order} of{" "}
+                {upNext.module.steps.length}
+              </p>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-12 bg-accent px-7 text-base font-semibold text-accent-foreground hover:bg-accent-bright"
+                >
+                  <Link
+                    to="/modules/$moduleId"
+                    params={{ moduleId: upNext.module.id }}
+                    search={{ step: upNext.step.id, trainee: undefined }}
+                  >
+                    {done > 0 ? "Continue" : "Start"}
+                    {upNext.module.day_assignment
+                      ? ` Day ${upNext.module.day_assignment}: `
+                      : ": "}
+                    {upNext.module.name}
+                  </Link>
+                </Button>
+                <span className="text-sm text-hero-foreground/70">
+                  {done} of {allSteps.length} steps done
+                </span>
+              </div>
+            </div>
+            <div className="text-hero-foreground">
+              <ProgressRing value={pct} size={76} label={`${pct}% of your training complete`} />
+            </div>
+          </div>
+          <div className="h-1.5 w-full bg-hero-foreground/15">
+            <div
+              className="h-full bg-accent-bright transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-primary/25 bg-primary-tint px-6 py-5">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <PartyPopper className="size-5" aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-2xl font-semibold tracking-tight">
+                Training complete, {(employee.full_name ?? employee.email).split(" ")[0]}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {allSteps.length
+                  ? `All ${allSteps.length} steps signed off. Come back any time for a refresher.`
+                  : "No modules are assigned to your path yet."}
+              </p>
+            </div>
+            <Button asChild variant="outline" className="shrink-0">
+              <Link to="/training-library">
+                <BookOpen className="mr-1.5 size-4" />
+                Browse all training
+              </Link>
+            </Button>
+          </div>
+        </section>
+      )}
 
-        <div className="mt-5">
-          <AskAssistant />
-        </div>
-
+      <section className="rounded-xl border border-border bg-card px-5 py-5">
+        <AskAssistant />
         <Link to="/search" className="mt-3 block">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               readOnly
               placeholder="Search every module, step, and sourcing entry…"
-              className="h-12 cursor-pointer border-border bg-card pl-9 text-base shadow-xs"
+              className="h-12 cursor-pointer border-border bg-background pl-9 text-base shadow-xs"
             />
           </div>
         </Link>
-
-        <div className="mt-5 space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-semibold">Your progress</span>
-            <span className="text-muted-foreground">
-              {done} of {allSteps.length} steps · {pct}%
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Button variant="outline" onClick={() => setReportOpen(true)}>
+            <AlertTriangle className="mr-1.5 size-4" />
+            Report a delivery issue
+          </Button>
+          {trainingComplete ? null : (
+            <span className="text-xs text-muted-foreground">
+              Something wrong with a truck order? Tell us here — anyone can report.
             </span>
-          </div>
-          <Progress value={pct} className="h-2.5" />
+          )}
         </div>
-
-        <Button
-          variant="outline"
-          className="mt-5 w-full justify-center sm:w-auto"
-          onClick={() => setReportOpen(true)}
-        >
-          <AlertTriangle className="mr-1.5 size-4" />
-          Report a delivery issue
-        </Button>
       </section>
 
       <ReportDeliveryIssueDialog open={reportOpen} onOpenChange={setReportOpen} />
@@ -274,24 +351,34 @@ function IndexPage() {
           );
           const isActive = modIndex === firstOpenIndex;
           const isFuture = firstOpenIndex !== -1 && modIndex > firstOpenIndex;
+          const theme = trackTheme(mod.track.name);
           return (
           <Card
             key={mod.id}
             className={
-              isActive
+              "relative overflow-hidden pl-1.5 " +
+              (isActive
                 ? "border-primary/45 shadow-md ring-1 ring-primary/15"
                 : isFuture
                   ? "border-dashed bg-muted/30 opacity-70"
-                  : "bg-card/70"
+                  : "bg-card/70")
             }
           >
+            <span
+              className={`absolute inset-y-0 left-0 w-1.5 ${theme.rail} ${isFuture ? "opacity-40" : ""}`}
+              aria-hidden
+            />
             <CardContent className={isActive ? "py-5" : "py-4"}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <p
+                    className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] ${
+                      isFuture ? "text-muted-foreground" : theme.label
+                    }`}
+                  >
                     {isActive ? (
-                      <span className="rounded-sm bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">
-                        Up next
+                      <span className="rounded-sm bg-accent px-1.5 py-0.5 text-[10px] font-bold text-accent-foreground">
+                        In progress
                       </span>
                     ) : moduleDone ? (
                       <Check className="size-3.5 text-success" />
@@ -307,7 +394,7 @@ function IndexPage() {
                     params={{ moduleId: mod.id }}
                     search={{ step: undefined }}
                     className={`font-display font-semibold hover:underline ${
-                      isActive ? "text-lg" : "text-base"
+                      isActive ? "text-xl" : "text-base"
                     }`}
                   >
                     {mod.name}
@@ -353,9 +440,7 @@ function IndexPage() {
                           <span className={complete ? "text-muted-foreground line-through" : ""}>
                             {step.sequence_order}. {step.title}
                           </span>
-                          <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-secondary-foreground">
-                            {stepTypeLabels[step.step_type]}
-                          </span>
+                          <StepTypeChip type={step.step_type} />
                           <StepStatusBadge status={step.content_status} />
                           {trainerOnly && !complete ? (
                             <span className="text-xs font-medium text-accent">
@@ -379,35 +464,41 @@ function IndexPage() {
         })}
       </section>
 
-      <Link to="/training-library" className="block">
-        <Card className="border-primary/30 bg-primary/8 transition-colors hover:border-primary">
-          <CardContent className="flex items-center gap-3 py-4">
-            <BookOpen className="size-5 text-primary" />
-            <div className="flex-1">
-              <p className="font-display text-sm font-semibold">Browse all training</p>
-              <p className="text-sm text-muted-foreground">
-                Revisit any module you can see — refreshers, any time
-              </p>
-            </div>
-            <ChevronRight className="size-4 text-muted-foreground" />
-          </CardContent>
-        </Card>
-      </Link>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Link to="/training-library" className="block">
+          <Card className="h-full border-primary/30 bg-primary/8 transition-colors hover:border-primary">
+            <CardContent className="flex items-center gap-3 py-4">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
+                <BookOpen className="size-5" />
+              </span>
+              <div className="flex-1">
+                <p className="font-display text-base font-semibold">Browse all training</p>
+                <p className="text-sm text-muted-foreground">
+                  Refreshers on anything you&apos;ve already covered
+                </p>
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
 
-      <Link to="/reference/sourcing" className="block">
-        <Card className="border-accent/30 bg-accent/8 transition-colors hover:border-accent">
-          <CardContent className="flex items-center gap-3 py-4">
-            <Compass className="size-5 text-accent" />
-            <div className="flex-1">
-              <p className="font-display text-sm font-semibold">Sourcing Board</p>
-              <p className="text-sm text-muted-foreground">
-                Where our products come from — guest questions, answered
-              </p>
-            </div>
-            <ChevronRight className="size-4 text-muted-foreground" />
-          </CardContent>
-        </Card>
-      </Link>
+        <Link to="/reference/sourcing" className="block">
+          <Card className="h-full border-accent/35 bg-accent/10 transition-colors hover:border-accent">
+            <CardContent className="flex items-center gap-3 py-4">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent/20 text-accent-foreground">
+                <Compass className="size-5" />
+              </span>
+              <div className="flex-1">
+                <p className="font-display text-base font-semibold">Sourcing Board</p>
+                <p className="text-sm text-muted-foreground">
+                  Where our products come from — guest questions, answered
+                </p>
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
     </div>
   );
 }
