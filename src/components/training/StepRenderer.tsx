@@ -3,10 +3,10 @@ import { CheckCircle2, Clapperboard, Image as ImageIcon, ListChecks, UserCheck }
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StepStatusBadge } from "./StepStatusBadge";
+import { StepTypeChip } from "./StepTypeChip";
 import { VideoEmbed, youTubeId } from "@/components/VideoEmbed";
 import {
   bodyLines,
-  stepTypeLabels,
   trainerSignoffTypes,
   type QuizRow,
   type StepRow,
@@ -126,13 +126,13 @@ export function StepRenderer({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary-foreground">
-          {stepTypeLabels[step.step_type]}
-        </span>
+        <StepTypeChip type={step.step_type} />
         <StepStatusBadge status={step.content_status} />
       </div>
 
-      <h2 className="font-display text-2xl font-semibold tracking-tight">{step.title}</h2>
+      <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight">
+        {step.title}
+      </h2>
 
       {unavailable ? (
         <ComingSoon step={step} isAdmin={isAdmin} />
@@ -213,19 +213,25 @@ export function StepRenderer({
           <Body lines={lines} />
 
           {trainerSignoffTypes.includes(step.step_type) ? (
-            <Card className="border-accent/35 bg-accent/8">
+            <Card className="mt-8 overflow-hidden border-2 border-dashed border-accent/50 bg-accent/10">
+              <div className="bg-accent/25 px-5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-accent-foreground">
+                Certification moment
+              </div>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 py-5">
-                <p className="flex items-center gap-2 text-sm">
-                  <UserCheck className="size-4 text-accent" />
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <UserCheck className="size-4 shrink-0 text-accent" />
                   {step.step_type === "doing_signoff"
-                    ? "Certification happens when your trainer signs off."
-                    : "Day 4 is live practice with real customers, supervised."}
+                    ? "This is the real certification — your trainer signs off after watching you do it."
+                    : "Day 4 is live practice with real customers, supervised by your trainer."}
                 </p>
                 <Button
-                  size="sm"
-                  variant="secondary"
                   disabled={signedOff || !canSignOff || signingOff}
                   onClick={onSignOff}
+                  className={
+                    signedOff
+                      ? ""
+                      : "bg-accent text-accent-foreground hover:bg-accent-bright"
+                  }
                 >
                   <CheckCircle2 className="size-4" />
                   {signedOff
