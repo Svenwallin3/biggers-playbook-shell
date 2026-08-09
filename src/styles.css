@@ -211,3 +211,48 @@
     letter-spacing: -0.015em;
   }
 }
+
+/* Paper fallback: blank 8.5x11 checklist copy. */
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 0.6in;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .print-hidden,
+  nav,
+  header,
+  footer,
+  button {
+    display: none !important;
+  }
+
+  .print-sheet {
+    display: block !important;
+    font-family: var(--font-sans);
+    color: #000;
+  }
+
+  .print-sheet .print-box {
+    display: inline-block;
+    width: 0.22in;
+    height: 0.22in;
+    border: 1.5px solid #000;
+    margin-right: 0.12in;
+    vertical-align: top;
+  }
+
+  .print-sheet li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

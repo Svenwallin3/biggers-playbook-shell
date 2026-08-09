@@ -158,12 +158,23 @@ export async function createPresentationEntry(input: {
 
 export const departmentOptions = ["universal", "market", "kitchen", "delivery"] as const;
 
+export const locationOptions = [
+  { value: "market_street", label: "Market Street" },
+  { value: "carolina_beach_road", label: "Carolina Beach Road" },
+] as const;
+
+export function locationLabel(value: string | null) {
+  if (!value) return "No specific location (shared)";
+  return locationOptions.find((l) => l.value === value)?.label ?? value;
+}
+
 /** Owner-only direct create (reference_documents insert RLS is owner-tier). */
 export async function createReferenceDocument(input: {
   documentType: ReferenceDocumentType;
   title: string;
   subCategory: string | null;
   departments: string[];
+  locationTag?: string | null;
   updatedBy: string | null;
 }) {
   const { error } = await supabase.from("reference_documents").insert({
@@ -171,6 +182,7 @@ export async function createReferenceDocument(input: {
     title: input.title,
     sub_category: input.subCategory,
     departments: input.departments,
+    location_tag: input.locationTag ?? null,
     sections: [],
     content_status: "missing",
     updated_by: input.updatedBy,
@@ -188,6 +200,7 @@ export async function submitNewDocumentSuggestion(input: {
   title: string;
   subCategory: string | null;
   departments: string[];
+  locationTag?: string | null;
   howYouKnow: string | null;
 }) {
   const label = input.documentType === "checklist" ? "checklist" : "SOP";
@@ -195,6 +208,7 @@ export async function submitNewDocumentSuggestion(input: {
     `New ${label}: ${input.title}`,
     input.subCategory ? `Group: ${input.subCategory}` : null,
     `Departments: ${input.departments.map(departmentLabel).join(", ") || "—"}`,
+    `Location: ${locationLabel(input.locationTag ?? null)}`,
   ]
     .filter(Boolean)
     .join("\n");

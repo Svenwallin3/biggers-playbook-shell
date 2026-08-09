@@ -14,15 +14,30 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import {
   createReferenceDocument,
   departmentLabel,
   departmentOptions,
+  locationOptions,
   submitNewDocumentSuggestion,
   type ReferenceDocumentType,
 } from "@/lib/reference.queries";
+
+const SHARED = "__shared__";
 
 /**
  * Create a new checklist / SOP. Owners write the row directly (insert RLS is
@@ -41,6 +56,7 @@ export function NewDocumentDialog({
   const [title, setTitle] = useState("");
   const [subCategory, setSubCategory] = useState("");
   const [departments, setDepartments] = useState<string[]>([]);
+  const [locationTag, setLocationTag] = useState<string>(SHARED);
   const [why, setWhy] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -48,6 +64,7 @@ export function NewDocumentDialog({
     setTitle("");
     setSubCategory("");
     setDepartments(employee?.department_scope ? [employee.department_scope] : []);
+    setLocationTag(SHARED);
     setWhy("");
     setOpen(true);
   }
@@ -65,6 +82,7 @@ export function NewDocumentDialog({
       return;
     }
     setBusy(true);
+    const location = locationTag === SHARED ? null : locationTag;
     try {
       if (isOwner) {
         await createReferenceDocument({
@@ -72,6 +90,7 @@ export function NewDocumentDialog({
           title: title.trim(),
           subCategory: subCategory.trim() || null,
           departments,
+          locationTag: location,
           updatedBy: employee.id,
         });
         await queryClient.invalidateQueries({ queryKey: ["reference-documents"] });
@@ -83,6 +102,7 @@ export function NewDocumentDialog({
           title: title.trim(),
           subCategory: subCategory.trim() || null,
           departments,
+          locationTag: location,
           howYouKnow: why.trim() || null,
         });
         toast.success("Sent to the Owner approval queue.");
@@ -148,6 +168,50 @@ export function NewDocumentDialog({
                 </p>
               ) : null}
             </div>
+
+            {documentType === "checklist" ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="doc-location">Location</Label>
+                <Select value={locationTag} onValueChange={setLocationTag}>
+                  <SelectTrigger id="doc-location">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SHARED}>No specific location (shared)</SelectItem>
+                    {locationOptions.map((l) => (
+                      <SelectItem key={l.value} value={l.value}>
+                        {l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Checklists usually differ by Market location — pick one unless this run is
+                  identical everywhere.
+                </p>
+              </div>
+            ) : (
+              <Collapsible>
+                <CollapsibleTrigger className="text-xs text-muted-foreground underline underline-offset-2">
+                  Location (optional) — {locationTag === SHARED ? "shared" : "set"}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <Select value={locationTag} onValueChange={setLocationTag}>
+                    <SelectTrigger id="doc-location">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SHARED}>No specific location (shared)</SelectItem>
+                      {locationOptions.map((l) => (
+                        <SelectItem key={l.value} value={l.value}>
+                          {l.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
 
             {!isOwner ? (
               <div className="space-y-1.5">
