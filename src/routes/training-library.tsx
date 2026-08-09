@@ -6,6 +6,7 @@ import { BookOpen, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { planQueryOptions, type PlanModule } from "@/lib/training.queries";
+import { trackTheme } from "@/lib/track-theme";
 
 const title = "Browse all training — Biggers Training Platform";
 const description =
@@ -76,12 +77,18 @@ function TrainingLibraryPage() {
         <p className="text-sm text-muted-foreground">Nothing is available to you yet.</p>
       ) : null}
 
-      {grouped.map((track) => (
+      {grouped.map((track) => {
+        const theme = trackTheme(track.name);
+        return (
         <section key={track.name} className="space-y-2">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <h2
+            className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] ${theme.label}`}
+          >
+            <span className={`inline-block h-3 w-1.5 rounded-full ${theme.rail}`} aria-hidden />
             {track.name}
           </h2>
-          <Card>
+          <Card className="relative overflow-hidden pl-1.5">
+            <span className={`absolute inset-y-0 left-0 w-1.5 ${theme.rail}`} aria-hidden />
             <CardContent className="px-0 py-0">
               <ul className="divide-y">
                 {track.modules.map((mod) => (
@@ -93,7 +100,7 @@ function TrainingLibraryPage() {
                       className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-muted/60"
                     >
                       <span className="min-w-0 flex-1">
-                        <span className="block font-medium">{mod.name}</span>
+                        <span className="block font-display font-semibold">{mod.name}</span>
                         <span className="block text-xs text-muted-foreground">
                           {mod.sub_path ? `${mod.sub_path} · ` : ""}
                           {mod.day_assignment ? `Day ${mod.day_assignment} · ` : ""}
@@ -108,7 +115,8 @@ function TrainingLibraryPage() {
             </CardContent>
           </Card>
         </section>
-      ))}
+        );
+      })}
     </div>
   );
 }
