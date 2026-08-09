@@ -158,15 +158,18 @@ export async function createPresentationEntry(input: {
 
 export const departmentOptions = ["universal", "market", "kitchen", "delivery"] as const;
 
+export const locationOptions = [
+  { value: "market_street", label: "Market Street" },
+  { value: "carolina_beach_road", label: "Carolina Beach Road" },
+] as const;
+
+export function locationLabel(value: string | null) {
+  if (!value) return "No specific location (shared)";
+  return locationOptions.find((l) => l.value === value)?.label ?? value;
+}
+
 /** Owner-only direct create (reference_documents insert RLS is owner-tier). */
 export async function createReferenceDocument(input: {
-  documentType: ReferenceDocumentType;
-  title: string;
-  subCategory: string | null;
-  departments: string[];
-  locationTag?: string | null;
-  updatedBy: string | null;
-}) {
   documentType: ReferenceDocumentType;
   title: string;
   subCategory: string | null;
