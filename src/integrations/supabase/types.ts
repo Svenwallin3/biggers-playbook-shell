@@ -210,10 +210,12 @@ export type Database = {
           is_deleted: boolean
           issue_description: string
           photo_url: string | null
+          photo_url_2: string | null
           product_vendor: string
           reported_by: string | null
           resolved_at: string | null
           status: string
+          truck_date: string | null
           updated_at: string
         }
         Insert: {
@@ -225,10 +227,12 @@ export type Database = {
           is_deleted?: boolean
           issue_description: string
           photo_url?: string | null
+          photo_url_2?: string | null
           product_vendor: string
           reported_by?: string | null
           resolved_at?: string | null
           status?: string
+          truck_date?: string | null
           updated_at?: string
         }
         Update: {
@@ -240,10 +244,12 @@ export type Database = {
           is_deleted?: boolean
           issue_description?: string
           photo_url?: string | null
+          photo_url_2?: string | null
           product_vendor?: string
           reported_by?: string | null
           resolved_at?: string | null
           status?: string
+          truck_date?: string | null
           updated_at?: string
         }
         Relationships: [
