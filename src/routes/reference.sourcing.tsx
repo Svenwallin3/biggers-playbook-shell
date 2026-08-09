@@ -61,10 +61,10 @@ function categoryMeta(value: string | null) {
   return CATEGORIES.find((c) => c.value === value) ?? null;
 }
 
-/** Row thumbnail: fixed width, stretches to the row's full height. */
+/** Row thumbnail: fixed square. */
 function RowThumb({ path, alt }: { path: string | null; alt: string }) {
   return (
-    <div className="relative w-20 shrink-0 self-stretch min-h-16 overflow-hidden rounded-md border bg-muted">
+    <div className="relative size-14 shrink-0 overflow-hidden rounded-md border bg-muted">
       <span className="absolute inset-0 flex items-center justify-center">
         <ImageIcon className="size-4 text-muted-foreground" aria-hidden />
       </span>
@@ -453,10 +453,10 @@ function SourcingBoardPage() {
 function DetailBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <div className="text-sm">{children}</div>
+      <div className="text-base font-semibold text-foreground">{children}</div>
     </div>
   );
 }
@@ -478,7 +478,7 @@ function ProductDetailDialog({
                 <StoredPhoto
                   path={entry.photo_url}
                   alt={entry.product}
-                  className="h-[42dvh] max-h-[420px] min-h-[260px] rounded-none border-0 object-cover"
+                  className="aspect-square w-full rounded-none border-0 object-cover"
                 />
               </div>
             ) : null}
@@ -500,25 +500,29 @@ function ProductDetailDialog({
               </DetailBlock>
 
               <div className="space-y-3 rounded-md border bg-muted/40 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Tasting Notes &amp; Seasonality
                 </p>
                 <div className="space-y-1">
-                  <p className="text-xs font-medium">Tasting Notes</p>
-                  <p className="text-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Tasting Notes
+                  </p>
+                  <p className="text-base font-semibold text-foreground">
                     {entry.notes || (
                       <span className="italic text-muted-foreground">Nothing noted yet</span>
                     )}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-medium">Seasonality</p>
-                  <p className="text-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Seasonality
+                  </p>
+                  <p className="text-base font-semibold text-foreground">
                     {entry.seasonality || (
                       <span className="italic text-muted-foreground">Not noted yet</span>
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs font-normal text-muted-foreground">
                     Indicates whether this is local or sourced from elsewhere (like Georgia or
                     Florida), not whether we currently carry it.
                   </p>
