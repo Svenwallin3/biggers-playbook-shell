@@ -6,6 +6,7 @@ import {
   ChevronDown,
   FileText,
   ListChecks,
+  Printer,
   Search,
   Trash2,
 } from "lucide-react";
@@ -74,6 +75,36 @@ function CompletedTodayTag() {
       <CheckCircle2 className="size-3" />
       Completed today
     </span>
+  );
+}
+
+function ChecklistPrintSheet({ doc }: { doc: ReferenceDocumentRow }) {
+  const sections = docSections(doc);
+  return (
+    <div className="print-sheet">
+      <h1 style={{ fontSize: "20pt", margin: "0 0 4pt" }}>{doc.title}</h1>
+      {doc.sub_category ? (
+        <p style={{ fontSize: "10pt", margin: "0 0 12pt", textTransform: "uppercase" }}>
+          {doc.sub_category}
+        </p>
+      ) : null}
+      <p style={{ fontSize: "10pt", margin: "0 0 16pt" }}>
+        Date: ______________ &nbsp;&nbsp; Completed by: ______________________
+      </p>
+      {sections.map((section, i) => (
+        <div key={i} style={{ marginBottom: "16pt" }}>
+          <h2 style={{ fontSize: "13pt", margin: "0 0 6pt" }}>{section.title}</h2>
+          <ol style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "11pt" }}>
+            {sectionLineItems(section).map((item, idx) => (
+              <li key={idx} style={{ margin: "0 0 6pt" }}>
+                <span className="print-box" />
+                {idx + 1}. {item.text}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -157,12 +188,21 @@ function Detail({
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      {isChecklist ? <ChecklistPrintSheet doc={doc} /> : null}
+      <div className="space-y-6 print-hidden">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
           <ArrowLeft className="size-4" />
           Back
         </Button>
+        <div className="flex items-center gap-2">
+          {isChecklist ? (
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <Printer className="size-4" />
+              Print
+            </Button>
+          ) : null}
         {isOwner ? (
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -188,6 +228,7 @@ function Detail({
             </AlertDialogContent>
           </AlertDialog>
         ) : null}
+        </div>
       </div>
 
       <div className="space-y-2">
