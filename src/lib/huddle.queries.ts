@@ -84,3 +84,15 @@ export async function createManagerNote(input: {
   });
   if (error) throw error;
 }
+
+export async function deleteManagerNote(input: { id: string; deletedBy: string | null }) {
+  const { error } = await supabase
+    .from("manager_notes")
+    .update({
+      is_deleted: true,
+      deleted_by: input.deletedBy,
+      deleted_at: new Date().toISOString(),
+    })
+    .eq("id", input.id);
+  if (error) throw error;
+}

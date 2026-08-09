@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ChevronDown, Plus, StickyNote } from "lucide-react";
+import { AlertTriangle, ChevronDown, Plus, StickyNote, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth, type Employee } from "@/hooks/useAuth";
 import {
   createManagerNote,
+  deleteManagerNote,
   huddleDepartmentForPath,
   todaysHuddleCardQueryOptions,
   todaysManagerNotesQueryOptions,
@@ -34,7 +35,7 @@ const MOTTO =
   "We are hosts. Every guest who walks in is someone we're welcoming into our home, not a transaction to get through. Southern hospitality means they leave feeling looked after, at ease, and glad they came by.";
 
 export function ManagerDailyBrief({ employee }: { employee: Employee }) {
-  const { isOwner } = useAuth();
+  const { isOwner, isManagerOrOwner } = useAuth();
   const department = huddleDepartmentForPath(employee.path);
   const locationId = employee.location_id ?? null;
 
@@ -111,13 +112,16 @@ export function ManagerDailyBrief({ employee }: { employee: Employee }) {
                 {notesQuery.isPending ? (
                   <p className="text-sm text-muted-foreground">Loading notes…</p>
                 ) : notes.length ? (
-                  <ul className="space-y-2">
+                  <ul className="max-h-64 space-y-2 overflow-y-auto pr-1">
                     {notes.map((note) => (
                       <li
                         key={note.id}
-                        className="rounded-md border border-border/70 bg-muted/40 px-3 py-2 text-sm leading-relaxed"
+                        className="flex items-start gap-2 rounded-md border border-border/70 bg-muted/40 px-3 py-2 text-sm leading-relaxed"
                       >
-                        {note.note_text}
+                        <span className="min-w-0 flex-1">{note.note_text}</span>
+                        {isManagerOrOwner ? (
+                          <DeleteNoteButton noteId={note.id} employeeId={employee.id} />
+                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -184,6 +188,33 @@ export function ManagerDailyBrief({ employee }: { employee: Employee }) {
         </section>
       ) : null}
     </div>
+  );
+}
+
+function DeleteNoteButton({ noteId, employeeId }: { noteId: string; employeeId: string }) {
+  const queryClient = useQueryClient();
+  const remove = useMutation({
+    mutationFn: () => deleteManagerNote({ id: noteId, deletedBy: employeeId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["manager-notes"] });
+      toast.success("Note removed");
+    },
+    onError: (error: Error) => toast.error("Couldn't remove note", { description: error.message }),
+  });
+
+  return (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="size-6 shrink-0 text-muted-foreground hover:text-destructive"
+      aria-label="Delete note"
+      disabled={remove.isPending}
+      onClick={() => {
+        if (window.confirm("Remove this note for today?")) remove.mutate();
+      }}
+    >
+      <X className="size-3.5" />
+    </Button>
   );
 }
 
