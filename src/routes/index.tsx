@@ -464,35 +464,41 @@ function IndexPage() {
         })}
       </section>
 
-      <Link to="/training-library" className="block">
-        <Card className="border-primary/30 bg-primary/8 transition-colors hover:border-primary">
-          <CardContent className="flex items-center gap-3 py-4">
-            <BookOpen className="size-5 text-primary" />
-            <div className="flex-1">
-              <p className="font-display text-sm font-semibold">Browse all training</p>
-              <p className="text-sm text-muted-foreground">
-                Revisit any module you can see — refreshers, any time
-              </p>
-            </div>
-            <ChevronRight className="size-4 text-muted-foreground" />
-          </CardContent>
-        </Card>
-      </Link>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Link to="/training-library" className="block">
+          <Card className="h-full border-primary/30 bg-primary/8 transition-colors hover:border-primary">
+            <CardContent className="flex items-center gap-3 py-4">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
+                <BookOpen className="size-5" />
+              </span>
+              <div className="flex-1">
+                <p className="font-display text-base font-semibold">Browse all training</p>
+                <p className="text-sm text-muted-foreground">
+                  Refreshers on anything you&apos;ve already covered
+                </p>
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
 
-      <Link to="/reference/sourcing" className="block">
-        <Card className="border-accent/30 bg-accent/8 transition-colors hover:border-accent">
-          <CardContent className="flex items-center gap-3 py-4">
-            <Compass className="size-5 text-accent" />
-            <div className="flex-1">
-              <p className="font-display text-sm font-semibold">Sourcing Board</p>
-              <p className="text-sm text-muted-foreground">
-                Where our products come from — guest questions, answered
-              </p>
-            </div>
-            <ChevronRight className="size-4 text-muted-foreground" />
-          </CardContent>
-        </Card>
-      </Link>
+        <Link to="/reference/sourcing" className="block">
+          <Card className="h-full border-accent/35 bg-accent/10 transition-colors hover:border-accent">
+            <CardContent className="flex items-center gap-3 py-4">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent/20 text-accent-foreground">
+                <Compass className="size-5" />
+              </span>
+              <div className="flex-1">
+                <p className="font-display text-base font-semibold">Sourcing Board</p>
+                <p className="text-sm text-muted-foreground">
+                  Where our products come from — guest questions, answered
+                </p>
+              </div>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
     </div>
   );
 }
