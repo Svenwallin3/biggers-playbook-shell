@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
+import { useAuth } from "@/hooks/useAuth";
 import { searchQueryOptions, stepTypeLabels } from "@/lib/training.queries";
 import { sharedLabel } from "@/lib/reference.queries";
 
@@ -26,6 +27,9 @@ export const Route = createFileRoute("/search")({
 
 function SearchPage() {
   const [term, setTerm] = useState("");
+  const { isManagerOrOwner } = useAuth();
+  // Managers/owners browsing search are looking at content, not doing training.
+  const previewSearch = isManagerOrOwner ? { preview: true as const } : {};
   const query = useQuery(searchQueryOptions(term));
   const results = query.data;
   const count =
@@ -80,7 +84,7 @@ function SearchPage() {
                     <Link
                       to="/modules/$moduleId"
                       params={{ moduleId: mod.id }}
-                      search={{ step: undefined }}
+                      search={{ step: undefined, ...previewSearch }}
                       className="text-sm font-medium hover:underline"
                     >
                       {mod.name}
@@ -110,7 +114,7 @@ function SearchPage() {
                       <Link
                         to="/modules/$moduleId"
                         params={{ moduleId: step.module_id }}
-                        search={{ step: step.id }}
+                        search={{ step: step.id, ...previewSearch }}
                         className="text-sm font-medium hover:underline"
                       >
                         {step.title}
