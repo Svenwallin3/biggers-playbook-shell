@@ -383,7 +383,8 @@ function Detail({
           ) : null}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
