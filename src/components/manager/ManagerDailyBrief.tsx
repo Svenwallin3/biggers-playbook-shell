@@ -147,9 +147,13 @@ export function ManagerDailyBrief({ employee }: { employee: Employee }) {
                     Delivery issue · {issue.product_vendor}
                   </p>
                   <p className="mt-0.5 text-sm leading-relaxed">{issue.issue_description}</p>
-                  {issue.reporter ? (
+                  {issue.reporter || issue.truck_date ? (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Reported by {issue.reporter.full_name ?? issue.reporter.email}
+                      {issue.reporter
+                        ? `Reported by ${issue.reporter.full_name ?? issue.reporter.email}`
+                        : null}
+                      {issue.reporter && issue.truck_date ? " · " : null}
+                      {issue.truck_date ? `Truck date ${issue.truck_date}` : null}
                     </p>
                   ) : null}
                 </div>

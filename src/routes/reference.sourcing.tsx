@@ -478,25 +478,27 @@ function ProductDetailDialog({
 }) {
   return (
     <Dialog open={entry !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto p-0 sm:max-w-2xl">
         {entry ? (
           <>
-            <DialogHeader>
+            {entry.photo_url ? (
+              <div className="w-full overflow-hidden rounded-t-lg bg-muted">
+                <StoredPhoto
+                  path={entry.photo_url}
+                  alt={entry.product}
+                  className="h-[42dvh] max-h-[420px] min-h-[260px] rounded-none border-0 object-cover"
+                />
+              </div>
+            ) : null}
+
+            <DialogHeader className="px-6 pt-6">
               <DialogTitle className="flex items-center gap-2">
                 <CategoryDot value={entry.category} />
                 {entry.product}
               </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-4 pt-2">
-              {entry.photo_url ? (
-                <StoredPhoto
-                  path={entry.photo_url}
-                  alt={entry.product}
-                  className="max-h-56"
-                />
-              ) : null}
-
+            <div className="space-y-4 px-6 pb-6 pt-2">
               <DetailBlock label="Where it's from">
                 {entry.region || <span className="italic text-muted-foreground">Not confirmed yet</span>}
               </DetailBlock>
