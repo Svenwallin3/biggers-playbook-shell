@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { employeesQueryOptions, type EmployeeRow } from "@/lib/admin.queries";
@@ -26,6 +27,7 @@ type AuthTier = Database["public"]["Enums"]["auth_tier"];
 type Department = Database["public"]["Enums"]["department"];
 
 const tiers: AuthTier[] = ["staff", "manager", "owner"];
+const gmTiers: AuthTier[] = ["staff", "manager"];
 const departments: Department[] = ["universal", "market", "kitchen", "delivery"];
 const NONE = "__none__";
 
@@ -53,7 +55,7 @@ export const Route = createFileRoute("/team")({
 });
 
 function TeamPage() {
-  const { isOwner, loading, session } = useAuth();
+  const { isOwner, isGeneralManager, employee, loading, session } = useAuth();
   const queryClient = useQueryClient();
   const employeesQuery = useQuery(employeesQueryOptions());
 
@@ -71,20 +73,36 @@ function TeamPage() {
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (!session) return <Navigate to="/login" />;
-  if (!isOwner) {
+  if (!isOwner && !isGeneralManager) {
     return <p className="text-sm text-muted-foreground">Team management is owner-only.</p>;
   }
 
-  const rows = (employeesQuery.data ?? []).filter((e) => !e.is_deleted);
+  const all = (employeesQuery.data ?? []).filter((e) => !e.is_deleted);
+  const rows = isOwner
+    ? all
+    : all.filter(
+        (e) =>
+          e.auth_tier !== "owner" &&
+          e.department_scope === (employee?.department_scope ?? null) &&
+          e.location_id === (employee?.location_id ?? null),
+      );
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Team</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Set each person&apos;s access tier and department. Managers edit content for the
-          department set here.
-        </p>
+        {isOwner ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Set each person&apos;s access tier and department. Managers edit content for the
+            department set here. General Managers can promote and demote staff in their own
+            department and location.
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">
+            As a General Manager you can promote staff to manager, or move a manager back to
+            staff, for your own department and location.
+          </p>
+        )}
       </div>
 
       {employeesQuery.isPending ? (
@@ -101,9 +119,19 @@ function TeamPage() {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead className="w-[150px]">Access tier</TableHead>
-              <TableHead className="w-[170px]">Department</TableHead>
-              <TableHead className="w-[150px]">Path</TableHead>
-              <TableHead className="w-[190px]">Location</TableHead>
+              {isOwner ? (
+                <>
+                  <TableHead className="w-[150px]">General Manager</TableHead>
+                  <TableHead className="w-[170px]">Department</TableHead>
+                  <TableHead className="w-[150px]">Path</TableHead>
+                  <TableHead className="w-[190px]">Location</TableHead>
+                </>
+              ) : (
+                <>
+                  <TableHead className="w-[170px]">Department</TableHead>
+                  <TableHead className="w-[190px]">Location</TableHead>
+                </>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -114,7 +142,7 @@ function TeamPage() {
                 <TableCell>
                   <Select
                     value={e.auth_tier}
-                    disabled={update.isPending}
+                    disabled={update.isPending || (!isOwner && e.auth_tier === "owner")}
                     onValueChange={(v) =>
                       update.mutate({ id: e.id, patch: { auth_tier: v as AuthTier } })
                     }
@@ -123,7 +151,7 @@ function TeamPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {tiers.map((t) => (
+                      {(isOwner ? tiers : gmTiers).map((t) => (
                         <SelectItem key={t} value={t}>
                           {t}
                         </SelectItem>
@@ -131,7 +159,29 @@ function TeamPage() {
                     </SelectContent>
                   </Select>
                 </TableCell>
+                {isOwner ? (
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={e.can_manage_team}
+                        disabled={update.isPending || e.auth_tier !== "manager"}
+                        aria-label="General Manager"
+                        onCheckedChange={(checked) =>
+                          update.mutate({ id: e.id, patch: { can_manage_team: checked } })
+                        }
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {e.auth_tier === "manager" ? (e.can_manage_team ? "GM" : "—") : "n/a"}
+                      </span>
+                    </div>
+                  </TableCell>
+                ) : null}
                 <TableCell>
+                  {!isOwner ? (
+                    <span className="text-sm text-muted-foreground">
+                      {e.department_scope ?? "—"}
+                    </span>
+                  ) : (
                   <Select
                     value={e.department_scope ?? NONE}
                     disabled={update.isPending}
@@ -154,7 +204,9 @@ function TeamPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  )}
                 </TableCell>
+                {isOwner ? (
                 <TableCell>
                   <Select
                     value={e.path ?? NONE}
@@ -174,7 +226,13 @@ function TeamPage() {
                     </SelectContent>
                   </Select>
                 </TableCell>
+                ) : null}
                 <TableCell>
+                  {!isOwner ? (
+                    <span className="text-sm text-muted-foreground">
+                      {locations.find((l) => l.value === e.location_id)?.label ?? "—"}
+                    </span>
+                  ) : (
                   <Select
                     value={e.location_id ?? NONE}
                     disabled={update.isPending}
@@ -194,6 +252,7 @@ function TeamPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

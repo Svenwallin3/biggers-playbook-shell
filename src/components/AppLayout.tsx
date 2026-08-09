@@ -20,7 +20,8 @@ const linkClass =
 const activeClass = "bg-secondary text-secondary-foreground font-semibold";
 
 export function AppLayout() {
-  const { session, employee, tier, isManagerOrOwner, isOwner, signOut } = useAuth();
+  const { session, employee, tier, isManagerOrOwner, isOwner, isGeneralManager, signOut } =
+    useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const isAdminScreen = [
@@ -57,7 +58,9 @@ export function AppLayout() {
         { label: "Compliance", to: "/compliance" },
         { label: "Merge", to: "/merge-tool" },
       ]
-    : [];
+    : isGeneralManager
+      ? [{ label: "Team", to: "/team" }]
+      : [];
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
   const groupActive = (items: NavItem[]) => items.some((i) => isActive(i.to));

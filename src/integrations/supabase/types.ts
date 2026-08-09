@@ -155,6 +155,7 @@ export type Database = {
       employees: {
         Row: {
           auth_tier: Database["public"]["Enums"]["auth_tier"]
+          can_manage_team: boolean
           created_at: string
           deleted_at: string | null
           deleted_by: string | null
@@ -172,6 +173,7 @@ export type Database = {
         }
         Insert: {
           auth_tier?: Database["public"]["Enums"]["auth_tier"]
+          can_manage_team?: boolean
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
@@ -189,6 +191,7 @@ export type Database = {
         }
         Update: {
           auth_tier?: Database["public"]["Enums"]["auth_tier"]
+          can_manage_team?: boolean
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
@@ -1022,6 +1025,7 @@ export type Database = {
         Args: { _tier: Database["public"]["Enums"]["auth_tier"] }
         Returns: boolean
       }
+      is_gm: { Args: never; Returns: boolean }
       is_manager_or_owner: { Args: never; Returns: boolean }
       merge_employees: {
         Args: { _duplicate: string; _primary: string }
@@ -1031,6 +1035,7 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["department"]
       }
+      my_location: { Args: never; Returns: string }
     }
     Enums: {
       auth_tier: "staff" | "manager" | "owner"

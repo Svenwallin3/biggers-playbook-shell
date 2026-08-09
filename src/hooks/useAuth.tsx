@@ -22,6 +22,7 @@ type AuthContextValue = {
   loading: boolean;
   isManagerOrOwner: boolean;
   isOwner: boolean;
+  isGeneralManager: boolean;
   refreshEmployee: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -76,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       isManagerOrOwner: tier === "manager" || tier === "owner",
       isOwner: tier === "owner",
+      isGeneralManager: tier === "manager" && employee?.can_manage_team === true,
       refreshEmployee: () => loadEmployee(session?.user?.id),
       signOut: async () => {
         await supabase.auth.signOut();
