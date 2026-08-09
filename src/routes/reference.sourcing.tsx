@@ -61,15 +61,19 @@ function categoryMeta(value: string | null) {
   return CATEGORIES.find((c) => c.value === value) ?? null;
 }
 
-/** Fixed-footprint 44px row thumbnail; falls back to a muted placeholder. */
+/** Row thumbnail: fixed width, stretches to the row's full height. */
 function RowThumb({ path, alt }: { path: string | null; alt: string }) {
   return (
-    <div className="relative size-11 shrink-0 overflow-hidden rounded-md border bg-muted">
+    <div className="relative w-20 shrink-0 self-stretch min-h-16 overflow-hidden rounded-md border bg-muted">
       <span className="absolute inset-0 flex items-center justify-center">
         <ImageIcon className="size-4 text-muted-foreground" aria-hidden />
       </span>
       {path ? (
-        <StoredPhoto path={path} alt={alt} className="relative size-full rounded-none border-0" />
+        <StoredPhoto
+          path={path}
+          alt={alt}
+          className="relative h-full w-full rounded-none border-0 object-cover"
+        />
       ) : null}
     </div>
   );
@@ -301,13 +305,13 @@ function SourcingBoardPage() {
                 );
                 return (
                   <li key={entry.id}>
-                    <div className="flex items-center transition-colors hover:bg-muted/60">
+                    <div className="flex items-stretch transition-colors hover:bg-muted/60">
                       <button
                         type="button"
                         onClick={() => setViewing(entry)}
-                        className="flex min-w-0 flex-1 items-center gap-3 pr-3"
+                        className="flex min-w-0 flex-1 items-stretch gap-3 py-2 pr-3"
                       >
-                        <span className="min-w-0 flex-1">{row}</span>
+                        <span className="min-w-0 flex-1 self-center">{row}</span>
                         <RowThumb path={entry.photo_url ?? null} alt={entry.product} />
                       </button>
                       {canEdit ? (
@@ -316,7 +320,7 @@ function SourcingBoardPage() {
                           variant="ghost"
                           size="icon"
                           aria-label={`Edit ${entry.product}`}
-                          className="mr-3 shrink-0"
+                          className="mr-3 shrink-0 self-center"
                           onClick={() => openEntry(entry)}
                         >
                           <Pencil className="size-4" />
