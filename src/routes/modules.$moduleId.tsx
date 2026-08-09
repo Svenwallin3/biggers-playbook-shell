@@ -232,7 +232,7 @@ function ModulePage() {
             subPath={mod.sub_path}
             dayAssignment={mod.day_assignment}
             name={mod.name}
-            description={mod.description}
+            description={null}
           />
         </div>
       </div>
