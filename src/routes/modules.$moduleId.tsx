@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Users } from "lucide-react";
+import { Eye, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -23,10 +23,15 @@ import {
 export const Route = createFileRoute("/modules/$moduleId")({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { step?: string | undefined; trainee?: string | undefined } => ({
+  ): { step?: string | undefined; trainee?: string | undefined; preview?: boolean | undefined } => ({
     step: typeof search["step"] === "string" ? search["step"] : undefined,
     // Set when a manager opens the module from the training queue for a specific trainee.
     trainee: typeof search["trainee"] === "string" ? search["trainee"] : undefined,
+    // Manager/owner read-only walkthrough — never writes progress.
+    preview:
+      search["preview"] === true || search["preview"] === "1" || search["preview"] === "true"
+        ? true
+        : undefined,
   }),
   head: () => ({
     meta: [
@@ -50,13 +55,15 @@ export const Route = createFileRoute("/modules/$moduleId")({
 
 function ModulePage() {
   const { moduleId } = Route.useParams();
-  const { step: stepParam, trainee } = Route.useSearch();
+  const { step: stepParam, trainee, preview } = Route.useSearch();
   const { employee } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const isAdmin = employee?.auth_tier === "manager" || employee?.auth_tier === "owner";
+  // Preview is ignored entirely for non-admins, so a staff member can't opt out of real progress.
+  const previewMode = Boolean(preview) && isAdmin;
   // A manager can be standing with the trainee; otherwise these are the viewer's own records.
-  const subjectId = (isAdmin && trainee) || employee?.id;
+  const subjectId = previewMode ? undefined : (isAdmin && trainee) || employee?.id;
 
   const moduleQuery = useQuery(moduleQueryOptions(moduleId));
   const progressQuery = useQuery(progressQueryOptions(subjectId));
@@ -138,7 +145,7 @@ function ModulePage() {
     activeRecord?.status === "completed" || activeRecord?.status === "signed_off";
   const activeSignedOff = activeRecord?.status === "signed_off";
   const needsTrainer = active ? trainerSignoffTypes.includes(active.step_type) : false;
-  const blockedOnTrainer = needsTrainer && !activeSignedOff;
+  const blockedOnTrainer = !previewMode && needsTrainer && !activeSignedOff;
   const activeIndex = active
     ? orderedSteps.findIndex((s) => s.stepId === active.id)
     : -1;
@@ -157,14 +164,18 @@ function ModulePage() {
 
   const goNext = async () => {
     if (!active) return;
-    if (!needsTrainer && !activeComplete && subjectId) {
+    if (!previewMode && !needsTrainer && !activeComplete && subjectId) {
       await toggle.mutateAsync({ stepId: active.id, completed: true });
     }
     if (nextStep) {
       void navigate({
         to: "/modules/$moduleId",
         params: { moduleId: nextStep.moduleId },
-        search: { step: nextStep.stepId, ...(trainee ? { trainee } : {}) },
+        search: {
+          step: nextStep.stepId,
+          ...(trainee ? { trainee } : {}),
+          ...(previewMode ? { preview: true } : {}),
+        },
       });
     } else {
       void navigate({ to: "/" });
@@ -176,12 +187,27 @@ function ModulePage() {
     void navigate({
       to: "/modules/$moduleId",
       params: { moduleId: prevStep.moduleId },
-      search: { step: prevStep.stepId, ...(trainee ? { trainee } : {}) },
+      search: {
+        step: prevStep.stepId,
+        ...(trainee ? { trainee } : {}),
+        ...(previewMode ? { preview: true } : {}),
+      },
     });
   };
 
   return (
     <div className="space-y-6">
+      {previewMode ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3">
+          <Eye className="size-4 text-warning" aria-hidden="true" />
+          <p className="text-sm font-semibold text-warning">
+            Previewing as a new hire — nothing here is being saved
+          </p>
+          <p className="text-xs text-warning/90">
+            No progress, sign-offs, or completions are recorded in this mode.
+          </p>
+        </div>
+      ) : null}
       <div>
         <Link to="/" className="text-xs text-muted-foreground hover:underline">
           ← Today&apos;s training
@@ -205,7 +231,7 @@ function ModulePage() {
               key={s.id}
               to="/modules/$moduleId"
               params={{ moduleId }}
-              search={{ step: s.id }}
+              search={{ step: s.id, ...(previewMode ? { preview: true } : {}) }}
               className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
                 active && s.id === active.id
                   ? "bg-card font-semibold text-foreground shadow-xs ring-1 ring-primary/25"
@@ -225,8 +251,8 @@ function ModulePage() {
               step={active}
               quizzes={quizzes.filter((q) => q.step_id === active.id)}
               isAdmin={isAdmin}
-              signedOff={activeSignedOff}
-              canSignOff={Boolean(isAdmin && subjectId)}
+              signedOff={previewMode ? false : activeSignedOff}
+              canSignOff={Boolean(!previewMode && isAdmin && subjectId)}
               signingOff={signOff.isPending}
               onSignOff={() => signOff.mutate(active.id)}
             />
@@ -242,10 +268,12 @@ function ModulePage() {
               <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
               <div className="flex items-center gap-2">
                 {needsTrainer ? (
+                  previewMode ? null : (
                   <Button size="sm" variant="outline" disabled>
                     Trainer sign-off required
                   </Button>
-                ) : activeComplete ? (
+                  )
+                ) : activeComplete && !previewMode ? (
                   <Button
                     size="sm"
                     variant="secondary"

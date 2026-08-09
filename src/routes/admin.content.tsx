@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Eye } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -309,12 +310,23 @@ function ContentEditorPage() {
             />
           ) : null}
           {selectedModule ? (
-            <ModuleEditPanel
-              module={selectedModule}
-              trackName={selectedModule.track?.name}
-              canEdit={canEditDepartment(selectedModule.track?.department)}
-              employeeId={employee?.id}
-            />
+            <div className="space-y-3">
+              <Link
+                to="/modules/$moduleId"
+                params={{ moduleId: selectedModule.id }}
+                search={{ preview: true }}
+                className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-secondary/60"
+              >
+                <Eye className="size-4" aria-hidden="true" />
+                Preview as New Hire
+              </Link>
+              <ModuleEditPanel
+                module={selectedModule}
+                trackName={selectedModule.track?.name}
+                canEdit={canEditDepartment(selectedModule.track?.department)}
+                employeeId={employee?.id}
+              />
+            </div>
           ) : null}
           {step && draft ? (
             <Card>
