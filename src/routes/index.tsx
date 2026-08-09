@@ -351,24 +351,34 @@ function IndexPage() {
           );
           const isActive = modIndex === firstOpenIndex;
           const isFuture = firstOpenIndex !== -1 && modIndex > firstOpenIndex;
+          const theme = trackTheme(mod.track.name);
           return (
           <Card
             key={mod.id}
             className={
+              "relative overflow-hidden pl-1.5 " +
               isActive
                 ? "border-primary/45 shadow-md ring-1 ring-primary/15"
                 : isFuture
                   ? "border-dashed bg-muted/30 opacity-70"
-                  : "bg-card/70"
+                  : "bg-card/70")
             }
           >
+            <span
+              className={`absolute inset-y-0 left-0 w-1.5 ${theme.rail} ${isFuture ? "opacity-40" : ""}`}
+              aria-hidden
+            />
             <CardContent className={isActive ? "py-5" : "py-4"}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <p
+                    className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] ${
+                      isFuture ? "text-muted-foreground" : theme.label
+                    }`}
+                  >
                     {isActive ? (
-                      <span className="rounded-sm bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">
-                        Up next
+                      <span className="rounded-sm bg-accent px-1.5 py-0.5 text-[10px] font-bold text-accent-foreground">
+                        In progress
                       </span>
                     ) : moduleDone ? (
                       <Check className="size-3.5 text-success" />
@@ -384,7 +394,7 @@ function IndexPage() {
                     params={{ moduleId: mod.id }}
                     search={{ step: undefined }}
                     className={`font-display font-semibold hover:underline ${
-                      isActive ? "text-lg" : "text-base"
+                      isActive ? "text-xl" : "text-base"
                     }`}
                   >
                     {mod.name}
