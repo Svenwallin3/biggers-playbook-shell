@@ -180,6 +180,18 @@ function IndexPage() {
       progressByStep.get(s.id)?.status === "signed_off",
   ).length;
   const pct = Math.round((done / Math.max(allSteps.length, 1)) * 100);
+  const trainingComplete = allSteps.length > 0 && done === allSteps.length;
+  // The single "one thing to do next" across the whole ordered plan.
+  const upNext = (() => {
+    for (const mod of modules) {
+      for (const step of mod.steps) {
+        const record = progressByStep.get(step.id);
+        if (record?.status === "completed" || record?.status === "signed_off") continue;
+        return { module: mod, step };
+      }
+    }
+    return null;
+  })();
 
   // First-login flow: staff start on Hospitality, and only pick a path once it's done.
   const isStaff = employee.auth_tier === "staff";
