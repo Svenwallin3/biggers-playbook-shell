@@ -61,15 +61,19 @@ function categoryMeta(value: string | null) {
   return CATEGORIES.find((c) => c.value === value) ?? null;
 }
 
-/** Fixed-footprint 44px row thumbnail; falls back to a muted placeholder. */
+/** Row thumbnail: fixed width, stretches to the row's full height. */
 function RowThumb({ path, alt }: { path: string | null; alt: string }) {
   return (
-    <div className="relative size-11 shrink-0 overflow-hidden rounded-md border bg-muted">
+    <div className="relative w-20 shrink-0 self-stretch min-h-16 overflow-hidden rounded-md border bg-muted">
       <span className="absolute inset-0 flex items-center justify-center">
         <ImageIcon className="size-4 text-muted-foreground" aria-hidden />
       </span>
       {path ? (
-        <StoredPhoto path={path} alt={alt} className="relative size-full rounded-none border-0" />
+        <StoredPhoto
+          path={path}
+          alt={alt}
+          className="relative h-full w-full rounded-none border-0 object-cover"
+        />
       ) : null}
     </div>
   );
