@@ -9,6 +9,8 @@ import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { StepRenderer } from "@/components/training/StepRenderer";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
+import { StepTypeChip } from "@/components/training/StepTypeChip";
+import { trackTheme } from "@/lib/track-theme";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getDayGroupedSteps,
@@ -153,6 +155,17 @@ function ModulePage() {
   const prevStep = activeIndex > 0 ? orderedSteps[activeIndex - 1] : undefined;
   const isLastStep = activeIndex >= 0 && !nextStep;
 
+  const theme = trackTheme(mod.track?.name);
+  const stepNumber = steps.findIndex((s) => s.id === active?.id) + 1;
+  const modulePct = Math.round(
+    (steps.filter((s) => {
+      const r = progressByStep.get(s.id);
+      return r?.status === "completed" || r?.status === "signed_off";
+    }).length /
+      Math.max(steps.length, 1)) *
+      100,
+  );
+
   // Self-paced material that the trainer also covers hands-on later the same day.
   const activeDay = mod.day_assignment ?? 99;
   const dayHasTrainerStep = getDayGroupedSteps(planQuery.data ?? []).some(
@@ -224,8 +237,37 @@ function ModulePage() {
         </div>
       </div>
 
+      <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur supports-backdrop-filter:bg-background/80 sm:-mx-6 sm:px-6">
+        <div className="flex items-center gap-3">
+          <span className={`h-6 w-1.5 shrink-0 rounded-full ${theme.rail}`} aria-hidden />
+          <p className="min-w-0 flex-1 truncate font-display text-sm font-semibold">{mod.name}</p>
+          <p className="shrink-0 text-xs font-medium text-muted-foreground">
+            Step {stepNumber} of {steps.length}
+          </p>
+        </div>
+        <div className="mt-2 flex gap-1" aria-hidden>
+          {steps.map((s) => {
+            const r = progressByStep.get(s.id);
+            const doneStep = r?.status === "completed" || r?.status === "signed_off";
+            return (
+              <span
+                key={s.id}
+                className={`h-1 flex-1 rounded-full ${
+                  doneStep
+                    ? "bg-accent-bright"
+                    : s.id === active?.id
+                      ? "bg-primary/60"
+                      : "bg-border"
+                }`}
+              />
+            );
+          })}
+        </div>
+        <span className="sr-only">{modulePct}% of this module complete</span>
+      </div>
+
       <div className="grid gap-8 md:grid-cols-[248px_1fr]">
-        <nav className="space-y-0.5 rounded-lg border border-border bg-surface/60 p-2">
+        <nav className="space-y-0.5 self-start rounded-lg border border-border bg-surface/60 p-2 md:sticky md:top-24">
           {steps.map((s) => (
             <Link
               key={s.id}
@@ -239,7 +281,12 @@ function ModulePage() {
               }`}
             >
               <span className="shrink-0">{s.sequence_order}.</span>
-              <span className="min-w-0 flex-1 truncate">{s.title}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{s.title}</span>
+                <span className="mt-1 block">
+                  <StepTypeChip type={s.step_type} />
+                </span>
+              </span>
               <StepStatusBadge status={s.content_status} />
             </Link>
           ))}
