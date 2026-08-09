@@ -17,7 +17,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { AskAssistant } from "@/components/training/AskAssistant";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
