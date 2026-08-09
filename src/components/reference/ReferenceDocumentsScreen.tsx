@@ -373,6 +373,11 @@ export function ReferenceDocumentsScreen({
   const q = term.trim().toLowerCase();
   const docs = q ? scoped.filter((d) => d.title.toLowerCase().includes(q)) : scoped;
 
+  const submittedQuery = useQuery(
+    submittedTodayQueryOptions(documentType === "checklist" ? all.map((d) => d.id) : []),
+  );
+  const submittedToday = submittedQuery.data ?? new Set<string>();
+
   const openDoc = all.find((d) => d.id === openId) ?? null;
   if (openDoc) {
     return <Detail doc={openDoc} documentType={documentType} onBack={() => setOpenId(null)} />;
@@ -462,6 +467,9 @@ export function ReferenceDocumentsScreen({
                         <span className="text-sm font-medium hover:underline">{doc.title}</span>
                         <StepStatusBadge status={doc.content_status} />
                         <SharedTag departments={doc.departments} />
+                        {documentType === "checklist" && submittedToday.has(doc.id) ? (
+                          <CompletedTodayTag />
+                        ) : null}
                       </button>
                     </CardContent>
                   </Card>
