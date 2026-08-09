@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { Pencil, Plus, Search } from "lucide-react";
+import { AlertTriangle, Pencil, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { sourcingQueryOptions, type SourcingRow } from "@/lib/training.queries";
+import { PhotoUpload, StoredPhoto } from "@/components/PhotoUpload";
+import { ReportDeliveryIssueDialog } from "@/components/sourcing/ReportDeliveryIssueDialog";
 
 const title = "Sourcing Board — Biggers Training Platform";
 const description = "Where Biggers Market ingredients and products come from.";
@@ -80,6 +82,7 @@ type FormState = {
   seasonality: string;
   category: string;
   notes: string;
+  photoUrl: string | null;
 };
 
 const blank: FormState = {
@@ -89,6 +92,7 @@ const blank: FormState = {
   seasonality: "",
   category: "",
   notes: "",
+  photoUrl: null,
 };
 
 function toForm(entry: SourcingRow): FormState {
@@ -99,6 +103,7 @@ function toForm(entry: SourcingRow): FormState {
     seasonality: entry.seasonality ?? "",
     category: entry.category ?? "",
     notes: entry.notes ?? "",
+    photoUrl: entry.photo_url ?? null,
   };
 }
 
@@ -112,6 +117,8 @@ function SourcingBoardPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null); // null = closed, "new" = create
   const [form, setForm] = useState<FormState>(blank);
+  const [viewing, setViewing] = useState<SourcingRow | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -143,6 +150,7 @@ function SourcingBoardPage() {
         seasonality: form.seasonality.trim() || null,
         category: form.category || null,
         notes: form.notes.trim() || null,
+        photo_url: form.photoUrl,
       };
       if (editingId === "new") {
         const { error } = await supabase.from("sourcing_board_entries").insert(payload);
@@ -181,9 +189,18 @@ function SourcingBoardPage() {
             Who we buy from, so you can answer a guest without guessing.
           </p>
         </div>
-        {canEdit ? (
-          <div className="flex items-center gap-2">
-            <div className="relative w-72">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => setReportOpen(true)}
+          >
+            <AlertTriangle className="mr-1.5 size-4" />
+            Report a delivery issue
+          </Button>
+          {canEdit ? (
+            <>
+            <div className="relative w-full sm:w-72">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 aria-label="Find a product"
@@ -223,12 +240,13 @@ function SourcingBoardPage() {
                 </ul>
               ) : null}
             </div>
-            <Button onClick={openNew}>
+            <Button className="w-full sm:w-auto" onClick={openNew}>
               <Plus className="mr-1.5 size-4" />
               Add product
             </Button>
-          </div>
-        ) : null}
+            </>
+          ) : null}
+        </div>
       </div>
 
       <Card>
@@ -271,7 +289,6 @@ function SourcingBoardPage() {
                     <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
                       Last updated{" "}
                       {formatDistanceToNow(new Date(entry.updated_at), { addSuffix: true })}
-                      {canEdit ? <Pencil className="size-3.5 opacity-60" /> : null}
                     </span>
                     {entry.notes ? (
                       <p className="w-full text-xs text-muted-foreground">{entry.notes}</p>
@@ -280,17 +297,27 @@ function SourcingBoardPage() {
                 );
                 return (
                   <li key={entry.id}>
-                    {canEdit ? (
+                    <div className="flex items-center transition-colors hover:bg-muted/60">
                       <button
                         type="button"
-                        onClick={() => openEntry(entry)}
-                        className="w-full transition-colors hover:bg-muted/60"
+                        onClick={() => setViewing(entry)}
+                        className="min-w-0 flex-1"
                       >
                         {row}
                       </button>
-                    ) : (
-                      row
-                    )}
+                      {canEdit ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Edit ${entry.product}`}
+                          className="mr-3 shrink-0"
+                          onClick={() => openEntry(entry)}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                      ) : null}
+                    </div>
                   </li>
                 );
               })}
@@ -299,8 +326,12 @@ function SourcingBoardPage() {
         </CardContent>
       </Card>
 
+      <ProductDetailDialog entry={viewing} onClose={() => setViewing(null)} />
+
+      <ReportDeliveryIssueDialog open={reportOpen} onOpenChange={setReportOpen} />
+
       <Dialog open={editingId !== null} onOpenChange={(open) => !open && setEditingId(null)}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <form onSubmit={onSubmit}>
             <DialogHeader>
               <DialogTitle>
@@ -388,6 +419,13 @@ function SourcingBoardPage() {
                   placeholder="Delivery day, anything staff should know."
                 />
               </div>
+
+              <PhotoUpload
+                folder="sourcing"
+                value={form.photoUrl}
+                onChange={(photoUrl) => setForm((prev) => ({ ...prev, photoUrl }))}
+                label="Product photo (optional)"
+              />
             </div>
 
             <DialogFooter>
@@ -402,5 +440,85 @@ function SourcingBoardPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function DetailBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <div className="text-sm">{children}</div>
+    </div>
+  );
+}
+
+function ProductDetailDialog({
+  entry,
+  onClose,
+}: {
+  entry: SourcingRow | null;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog open={entry !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
+        {entry ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CategoryDot value={entry.category} />
+                {entry.product}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 pt-2">
+              {entry.photo_url ? (
+                <StoredPhoto
+                  path={entry.photo_url}
+                  alt={entry.product}
+                  className="max-h-56"
+                />
+              ) : null}
+
+              <DetailBlock label="Where it's from">
+                {entry.region || <span className="italic text-muted-foreground">Not confirmed yet</span>}
+              </DetailBlock>
+
+              <DetailBlock label="Farm or vendor name">
+                {entry.supplier || <span className="italic text-muted-foreground">Not confirmed yet</span>}
+              </DetailBlock>
+
+              <div className="space-y-3 rounded-md border bg-muted/40 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Tasting Notes &amp; Seasonality
+                </p>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium">Tasting Notes</p>
+                  <p className="text-sm">
+                    {entry.notes || (
+                      <span className="italic text-muted-foreground">Nothing noted yet</span>
+                    )}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium">Seasonality</p>
+                  <p className="text-sm">
+                    {entry.seasonality || (
+                      <span className="italic text-muted-foreground">Not noted yet</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Indicates whether this is local or sourced from elsewhere (like Georgia or
+                    Florida), not whether we currently carry it.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }
