@@ -37,6 +37,15 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-tint: var(--primary-tint);
+  --color-hero: var(--hero);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-edge: var(--hero-edge);
+  --color-accent-bright: var(--accent-bright);
+  --color-track-hospitality: var(--track-hospitality);
+  --color-track-market: var(--track-market);
+  --color-track-kitchen: var(--track-kitchen);
+  --color-track-delivery: var(--track-delivery);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -90,6 +99,15 @@
   --primary: oklch(0.333 0.055 163); /* Forest Green #173f2e */
   --primary-foreground: oklch(0.985 0.008 91.5);
   --primary-hover: oklch(0.28 0.047 163); /* Dark Green #0f3022 */
+  --primary-tint: oklch(0.945 0.019 145); /* Pale green #eaf1e7 */
+  --hero: oklch(0.302 0.05 163); /* Deep signage green */
+  --hero-edge: oklch(0.245 0.042 163);
+  --hero-foreground: oklch(0.975 0.012 91.5);
+  --accent-bright: oklch(0.822 0.152 78); /* Bright gold #ffb62f */
+  --track-hospitality: oklch(0.333 0.055 163);
+  --track-market: oklch(0.637 0.135 66.3);
+  --track-kitchen: oklch(0.536 0.149 34.3);
+  --track-delivery: oklch(0.617 0.024 158.2);
   --secondary: oklch(0.947 0.018 86);
   --secondary-foreground: oklch(0.28 0.03 163);
   --muted: oklch(0.947 0.018 86); /* Tan */
