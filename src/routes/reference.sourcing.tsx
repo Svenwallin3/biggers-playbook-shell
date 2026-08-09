@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { AlertTriangle, ImageIcon, Pencil, Plus, Search } from "lucide-react";
+import { ImageIcon, Pencil, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { sourcingQueryOptions, type SourcingRow } from "@/lib/training.queries";
 import { PhotoUpload, StoredPhoto } from "@/components/PhotoUpload";
-import { ReportDeliveryIssueDialog } from "@/components/sourcing/ReportDeliveryIssueDialog";
 
 const title = "Sourcing Board — Biggers Training Platform";
 const description = "Where Biggers Market ingredients and products come from.";
@@ -132,7 +131,6 @@ function SourcingBoardPage() {
   const [editingId, setEditingId] = useState<string | null>(null); // null = closed, "new" = create
   const [form, setForm] = useState<FormState>(blank);
   const [viewing, setViewing] = useState<SourcingRow | null>(null);
-  const [reportOpen, setReportOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -204,14 +202,6 @@ function SourcingBoardPage() {
           </p>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          <Button
-            variant="outline"
-            className="w-full sm:w-auto"
-            onClick={() => setReportOpen(true)}
-          >
-            <AlertTriangle className="mr-1.5 size-4" />
-            Report a delivery issue
-          </Button>
           {canEdit ? (
             <>
             <div className="relative w-full sm:w-72">
@@ -342,8 +332,6 @@ function SourcingBoardPage() {
       </Card>
 
       <ProductDetailDialog entry={viewing} onClose={() => setViewing(null)} />
-
-      <ReportDeliveryIssueDialog open={reportOpen} onOpenChange={setReportOpen} />
 
       <Dialog open={editingId !== null} onOpenChange={(open) => !open && setEditingId(null)}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
