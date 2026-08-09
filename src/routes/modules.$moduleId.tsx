@@ -266,6 +266,18 @@ function ModulePage() {
         <span className="sr-only">{modulePct}% of this module complete</span>
       </div>
 
+      {mod.description ? (
+        <div className="relative overflow-hidden rounded-xl border-2 border-accent/50 bg-accent/10 px-5 py-5 sm:px-7 sm:py-6">
+          <span className={`absolute inset-y-0 left-0 w-1.5 ${theme.rail}`} aria-hidden />
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-foreground/70">
+            Read this first
+          </p>
+          <p className="mt-2 font-display text-xl font-semibold leading-snug tracking-tight text-foreground sm:text-2xl">
+            {mod.description}
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid gap-8 md:grid-cols-[248px_1fr]">
         <nav className="space-y-0.5 self-start rounded-lg border border-border bg-surface/60 p-2 md:sticky md:top-24">
           {steps.map((s) => (
