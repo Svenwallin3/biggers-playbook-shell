@@ -214,6 +214,123 @@ export type Database = {
           },
         ]
       }
+      huddle_cards: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          departments: string[]
+          id: string
+          is_deleted: boolean
+          manager_tip: string
+          sequence_order: number
+          standard_text: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          departments?: string[]
+          id?: string
+          is_deleted?: boolean
+          manager_tip: string
+          sequence_order?: number
+          standard_text: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          departments?: string[]
+          id?: string
+          is_deleted?: boolean
+          manager_tip?: string
+          sequence_order?: number
+          standard_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "huddle_cards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "huddle_cards_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manager_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          departments: string[]
+          effective_date: string
+          id: string
+          is_deleted: boolean
+          location_tag: string | null
+          note_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          departments?: string[]
+          effective_date: string
+          id?: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          note_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          departments?: string[]
+          effective_date?: string
+          id?: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          note_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_notes_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       modules: {
         Row: {
           created_at: string

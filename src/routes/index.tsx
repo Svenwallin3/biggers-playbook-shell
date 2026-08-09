@@ -12,6 +12,7 @@ import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { AskAssistant } from "@/components/training/AskAssistant";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { LocationChoice, PathChoice } from "@/components/PathChoice";
+import { ManagerDailyBrief } from "@/components/manager/ManagerDailyBrief";
 import { useAuth } from "@/hooks/useAuth";
 import type { PlanModule, ProgressRow } from "@/lib/training.queries";
 import {
@@ -194,6 +195,7 @@ function IndexPage() {
 
   return (
     <div className="space-y-6">
+      {employee.auth_tier !== "staff" ? <ManagerDailyBrief employee={employee} /> : null}
       <section className="rounded-xl border border-border bg-linear-to-br from-primary/12 via-card to-accent/10 px-6 py-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
           {employee.path ? `${employee.path} path` : "Path not set"} · {employee.auth_tier}
