@@ -191,6 +191,33 @@ export function ManagerDailyBrief({ employee }: { employee: Employee }) {
   );
 }
 
+function DeleteNoteButton({ noteId, employeeId }: { noteId: string; employeeId: string }) {
+  const queryClient = useQueryClient();
+  const remove = useMutation({
+    mutationFn: () => deleteManagerNote({ id: noteId, deletedBy: employeeId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["manager-notes"] });
+      toast.success("Note removed");
+    },
+    onError: (error: Error) => toast.error("Couldn't remove note", { description: error.message }),
+  });
+
+  return (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="size-6 shrink-0 text-muted-foreground hover:text-destructive"
+      aria-label="Delete note"
+      disabled={remove.isPending}
+      onClick={() => {
+        if (window.confirm("Remove this note for today?")) remove.mutate();
+      }}
+    >
+      <X className="size-3.5" />
+    </Button>
+  );
+}
+
 function AddNoteDialog({
   department,
   locationId,
