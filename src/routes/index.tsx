@@ -220,47 +220,104 @@ function IndexPage() {
   return (
     <div className="space-y-6">
       {employee.auth_tier !== "staff" ? <ManagerDailyBrief employee={employee} /> : null}
-      <section className="rounded-xl border border-border bg-linear-to-br from-primary/12 via-card to-accent/10 px-6 py-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-          {employee.path ? `${employee.path} path` : "Path not set"} · {employee.auth_tier}
-        </p>
-        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">
-          Welcome back, {(employee.full_name ?? employee.email).split(" ")[0]}
-        </h1>
+      {upNext && !trainingComplete ? (
+        <section className="overflow-hidden rounded-2xl bg-linear-to-br from-hero to-hero-edge text-hero-foreground shadow-md">
+          <div className="flex flex-wrap items-start justify-between gap-6 px-6 py-7 sm:px-8">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-bright">
+                Up next · {upNext.module.track.name}
+                {upNext.module.day_assignment ? ` · Day ${upNext.module.day_assignment}` : ""}
+              </p>
+              <h1 className="mt-2 font-display text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+                {upNext.step.title}
+              </h1>
+              <p className="mt-2 text-sm text-hero-foreground/75">
+                {upNext.module.name} · step {upNext.step.sequence_order} of{" "}
+                {upNext.module.steps.length}
+              </p>
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-12 bg-accent px-7 text-base font-semibold text-accent-foreground hover:bg-accent-bright"
+                >
+                  <Link
+                    to="/modules/$moduleId"
+                    params={{ moduleId: upNext.module.id }}
+                    search={{ step: upNext.step.id, trainee: undefined }}
+                  >
+                    {done > 0 ? "Continue" : "Start"}
+                    {upNext.module.day_assignment
+                      ? ` Day ${upNext.module.day_assignment}: `
+                      : ": "}
+                    {upNext.module.name}
+                  </Link>
+                </Button>
+                <span className="text-sm text-hero-foreground/70">
+                  {done} of {allSteps.length} steps done
+                </span>
+              </div>
+            </div>
+            <div className="text-hero-foreground">
+              <ProgressRing value={pct} size={76} label={`${pct}% of your training complete`} />
+            </div>
+          </div>
+          <div className="h-1.5 w-full bg-hero-foreground/15">
+            <div
+              className="h-full bg-accent-bright transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-primary/25 bg-primary-tint px-6 py-5">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <PartyPopper className="size-5" aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-2xl font-semibold tracking-tight">
+                Training complete, {(employee.full_name ?? employee.email).split(" ")[0]}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {allSteps.length
+                  ? `All ${allSteps.length} steps signed off. Come back any time for a refresher.`
+                  : "No modules are assigned to your path yet."}
+              </p>
+            </div>
+            <Button asChild variant="outline" className="shrink-0">
+              <Link to="/training-library">
+                <BookOpen className="mr-1.5 size-4" />
+                Browse all training
+              </Link>
+            </Button>
+          </div>
+        </section>
+      )}
 
-        <div className="mt-5">
-          <AskAssistant />
-        </div>
-
+      <section className="rounded-xl border border-border bg-card px-5 py-5">
+        <AskAssistant />
         <Link to="/search" className="mt-3 block">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               readOnly
               placeholder="Search every module, step, and sourcing entry…"
-              className="h-12 cursor-pointer border-border bg-card pl-9 text-base shadow-xs"
+              className="h-12 cursor-pointer border-border bg-background pl-9 text-base shadow-xs"
             />
           </div>
         </Link>
-
-        <div className="mt-5 space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-semibold">Your progress</span>
-            <span className="text-muted-foreground">
-              {done} of {allSteps.length} steps · {pct}%
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Button variant="outline" onClick={() => setReportOpen(true)}>
+            <AlertTriangle className="mr-1.5 size-4" />
+            Report a delivery issue
+          </Button>
+          {trainingComplete ? null : (
+            <span className="text-xs text-muted-foreground">
+              Something wrong with a truck order? Tell us here — anyone can report.
             </span>
-          </div>
-          <Progress value={pct} className="h-2.5" />
+          )}
         </div>
-
-        <Button
-          variant="outline"
-          className="mt-5 w-full justify-center sm:w-auto"
-          onClick={() => setReportOpen(true)}
-        >
-          <AlertTriangle className="mr-1.5 size-4" />
-          Report a delivery issue
-        </Button>
       </section>
 
       <ReportDeliveryIssueDialog open={reportOpen} onOpenChange={setReportOpen} />
