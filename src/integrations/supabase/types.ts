@@ -82,6 +82,124 @@ export type Database = {
           },
         ]
       }
+      checklist_instances: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          instance_date: string
+          is_deleted: boolean
+          location_tag: string | null
+          reference_document_id: string
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          instance_date: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          reference_document_id: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          instance_date?: string
+          is_deleted?: boolean
+          location_tag?: string | null
+          reference_document_id?: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_instances_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_instances_reference_document_id_fkey"
+            columns: ["reference_document_id"]
+            isOneToOne: false
+            referencedRelation: "reference_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_instances_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_line_completions: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          instance_id: string
+          line_order: number
+          section_index: number
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          instance_id: string
+          line_order: number
+          section_index: number
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          instance_id?: string
+          line_order?: number
+          section_index?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_line_completions_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_line_completions_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_issues: {
         Row: {
           assigned_to: string | null

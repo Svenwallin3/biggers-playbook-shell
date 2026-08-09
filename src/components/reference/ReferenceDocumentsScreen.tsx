@@ -1,10 +1,19 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ChevronDown, FileText, ListChecks, Search, Trash2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ChevronDown,
+  FileText,
+  ListChecks,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Collapsible,
@@ -30,6 +39,14 @@ import { NewDocumentDialog } from "@/components/reference/NewDocumentDialog";
 import { SectionBodyEditor } from "@/components/reference/SectionBodyEditor";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  checklistCompletionsQueryOptions,
+  completionKey,
+  submitChecklistInstance,
+  submittedTodayQueryOptions,
+  todaysChecklistInstanceQueryOptions,
+  toggleChecklistLine,
+} from "@/lib/checklist-instances.queries";
+import {
   docSections,
   groupBy,
   referenceDocumentsQueryOptions,
@@ -51,6 +68,15 @@ function SharedTag({ departments }: { departments: string[] | null }) {
   );
 }
 
+function CompletedTodayTag() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-sm bg-success-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success">
+      <CheckCircle2 className="size-3" />
+      Completed today
+    </span>
+  );
+}
+
 function Detail({
   doc,
   documentType,
@@ -64,6 +90,57 @@ function Detail({
   const queryClient = useQueryClient();
   const [deleting, setDeleting] = useState(false);
   const sections = docSections(doc);
+  const isChecklist = documentType === "checklist";
+
+  // Shared instance for today (per location when the doc carries a location_tag).
+  const instanceQuery = useQuery(
+    todaysChecklistInstanceQueryOptions(doc.id, doc.location_tag ?? null, isChecklist),
+  );
+  const instance = instanceQuery.data ?? null;
+  const completionsQuery = useQuery(checklistCompletionsQueryOptions(instance?.id));
+  const completions = completionsQuery.data ?? [];
+  const doneMap = new Map(
+    completions.map((c) => [completionKey(c.section_index, c.line_order), c.completed]),
+  );
+  const submitted = instance?.status === "submitted";
+
+  const totalLines = isChecklist
+    ? sections.reduce((n, s) => n + sectionLineItems(s).length, 0)
+    : 0;
+  const doneLines = isChecklist
+    ? sections.reduce(
+        (n, s, si) =>
+          n +
+          sectionLineItems(s).filter((item, idx) =>
+            doneMap.get(completionKey(si, item.order ?? idx)),
+          ).length,
+        0,
+      )
+    : 0;
+  const allDone = totalLines > 0 && doneLines === totalLines;
+
+  const toggle = useMutation({
+    mutationFn: (input: { sectionIndex: number; lineOrder: number; completed: boolean }) =>
+      toggleChecklistLine({
+        instanceId: instance!.id,
+        employeeId: employee?.id ?? null,
+        ...input,
+      }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["checklist-completions", instance?.id] }),
+    onError: (err: Error) => toast.error("Couldn't save that", { description: err.message }),
+  });
+
+  const submit = useMutation({
+    mutationFn: () =>
+      submitChecklistInstance({ instanceId: instance!.id, employeeId: employee?.id ?? null }),
+    onSuccess: async () => {
+      toast.success("Checklist marked complete for today.");
+      await queryClient.invalidateQueries({ queryKey: ["checklist-instance"] });
+      await queryClient.invalidateQueries({ queryKey: ["checklist-submitted-today"] });
+    },
+    onError: (err: Error) => toast.error("Couldn't submit", { description: err.message }),
+  });
 
   async function handleDelete() {
     setDeleting(true);
@@ -131,6 +208,26 @@ function Detail({
         ) : null}
       </div>
 
+      {isChecklist && submitted ? (
+        <div className="flex items-start gap-2 rounded-md border border-success/40 bg-success-soft px-3 py-2 text-sm text-success">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+          <p>
+            Submitted by{" "}
+            <span className="font-semibold">
+              {instance?.submitter?.full_name ?? instance?.submitter?.email ?? "a teammate"}
+            </span>{" "}
+            at{" "}
+            {instance?.submitted_at
+              ? new Date(instance.submitted_at).toLocaleTimeString([], {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+              : "—"}
+            . Today&apos;s run is closed.
+          </p>
+        </div>
+      ) : null}
+
       {sections.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="space-y-3 py-10 text-center text-sm text-muted-foreground">
@@ -159,16 +256,41 @@ function Detail({
                   </div>
 
                   <CollapsibleContent className="space-y-4">
-                {documentType === "checklist" ? (
-                  <ol className="space-y-2">
-                    {sectionLineItems(section).map((item, idx) => (
-                      <li key={idx} className="flex gap-3 text-sm leading-relaxed">
-                        <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/12 text-[11px] font-semibold text-primary">
-                          {idx + 1}
-                        </span>
-                        <span>{item.text}</span>
-                      </li>
-                    ))}
+                {isChecklist ? (
+                  <ol className="space-y-1">
+                    {sectionLineItems(section).map((item, idx) => {
+                      const lineOrder = item.order ?? idx;
+                      const checked = Boolean(doneMap.get(completionKey(i, lineOrder)));
+                      const disabled = submitted || !instance || toggle.isPending;
+                      return (
+                        <li key={idx}>
+                          <label
+                            className={`flex cursor-pointer items-start gap-3 rounded-md px-2 py-2 text-sm leading-relaxed transition-colors hover:bg-muted/60 ${
+                              disabled ? "cursor-default" : ""
+                            }`}
+                          >
+                            <Checkbox
+                              className="mt-0.5"
+                              checked={checked}
+                              disabled={disabled}
+                              onCheckedChange={(v) =>
+                                toggle.mutate({
+                                  sectionIndex: i,
+                                  lineOrder,
+                                  completed: v === true,
+                                })
+                              }
+                            />
+                            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/12 text-[11px] font-semibold text-primary">
+                              {idx + 1}
+                            </span>
+                            <span className={checked ? "text-muted-foreground line-through" : ""}>
+                              {item.text}
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
                   </ol>
                 ) : section.body_text ? (
                   <div className="space-y-2 text-sm leading-relaxed">
@@ -200,6 +322,22 @@ function Detail({
           {isManagerOrOwner ? (
             <div className="flex justify-start">
               <AddSectionButton doc={doc} />
+            </div>
+          ) : null}
+
+          {isChecklist && !submitted && totalLines > 0 ? (
+            <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-card px-3 py-3">
+              <Button
+                onClick={() => submit.mutate()}
+                disabled={!allDone || !instance || submit.isPending}
+              >
+                {submit.isPending ? "Submitting…" : "Mark checklist complete for today"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                {allDone
+                  ? "Everything is checked — submitting closes today's run."
+                  : `${doneLines} of ${totalLines} checked. Every line has to be checked before this can be submitted.`}
+              </p>
             </div>
           ) : null}
         </div>
@@ -234,6 +372,11 @@ export function ReferenceDocumentsScreen({
       : all.filter((d) => visibleToDepartment(d.departments, department));
   const q = term.trim().toLowerCase();
   const docs = q ? scoped.filter((d) => d.title.toLowerCase().includes(q)) : scoped;
+
+  const submittedQuery = useQuery(
+    submittedTodayQueryOptions(documentType === "checklist" ? all.map((d) => d.id) : []),
+  );
+  const submittedToday = submittedQuery.data ?? new Set<string>();
 
   const openDoc = all.find((d) => d.id === openId) ?? null;
   if (openDoc) {
@@ -324,6 +467,9 @@ export function ReferenceDocumentsScreen({
                         <span className="text-sm font-medium hover:underline">{doc.title}</span>
                         <StepStatusBadge status={doc.content_status} />
                         <SharedTag departments={doc.departments} />
+                        {documentType === "checklist" && submittedToday.has(doc.id) ? (
+                          <CompletedTodayTag />
+                        ) : null}
                       </button>
                     </CardContent>
                   </Card>
