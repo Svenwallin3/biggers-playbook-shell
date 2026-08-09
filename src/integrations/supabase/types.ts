@@ -82,6 +82,76 @@ export type Database = {
           },
         ]
       }
+      delivery_issues: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_deleted: boolean
+          issue_description: string
+          photo_url: string | null
+          product_vendor: string
+          reported_by: string | null
+          resolved_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          issue_description: string
+          photo_url?: string | null
+          product_vendor: string
+          reported_by?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          issue_description?: string
+          photo_url?: string | null
+          product_vendor?: string
+          reported_by?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_issues_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_issues_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_issues_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           auth_tier: Database["public"]["Enums"]["auth_tier"]
@@ -527,6 +597,7 @@ export type Database = {
           is_deleted: boolean
           location_tag: string | null
           notes: string | null
+          photo_url: string | null
           product: string
           region: string | null
           seasonality: string | null
@@ -543,6 +614,7 @@ export type Database = {
           is_deleted?: boolean
           location_tag?: string | null
           notes?: string | null
+          photo_url?: string | null
           product: string
           region?: string | null
           seasonality?: string | null
@@ -559,6 +631,7 @@ export type Database = {
           is_deleted?: boolean
           location_tag?: string | null
           notes?: string | null
+          photo_url?: string | null
           product?: string
           region?: string | null
           seasonality?: string | null
