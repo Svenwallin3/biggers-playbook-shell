@@ -156,6 +156,15 @@
   --primary: oklch(0.6 0.075 158);
   --primary-foreground: oklch(0.16 0.02 163);
   --primary-hover: oklch(0.52 0.07 160);
+  --primary-tint: oklch(0.29 0.03 158);
+  --hero: oklch(0.30 0.045 163);
+  --hero-edge: oklch(0.235 0.035 163);
+  --hero-foreground: oklch(0.975 0.012 91.5);
+  --accent-bright: oklch(0.822 0.152 78);
+  --track-hospitality: oklch(0.6 0.075 158);
+  --track-market: oklch(0.72 0.13 68);
+  --track-kitchen: oklch(0.62 0.15 34);
+  --track-delivery: oklch(0.7 0.024 158);
   --secondary: oklch(0.29 0.026 163);
   --secondary-foreground: oklch(0.94 0.012 90);
   --muted: oklch(0.28 0.024 163);
