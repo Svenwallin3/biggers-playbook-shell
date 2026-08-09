@@ -27,8 +27,10 @@ import { assignableStaffQueryOptions, createDeliveryIssue } from "@/lib/delivery
 
 type Props = { open: boolean; onOpenChange: (open: boolean) => void };
 
+const today = () => new Date().toISOString().slice(0, 10);
+
 export function ReportDeliveryIssueDialog({ open, onOpenChange }: Props) {
-  const { employee, isManagerOrOwner } = useAuth();
+  const { employee } = useAuth();
   const queryClient = useQueryClient();
   const staffQuery = useQuery({ ...assignableStaffQueryOptions(), enabled: open });
 
@@ -36,12 +38,16 @@ export function ReportDeliveryIssueDialog({ open, onOpenChange }: Props) {
   const [issue, setIssue] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoUrl2, setPhotoUrl2] = useState<string | null>(null);
+  const [truckDate, setTruckDate] = useState<string>(today());
 
   function reset() {
     setProductVendor("");
     setIssue("");
     setAssignedTo("");
     setPhotoUrl(null);
+    setPhotoUrl2(null);
+    setTruckDate(today());
   }
 
   const submit = useMutation({
@@ -50,6 +56,8 @@ export function ReportDeliveryIssueDialog({ open, onOpenChange }: Props) {
         productVendor: productVendor.trim(),
         issueDescription: issue.trim(),
         photoUrl,
+        photoUrl2,
+        truckDate: truckDate || null,
         reportedBy: employee?.id ?? null,
         assignedTo: assignedTo || null,
       }),
@@ -83,8 +91,7 @@ export function ReportDeliveryIssueDialog({ open, onOpenChange }: Props) {
             </DialogDescription>
           </DialogHeader>
 
-          {isManagerOrOwner ? (
-            <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="product-vendor">Product or vendor</Label>
                 <Input
@@ -94,6 +101,19 @@ export function ReportDeliveryIssueDialog({ open, onOpenChange }: Props) {
                   onChange={(e) => setProductVendor(e.target.value)}
                   placeholder="Heirloom tomatoes — Sunset Ridge Produce"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="truck-date">Truck date</Label>
+                <Input
+                  id="truck-date"
+                  type="date"
+                  value={truckDate}
+                  onChange={(e) => setTruckDate(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  The day the delivery actually arrived.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -116,6 +136,13 @@ export function ReportDeliveryIssueDialog({ open, onOpenChange }: Props) {
                 helpText="A picture of the damaged product helps whoever follows up."
               />
 
+              <PhotoUpload
+                folder="delivery-issues"
+                value={photoUrl2}
+                onChange={setPhotoUrl2}
+                label="Second photo (optional)"
+              />
+
               <div className="space-y-2">
                 <Label htmlFor="assigned-to">Send to</Label>
                 <Select value={assignedTo} onValueChange={setAssignedTo}>
@@ -131,23 +158,15 @@ export function ReportDeliveryIssueDialog({ open, onOpenChange }: Props) {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          ) : (
-            <p className="py-6 text-sm text-muted-foreground">
-              Delivery issues are reported by managers and owners. Let your manager know and
-              they&apos;ll log it.
-            </p>
-          )}
+          </div>
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              {isManagerOrOwner ? "Cancel" : "Close"}
+              Cancel
             </Button>
-            {isManagerOrOwner ? (
-              <Button type="submit" disabled={submit.isPending}>
-                Submit report
-              </Button>
-            ) : null}
+            <Button type="submit" disabled={submit.isPending}>
+              Submit report
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
