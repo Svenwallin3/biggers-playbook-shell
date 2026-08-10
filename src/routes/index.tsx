@@ -78,7 +78,9 @@ function HospitalityWelcome({
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
           Welcome{employeeName ? `, ${employeeName}` : ""}
         </p>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">{mod.name}</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+          {mod.name}
+        </h1>
         {mod.description ? (
           <p className="mx-auto max-w-xl text-sm text-muted-foreground">{mod.description}</p>
         ) : null}
@@ -221,7 +223,7 @@ function IndexPage() {
       {employee.auth_tier !== "staff" ? <ManagerDailyBrief employee={employee} /> : null}
       {upNext && !trainingComplete ? (
         <section className="overflow-hidden rounded-2xl bg-linear-to-br from-hero to-hero-edge text-hero-foreground shadow-md">
-          <div className="flex flex-wrap items-start justify-between gap-6 px-6 py-7 sm:px-8">
+          <div className="flex flex-wrap items-start justify-between gap-5 px-5 py-6 sm:gap-6 sm:px-8 sm:py-7">
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-bright">
                 Up next · {upNext.module.track.name}
@@ -269,7 +271,7 @@ function IndexPage() {
           </div>
         </section>
       ) : (
-        <section className="rounded-2xl border border-primary/25 bg-primary-tint px-6 py-5">
+        <section className="rounded-2xl border border-primary/25 bg-primary-tint px-5 py-5 sm:px-6">
           <div className="flex flex-wrap items-center gap-4">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <PartyPopper className="size-5" aria-hidden />

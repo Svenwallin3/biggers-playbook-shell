@@ -113,7 +113,7 @@ export function AppLayout() {
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/75">
         <div
-          className={`mx-auto flex min-h-14 w-full flex-wrap items-center justify-between gap-3 px-6 py-2 ${
+          className={`mx-auto flex min-h-14 w-full flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6 ${
             isAdminScreen ? "max-w-7xl" : "max-w-5xl"
           }`}
         >
@@ -244,7 +244,7 @@ export function AppLayout() {
       </header>
       {!session ? (
         <div className="border-b border-warning/40 bg-warning-soft/60">
-          <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2 px-6 py-2 text-xs">
+          <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2 px-4 py-2 text-xs sm:px-6">
             <span className="font-semibold">You&apos;re signed out.</span>
             <span className="text-muted-foreground">
               Checklists, SOPs, sourcing, and everything owner-only stay hidden until you sign in —
@@ -257,14 +257,14 @@ export function AppLayout() {
         </div>
       ) : null}
       <main
-        className={`mx-auto w-full flex-1 px-6 ${
-          isAdminScreen ? "admin-dense max-w-7xl py-6" : "max-w-5xl py-8"
+        className={`mx-auto w-full min-w-0 flex-1 px-4 sm:px-6 ${
+          isAdminScreen ? "admin-dense max-w-7xl py-5 sm:py-6" : "max-w-5xl py-6 sm:py-8"
         }`}
       >
         <Outlet />
       </main>
       <footer className="border-t border-border bg-surface/50">
-        <div className="mx-auto w-full max-w-7xl px-6 py-4 text-xs text-muted-foreground">
+        <div className="mx-auto w-full max-w-7xl px-4 py-4 text-xs text-muted-foreground sm:px-6">
           Biggers Market — internal tool
         </div>
       </footer>
