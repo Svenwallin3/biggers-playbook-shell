@@ -1,6 +1,8 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StepRenderer } from "@/components/training/StepRenderer";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
@@ -51,6 +53,12 @@ function PreviewPage() {
   const quizzes = trackQuery.data?.quizzes ?? [];
   const activeModule = modules.find((m) => m.id === moduleId) ?? modules[0];
   const activeStep = activeModule?.steps.find((s) => s.id === stepId) ?? activeModule?.steps[0];
+
+  // One flat walk through the whole track, so Previous/Next crosses module boundaries.
+  const flatSteps = modules.flatMap((m) => m.steps.map((s) => ({ moduleId: m.id, stepId: s.id })));
+  const activeIndex = activeStep ? flatSteps.findIndex((s) => s.stepId === activeStep.id) : -1;
+  const prevStep = activeIndex > 0 ? flatSteps[activeIndex - 1] : undefined;
+  const nextStep = activeIndex >= 0 ? flatSteps[activeIndex + 1] : undefined;
 
   const days: Array<{ key: string; label: string; moduleId: string; day: number | null }> = [];
   for (const m of modules) {
@@ -130,7 +138,7 @@ function PreviewPage() {
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-[248px_minmax(0,1fr)]">
           <div className="min-w-0 space-y-4">
             {/* Mobile: horizontal scrolling module + step bars */}
-            <nav className="space-y-2 md:hidden">
+            <nav className="md:hidden">
               <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {modules.map((m) => (
                   <Link
@@ -145,24 +153,6 @@ function PreviewPage() {
                   >
                     {m.day_assignment ? `Day ${m.day_assignment} · ` : ""}
                     {m.name}
-                  </Link>
-                ))}
-              </div>
-              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {activeModule.steps.map((s) => (
-                  <Link
-                    key={s.id}
-                    to="/preview"
-                    search={{ track: trackId, module: activeModule.id, step: s.id }}
-                    className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-[13px] transition-colors ${
-                      s.id === activeStep.id
-                        ? "bg-secondary font-semibold text-secondary-foreground"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    <span>{s.sequence_order}.</span>
-                    <span className="max-w-[9rem] truncate">{s.title}</span>
-                    <StepStatusBadge status={s.content_status} />
                   </Link>
                 ))}
               </div>
@@ -211,23 +201,67 @@ function PreviewPage() {
           </div>
 
           <div className="min-w-0 space-y-6">
-            <div>
-              <ModuleHeader
-                as="h2"
-                trackName={activeTrack?.name}
-                subPath={activeModule.sub_path}
-                dayAssignment={activeModule.day_assignment}
-                name={activeModule.name}
-                description={activeModule.description}
-              />
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <ModuleHeader
+                  as="h2"
+                  variant="compact"
+                  trackName={activeTrack?.name}
+                  subPath={activeModule.sub_path}
+                  dayAssignment={activeModule.day_assignment}
+                  name={activeModule.name}
+                />
+              </div>
+              <p className="shrink-0 text-xs font-medium text-muted-foreground">
+                Step {activeModule.steps.findIndex((s) => s.id === activeStep.id) + 1} of{" "}
+                {activeModule.steps.length}
+              </p>
             </div>
             <StepRenderer
               step={activeStep}
               quizzes={quizzes.filter((q) => q.step_id === activeStep.id)}
               isAdmin
             />
-            <div className="border-t border-border pt-4 text-xs text-muted-foreground">
-              {stepTypeLabels[activeStep.step_type]}
+            <div className="space-y-3 border-t border-border pt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  className="h-11 w-full"
+                  disabled={!prevStep}
+                  asChild={Boolean(prevStep)}
+                >
+                  {prevStep ? (
+                    <Link
+                      to="/preview"
+                      search={{ track: trackId, module: prevStep.moduleId, step: prevStep.stepId }}
+                    >
+                      <ChevronLeft className="size-4" aria-hidden />
+                      Previous
+                    </Link>
+                  ) : (
+                    <span>
+                      <ChevronLeft className="size-4" aria-hidden />
+                      Previous
+                    </span>
+                  )}
+                </Button>
+                <Button className="h-11 w-full" disabled={!nextStep} asChild={Boolean(nextStep)}>
+                  {nextStep ? (
+                    <Link
+                      to="/preview"
+                      search={{ track: trackId, module: nextStep.moduleId, step: nextStep.stepId }}
+                    >
+                      Next
+                      <ChevronRight className="size-4" aria-hidden />
+                    </Link>
+                  ) : (
+                    <span>Finish</span>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stepTypeLabels[activeStep.step_type]}
+              </p>
             </div>
           </div>
         </div>
