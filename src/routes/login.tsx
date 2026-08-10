@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Mail } from "lucide-react";
+import { Link2, Mail } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [sent, setSent] = useState(false);
+  const [magicLink, setMagicLink] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState<{ fullName: string; maskedEmail: string } | null>(
@@ -85,6 +86,26 @@ function LoginPage() {
     await sendLink();
   }
 
+  function openMagicLinkInPreview() {
+    setError(null);
+    try {
+      const url = new URL(magicLink.trim());
+      const isSupabaseLink =
+        url.protocol === "https:" &&
+        url.hostname === "kouyxrwnzjphuvnvxwyj.supabase.co" &&
+        url.pathname.startsWith("/auth/v1/verify");
+
+      if (!isSupabaseLink) {
+        setError("Paste the complete Biggers Training sign-in link from the email.");
+        return;
+      }
+
+      window.location.assign(url.toString());
+    } catch {
+      setError("Paste the complete Biggers Training sign-in link from the email.");
+    }
+  }
+
   return (
     <div className="mx-auto max-w-md py-10">
       <h1 className="text-2xl font-semibold tracking-tight">Biggers Training</h1>
@@ -102,6 +123,37 @@ function LoginPage() {
                 We sent a sign-in link to {email}. Open it on this device and you&apos;ll stay
                 signed in.
               </p>
+              <div className="space-y-3 rounded-md border border-dashed border-border bg-muted/40 p-4 text-left">
+                <div className="flex items-start gap-2">
+                  <Link2 className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <div>
+                    <p className="text-sm font-semibold">Signing in inside the Lovable editor?</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Copy the sign-in link from the email without opening it, paste it here, then
+                      open it in this preview.
+                    </p>
+                  </div>
+                </div>
+                <Label htmlFor="magic-link">Sign-in link</Label>
+                <Input
+                  id="magic-link"
+                  type="url"
+                  inputMode="url"
+                  autoComplete="off"
+                  placeholder="https://kouyxrwnzjphuvnvxwyj.supabase.co/auth/v1/verify…"
+                  value={magicLink}
+                  onChange={(event) => setMagicLink(event.target.value)}
+                />
+                {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={!magicLink.trim()}
+                  onClick={openMagicLinkInPreview}
+                >
+                  Open link in this preview
+                </Button>
+              </div>
               <Button variant="ghost" className="w-full" onClick={() => setSent(false)}>
                 Use a different email
               </Button>
