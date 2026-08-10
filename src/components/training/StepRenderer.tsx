@@ -141,6 +141,7 @@ export function StepRenderer({
   canSignOff = false,
   signingOff = false,
   onSignOff,
+  titleAs = "h2",
 }: {
   step: StepRow;
   quizzes?: QuizRow[];
@@ -151,9 +152,12 @@ export function StepRenderer({
   canSignOff?: boolean;
   signingOff?: boolean;
   onSignOff?: () => void;
+  /** The step title is the dominant heading on module screens. */
+  titleAs?: "h1" | "h2";
 }) {
   const unavailable = step.content_status === "missing" || step.content_status === "blocked";
   const lines = bodyLines(step);
+  const Title = titleAs;
 
   return (
     <div className="space-y-4">
@@ -162,9 +166,9 @@ export function StepRenderer({
         <StepStatusBadge status={step.content_status} />
       </div>
 
-      <h2 className="font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
+      <Title className="font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
         {step.title}
-      </h2>
+      </Title>
 
       {unavailable ? (
         <ComingSoon step={step} isAdmin={isAdmin} />
