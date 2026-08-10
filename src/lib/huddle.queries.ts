@@ -24,11 +24,25 @@ function dayOfYear(date = new Date()) {
   return Math.floor((date.getTime() - start.getTime()) / 86400000);
 }
 
+/**
+ * Kitchen only runs service Friday–Sunday, so its huddle only surfaces then.
+ * Market runs seven days a week.
+ */
+export function huddleRunsToday(
+  department: HuddleDepartment,
+  date = new Date(),
+): boolean {
+  if (department !== "kitchen") return true;
+  const day = date.getDay(); // 0 = Sunday
+  return day === 0 || day === 5 || day === 6;
+}
+
 /** Deterministically picks one huddle card per calendar day, no stored pointer. */
 export function todaysHuddleCardQueryOptions(department: HuddleDepartment) {
   return queryOptions({
     queryKey: ["huddle-card", department, todayISO()],
     queryFn: async (): Promise<HuddleCardRow | null> => {
+      if (!huddleRunsToday(department)) return null;
       const { data, error } = await supabase
         .from("huddle_cards")
         .select("*")
