@@ -104,6 +104,28 @@ function PreviewPage() {
         ))}
       </div>
 
+      {trackId && days.length > 1 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Jump to
+          </span>
+          {days.map((d) => (
+            <Link
+              key={d.key}
+              to="/preview"
+              search={{ track: trackId, module: d.moduleId, step: undefined }}
+              className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                d.key === activeDayKey
+                  ? "border-primary bg-primary/10 font-semibold text-foreground"
+                  : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+              }`}
+            >
+              {d.label}
+            </Link>
+          ))}
+        </div>
+      ) : null}
+
       {!trackId ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
