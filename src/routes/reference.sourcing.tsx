@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
-import { ImageIcon, Pencil, Plus, Search } from "lucide-react";
+import { ImageIcon, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { sourcingQueryOptions, type SourcingRow } from "@/lib/training.queries";
 import { PhotoUpload, StoredPhoto } from "@/components/PhotoUpload";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  deleteSourcingEntryDirect,
+  pendingSourcingDeleteRequestsQueryOptions,
+  requestSourcingDelete,
+  SOURCING_DELETE_REQUESTS_KEY,
+} from "@/lib/sourcing-delete.queries";
 
 const title = "Sourcing Board — Biggers Training Platform";
 const description = "Where Biggers Market ingredients and products come from.";
@@ -125,12 +141,48 @@ function toForm(entry: SourcingRow): FormState {
 }
 
 function SourcingBoardPage() {
-  const { employee } = useAuth();
+  const { employee, isOwner, isGeneralManager } = useAuth();
   const queryClient = useQueryClient();
   const entriesQuery = useQuery(sourcingQueryOptions());
   const entries = useMemo(() => entriesQuery.data ?? [], [entriesQuery.data]);
 
   const canEdit = employee?.auth_tier === "manager" || employee?.auth_tier === "owner";
+  const canRemove = isOwner || isGeneralManager;
+
+  const pendingRequestsQuery = useQuery({
+    ...pendingSourcingDeleteRequestsQueryOptions(),
+    enabled: canRemove,
+  });
+  const pendingEntryIds = useMemo(
+    () => new Set((pendingRequestsQuery.data ?? []).map((r) => r.entry_id)),
+    [pendingRequestsQuery.data],
+  );
+
+  const [removing, setRemoving] = useState<SourcingRow | null>(null);
+  const [removeReason, setRemoveReason] = useState("");
+
+  const removeMutation = useMutation({
+    mutationFn: async (entry: SourcingRow) => {
+      if (isOwner) {
+        await deleteSourcingEntryDirect({ entryId: entry.id, deletedBy: employee!.id });
+      } else {
+        await requestSourcingDelete({
+          entryId: entry.id,
+          productName: entry.product,
+          requestedBy: employee!.id,
+          reason: removeReason,
+        });
+      }
+    },
+    onSuccess: () => {
+      toast.success(isOwner ? "Deleted." : "Removal requested — an owner will review it.");
+      setRemoving(null);
+      setRemoveReason("");
+      void queryClient.invalidateQueries({ queryKey: ["sourcing-board"] });
+      void queryClient.invalidateQueries({ queryKey: SOURCING_DELETE_REQUESTS_KEY });
+    },
+    onError: (error: Error) => toast.error("Couldn't complete that", { description: error.message }),
+  });
 
   const [editingId, setEditingId] = useState<string | null>(null); // null = closed, "new" = create
   const [form, setForm] = useState<FormState>(blank);
@@ -326,6 +378,27 @@ function SourcingBoardPage() {
                           <Pencil className="size-4" />
                         </Button>
                       ) : null}
+                      {canRemove ? (
+                        pendingEntryIds.has(entry.id) ? (
+                          <span className="mr-3 shrink-0 self-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                            Removal requested
+                          </span>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Delete ${entry.product}`}
+                            className="mr-3 shrink-0 self-center"
+                            onClick={() => {
+                              setRemoveReason("");
+                              setRemoving(entry);
+                            }}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        )
+                      ) : null}
                     </div>
                   </li>
                 );
@@ -336,6 +409,49 @@ function SourcingBoardPage() {
       </Card>
 
       <ProductDetailDialog entry={viewing} onClose={() => setViewing(null)} />
+
+      <AlertDialog
+        open={removing !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemoving(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{isOwner ? "Delete this entry?" : "Request removal"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {isOwner
+                ? "This removes it from the Sourcing Board."
+                : "An owner needs to approve this before it's removed from the board."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {!isOwner ? (
+            <div className="space-y-2">
+              <Label htmlFor="remove-reason">Reason (optional)</Label>
+              <Textarea
+                id="remove-reason"
+                rows={2}
+                maxLength={200}
+                value={removeReason}
+                onChange={(e) => setRemoveReason(e.target.value)}
+                placeholder="We no longer carry this."
+              />
+            </div>
+          ) : null}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={removeMutation.isPending}
+              onClick={(ev) => {
+                ev.preventDefault();
+                if (removing) removeMutation.mutate(removing);
+              }}
+            >
+              {isOwner ? "Delete" : "Submit request"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={editingId !== null} onOpenChange={(open) => !open && setEditingId(null)}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">

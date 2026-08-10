@@ -10,6 +10,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { bodyLines } from "@/lib/training.queries";
 import { suggestionsQueryOptions, type SuggestionWithContext } from "@/lib/admin.queries";
+import {
+  decideSourcingDeleteRequest,
+  pendingSourcingDeleteRequestsQueryOptions,
+  SOURCING_DELETE_REQUESTS_KEY,
+} from "@/lib/sourcing-delete.queries";
 
 export const Route = createFileRoute("/approvals")({
   head: () => ({
@@ -46,6 +51,42 @@ function ApprovalsPage() {
   const queryClient = useQueryClient();
   const isOwner = employee?.auth_tier === "owner";
   const pendingQuery = useQuery({ ...suggestionsQueryOptions("pending"), enabled: isOwner });
+  const removalQuery = useQuery({
+    ...pendingSourcingDeleteRequestsQueryOptions(),
+    enabled: isOwner,
+  });
+  const removals = removalQuery.data ?? [];
+  const requesterIds = [...new Set(removals.map((r) => r.requested_by))];
+  const requestersQuery = useQuery({
+    queryKey: ["employees-by-id", requesterIds],
+    enabled: isOwner && requesterIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("employees")
+        .select("id, full_name, email")
+        .in("id", requesterIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const decideRemoval = useMutation({
+    mutationFn: async (input: {
+      requestId: string;
+      entryId: string;
+      decision: "approved" | "rejected";
+    }) => decideSourcingDeleteRequest({ ...input, reviewedBy: employee!.id }),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: SOURCING_DELETE_REQUESTS_KEY });
+      void queryClient.invalidateQueries({ queryKey: ["sourcing-board"] });
+      toast.success(
+        vars.decision === "approved"
+          ? "Approved — the entry is off the Sourcing Board."
+          : "Rejected — the entry stays on the board.",
+      );
+    },
+    onError: (error: Error) => toast.error("Couldn't record that", { description: error.message }),
+  });
 
   const decide = useMutation({
     mutationFn: async (input: { s: SuggestionWithContext; decision: "approved" | "rejected" }) => {
@@ -208,6 +249,58 @@ function ApprovalsPage() {
           );
         })}
       </div>
+
+      {removals.length > 0 ? (
+        <div className="space-y-5">
+          <h2 className="text-lg font-semibold tracking-tight">Sourcing Board removal requests</h2>
+          {removals.map((r) => {
+            const requester = requestersQuery.data?.find((e) => e.id === r.requested_by);
+            return (
+              <Card key={r.id}>
+                <CardHeader>
+                  <CardTitle className="text-base">{r.product_snapshot}</CardTitle>
+                  <CardDescription>
+                    Requested by {requester?.full_name ?? requester?.email ?? "unknown"} on{" "}
+                    {new Date(r.requested_at).toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {r.reason ? <p className="text-sm">{r.reason}</p> : null}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      disabled={decideRemoval.isPending}
+                      onClick={() =>
+                        decideRemoval.mutate({
+                          requestId: r.id,
+                          entryId: r.entry_id,
+                          decision: "approved",
+                        })
+                      }
+                    >
+                      Approve removal
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={decideRemoval.isPending}
+                      onClick={() =>
+                        decideRemoval.mutate({
+                          requestId: r.id,
+                          entryId: r.entry_id,
+                          decision: "rejected",
+                        })
+                      }
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }
