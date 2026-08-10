@@ -129,7 +129,46 @@ function PreviewPage() {
       {activeModule && activeStep ? (
         <div className="grid gap-8 md:grid-cols-[248px_1fr]">
           <div className="space-y-4">
-            <nav className="space-y-1 rounded-lg border border-border bg-surface/60 p-2">
+            {/* Mobile: horizontal scrolling module + step bars */}
+            <nav className="space-y-2 md:hidden">
+              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {modules.map((m) => (
+                  <Link
+                    key={m.id}
+                    to="/preview"
+                    search={{ track: trackId, module: m.id, step: undefined }}
+                    className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[13px] transition-colors ${
+                      m.id === activeModule.id
+                        ? "border-primary bg-primary/10 font-semibold text-foreground"
+                        : "border-border text-muted-foreground"
+                    }`}
+                  >
+                    {m.day_assignment ? `Day ${m.day_assignment} · ` : ""}
+                    {m.name}
+                  </Link>
+                ))}
+              </div>
+              <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {activeModule.steps.map((s) => (
+                  <Link
+                    key={s.id}
+                    to="/preview"
+                    search={{ track: trackId, module: activeModule.id, step: s.id }}
+                    className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-[13px] transition-colors ${
+                      s.id === activeStep.id
+                        ? "bg-secondary font-semibold text-secondary-foreground"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    <span>{s.sequence_order}.</span>
+                    <span className="max-w-[9rem] truncate">{s.title}</span>
+                    <StepStatusBadge status={s.content_status} />
+                  </Link>
+                ))}
+              </div>
+            </nav>
+
+            <nav className="hidden space-y-1 rounded-lg border border-border bg-surface/60 p-2 md:block">
               {modules.map((m) => (
                 <div key={m.id}>
                   <Link
