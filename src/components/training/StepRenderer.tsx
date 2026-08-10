@@ -41,6 +41,38 @@ function ComingSoon({ step, isAdmin }: { step: StepRow; isAdmin: boolean }) {
 function Body({ lines }: { lines: string[] }) {
   if (!lines.length) return null;
 
+  if (lines.some((line) => line.startsWith("## "))) {
+    const sections: { heading: string | null; bullets: string[] }[] = [];
+    for (const line of lines) {
+      if (line.startsWith("## ")) {
+        sections.push({ heading: line.slice(3).trim(), bullets: [] });
+      } else {
+        if (!sections.length) sections.push({ heading: null, bullets: [] });
+        sections[sections.length - 1]!.bullets.push(line);
+      }
+    }
+
+    return (
+      <div className="space-y-5">
+        {sections.map((section, i) => (
+          <div key={i} className="space-y-1.5">
+            {section.heading ? (
+              <h3 className="font-display text-base font-semibold">{section.heading}</h3>
+            ) : null}
+            <ul className="space-y-1.5">
+              {section.bullets.map((bullet, j) => (
+                <li key={j} className="flex gap-2.5 text-sm leading-relaxed">
+                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+                  <span>{bullet}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const pairs = lines.map((line) => {
     const i = line.indexOf(" | ");
     if (i === -1) return null;
