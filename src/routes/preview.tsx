@@ -1,6 +1,5 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Eye } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { StepRenderer } from "@/components/training/StepRenderer";
@@ -72,21 +71,6 @@ function PreviewPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3">
-        <Eye className="size-4 text-warning" />
-        <p className="text-sm font-semibold text-warning">Preview as trainee — read-only</p>
-        <p className="text-xs text-warning/90">
-          Nothing here is saved. No progress, sign-offs, or quiz attempts are recorded.
-        </p>
-      </div>
-
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">Preview training</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Browse any track the way a new hire meets it — same order, same content states.
-        </p>
-      </div>
-
       <div className="flex flex-wrap gap-2">
         {tracks.map((t) => (
           <Link
