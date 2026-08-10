@@ -162,7 +162,7 @@ export function StepRenderer({
         <StepStatusBadge status={step.content_status} />
       </div>
 
-      <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight">
+      <h2 className="font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
         {step.title}
       </h2>
 
@@ -177,17 +177,17 @@ export function StepRenderer({
           ) : null}
 
           {step.step_type === "photo" ? (
-            <Card>
-              <CardContent className="space-y-3 py-6">
+            <Card className="overflow-hidden">
+              <CardContent className="space-y-3 px-0 py-0 sm:px-6 sm:py-6">
                 {step.media_url ? (
                   <img
                     src={step.media_url}
                     alt={step.title}
                     loading="lazy"
-                    className="max-h-72 w-full rounded-md object-cover"
+                    className="max-h-72 w-full object-cover sm:rounded-md"
                   />
                 ) : (
-                  <div className="flex h-48 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  <div className="flex h-48 items-center justify-center bg-muted text-muted-foreground sm:rounded-md">
                     <ImageIcon className="size-8" />
                   </div>
                 )}
@@ -196,16 +196,18 @@ export function StepRenderer({
           ) : null}
 
           {step.step_type === "video" ? (
-            <Card>
-              <CardContent className="space-y-3 py-6">
+            <Card className="overflow-hidden">
+              <CardContent className="space-y-3 px-0 py-0 sm:px-6 sm:py-6">
                 {youTubeId(step.video_url) ? (
-                  <VideoEmbed url={step.video_url} title={step.title} />
+                  <VideoEmbed url={step.video_url} title={step.title} className="sm:rounded-md" />
                 ) : (
-                  <div className="flex h-48 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  <div className="flex h-48 items-center justify-center bg-muted text-muted-foreground sm:rounded-md">
                     <Clapperboard className="size-8" />
                   </div>
                 )}
-                <p className="text-sm text-muted-foreground">Short skill clip</p>
+                <p className="px-4 pb-4 text-sm text-muted-foreground sm:px-0 sm:pb-0">
+                  Short skill clip
+                </p>
               </CardContent>
             </Card>
           ) : null}
@@ -229,7 +231,7 @@ export function StepRenderer({
                           <button
                             key={i}
                             type="button"
-                            className="w-full rounded-md border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+                            className="min-h-11 w-full rounded-md border border-border px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                           >
                             {String(option)}
                           </button>
@@ -256,7 +258,7 @@ export function StepRenderer({
               <div className="bg-accent/25 px-5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-accent-foreground">
                 Certification moment
               </div>
-              <CardContent className="flex flex-wrap items-center justify-between gap-3 py-5">
+              <CardContent className="flex flex-col items-start gap-3 py-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <p className="flex items-center gap-2 text-sm font-medium">
                   <UserCheck className="size-4 shrink-0 text-accent" />
                   {step.step_type === "doing_signoff"
@@ -266,11 +268,11 @@ export function StepRenderer({
                 <Button
                   disabled={signedOff || !canSignOff || signingOff}
                   onClick={onSignOff}
-                  className={
+                  className={`h-11 w-full sm:h-9 sm:w-auto ${
                     signedOff
                       ? ""
                       : "bg-accent text-accent-foreground hover:bg-accent-bright"
-                  }
+                  }`}
                 >
                   <CheckCircle2 className="size-4" />
                   {signedOff
