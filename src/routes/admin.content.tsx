@@ -482,6 +482,46 @@ function ContentEditorPage() {
                   disabled={!canEdit}
                 />
 
+                <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Label htmlFor="media-rec" className="text-xs text-muted-foreground">
+                      Media recommendation
+                    </Label>
+                    <Select
+                      value={draft.media_recommendation}
+                      disabled={!canEdit}
+                      onValueChange={(v) =>
+                        patch({ media_recommendation: v as Draft["media_recommendation"] })
+                      }
+                    >
+                      <SelectTrigger id="media-rec" className="h-8 w-36 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="photo">Photo</SelectItem>
+                        <SelectItem value="video">Video</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {unmetMediaRecommendation({
+                      media_recommendation: draft.media_recommendation,
+                      media_url: draft.media_url,
+                      video_url: draft.video_url.trim() || null,
+                    }) ? (
+                      <span className="text-xs font-medium text-warning">Not added yet</span>
+                    ) : null}
+                  </div>
+                  <Input
+                    className="mt-2 h-8 border-0 bg-transparent px-0 text-xs text-muted-foreground shadow-none focus-visible:ring-0"
+                    value={draft.media_recommendation_note}
+                    maxLength={200}
+                    disabled={!canEdit}
+                    onChange={(e) => patch({ media_recommendation_note: e.target.value })}
+                    placeholder="Why this step wants media (optional)"
+                    aria-label="Media recommendation note"
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="loc">Location tag</Label>
                   <Input
