@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye } from "lucide-react";
+import { Camera, Eye, Film } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +75,19 @@ interface Draft {
   location_tag: string;
   video_url: string;
   media_url: string | null;
+  media_recommendation: "none" | "photo" | "video";
+  media_recommendation_note: string;
+}
+
+/** A curation flag only: the step asks for media it doesn't have yet. */
+function unmetMediaRecommendation(s: {
+  media_recommendation?: "none" | "photo" | "video" | null;
+  media_url?: string | null;
+  video_url?: string | null;
+}) {
+  if (s.media_recommendation === "photo" && !s.media_url) return "photo" as const;
+  if (s.media_recommendation === "video" && !s.video_url) return "video" as const;
+  return null;
 }
 
 function ContentEditorPage() {
@@ -133,6 +146,8 @@ function ContentEditorPage() {
       location_tag: step.location_tag ?? "",
       video_url: step.video_url ?? "",
       media_url: step.media_url ?? null,
+      media_recommendation: step.media_recommendation ?? "none",
+      media_recommendation_note: step.media_recommendation_note ?? "",
     });
   }, [step?.id, step?.updated_at]);
 
@@ -157,6 +172,8 @@ function ContentEditorPage() {
           location_tag: draft!.location_tag.trim() || null,
           video_url: draft!.video_url.trim() || null,
           media_url: draft!.media_url,
+          media_recommendation: draft!.media_recommendation,
+          media_recommendation_note: draft!.media_recommendation_note.trim() || null,
         })
         .eq("id", selectedId);
       if (error) throw error;
@@ -283,8 +300,21 @@ function ContentEditorPage() {
                                     : "text-muted-foreground"
                                 }`}
                               >
-                                <span className={s.is_deleted ? "line-through" : undefined}>
-                                  {s.title}
+                                <span className="flex items-center gap-1.5">
+                                  <span className={s.is_deleted ? "line-through" : undefined}>
+                                    {s.title}
+                                  </span>
+                                  {unmetMediaRecommendation(s) === "photo" ? (
+                                    <Camera
+                                      className="size-3.5 shrink-0 text-warning"
+                                      aria-label="Photo recommended, not added yet"
+                                    />
+                                  ) : unmetMediaRecommendation(s) === "video" ? (
+                                    <Film
+                                      className="size-3.5 shrink-0 text-warning"
+                                      aria-label="Video recommended, not added yet"
+                                    />
+                                  ) : null}
                                 </span>
                               </button>
                             </li>
@@ -451,6 +481,46 @@ function ContentEditorPage() {
                   helpText="Shown above the step's written content. Any step type can carry a photo."
                   disabled={!canEdit}
                 />
+
+                <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Label htmlFor="media-rec" className="text-xs text-muted-foreground">
+                      Media recommendation
+                    </Label>
+                    <Select
+                      value={draft.media_recommendation}
+                      disabled={!canEdit}
+                      onValueChange={(v) =>
+                        patch({ media_recommendation: v as Draft["media_recommendation"] })
+                      }
+                    >
+                      <SelectTrigger id="media-rec" className="h-8 w-36 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="photo">Photo</SelectItem>
+                        <SelectItem value="video">Video</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {unmetMediaRecommendation({
+                      media_recommendation: draft.media_recommendation,
+                      media_url: draft.media_url,
+                      video_url: draft.video_url.trim() || null,
+                    }) ? (
+                      <span className="text-xs font-medium text-warning">Not added yet</span>
+                    ) : null}
+                  </div>
+                  <Input
+                    className="mt-2 h-8 border-0 bg-transparent px-0 text-xs text-muted-foreground shadow-none focus-visible:ring-0"
+                    value={draft.media_recommendation_note}
+                    maxLength={200}
+                    disabled={!canEdit}
+                    onChange={(e) => patch({ media_recommendation_note: e.target.value })}
+                    placeholder="Why this step wants media (optional)"
+                    aria-label="Media recommendation note"
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="loc">Location tag</Label>
