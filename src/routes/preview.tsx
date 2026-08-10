@@ -169,11 +169,6 @@ function PreviewPage() {
                 </div>
               ))}
             </nav>
-            <p className="px-1 text-xs text-muted-foreground">
-              A trainee unlocks these in order — {activeTrack?.department === "universal"
-                ? "Hospitality comes first for everyone."
-                : "after finishing Universal / Hospitality."}
-            </p>
           </div>
 
           <div className="space-y-6">
@@ -192,9 +187,8 @@ function PreviewPage() {
               quizzes={quizzes.filter((q) => q.step_id === activeStep.id)}
               isAdmin
             />
-            <div className="flex items-center justify-between border-t border-border pt-4 text-xs text-muted-foreground">
-              <span>{stepTypeLabels[activeStep.step_type]}</span>
-              <span>Preview mode — completion is disabled</span>
+            <div className="border-t border-border pt-4 text-xs text-muted-foreground">
+              {stepTypeLabels[activeStep.step_type]}
             </div>
           </div>
         </div>
