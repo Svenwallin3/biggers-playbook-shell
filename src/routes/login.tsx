@@ -178,32 +178,65 @@ function LoginPage() {
               </div>
             </div>
           ) : (
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="space-y-2">
-                <Label htmlFor="name">Your full name</Label>
+            <div className="space-y-6">
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Your full name</Label>
+                  <Input
+                    id="name"
+                    placeholder="Jordan Fields"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Work email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    required
+                    placeholder="you@biggersmarket.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={busy}>
+                  {busy ? "Sending…" : "Send magic link"}
+                </Button>
+              </form>
+
+              <div className="space-y-3 rounded-md border border-dashed border-border bg-muted/40 p-4">
+                <div className="flex items-start gap-2">
+                  <Link2 className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <div>
+                    <p className="text-sm font-semibold">Already have a sign-in link?</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Copy it from your email without opening it, then paste it here to sign in
+                      inside this preview.
+                    </p>
+                  </div>
+                </div>
+                <Label htmlFor="existing-magic-link">Sign-in link</Label>
                 <Input
-                  id="name"
-                  placeholder="Jordan Fields"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  id="existing-magic-link"
+                  type="url"
+                  inputMode="url"
+                  autoComplete="off"
+                  placeholder="Paste the link from your email"
+                  value={magicLink}
+                  onChange={(event) => setMagicLink(event.target.value)}
                 />
+                {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={!magicLink.trim()}
+                  onClick={openMagicLinkInPreview}
+                >
+                  Open link in this preview
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Work email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  placeholder="you@biggersmarket.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              {error ? <p className="text-sm text-destructive">{error}</p> : null}
-              <Button type="submit" className="w-full" disabled={busy}>
-                {busy ? "Sending…" : "Send magic link"}
-              </Button>
-            </form>
+            </div>
           )}
         </CardContent>
       </Card>
