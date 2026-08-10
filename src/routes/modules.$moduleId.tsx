@@ -304,7 +304,7 @@ function ModulePage() {
           ))}
         </nav>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {active ? (
             <StepRenderer
               step={active}
