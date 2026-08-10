@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
+import { trainerSignoffTypes } from "@/lib/training.queries";
 import type { ModuleRow, QuizRow, StepRow, TrackRow } from "@/lib/training.queries";
 
 export type PreviewModule = ModuleRow & { steps: StepRow[] };
@@ -63,6 +64,9 @@ export function previewTrackQueryOptions(trackId: string | undefined) {
         .sort((a, b) => {
           const day = (a.day_assignment ?? 99) - (b.day_assignment ?? 99);
           if (day !== 0) return day;
+          const aTrainer = a.steps.some((s) => trainerSignoffTypes.includes(s.step_type));
+          const bTrainer = b.steps.some((s) => trainerSignoffTypes.includes(s.step_type));
+          if (aTrainer !== bTrainer) return aTrainer ? 1 : -1;
           return a.sequence_order - b.sequence_order;
         });
 
