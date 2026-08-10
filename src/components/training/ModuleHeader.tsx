@@ -22,7 +22,7 @@ export function ModuleHeader({
   const theme = trackTheme(trackName);
   const titleClass =
     as === "h1"
-      ? "font-display text-3xl font-semibold tracking-tight"
+      ? "font-display text-2xl font-semibold tracking-tight sm:text-3xl"
       : "font-display text-2xl font-semibold tracking-tight";
 
   return (
