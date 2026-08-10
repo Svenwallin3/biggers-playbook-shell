@@ -1,13 +1,10 @@
-import {
-  CheckCircle2,
-  Clapperboard,
-  Image as ImageIcon,
-  ListChecks,
-  UserCheck,
-} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { CheckCircle2, ListChecks, PenLine, UserCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { StoredPhoto } from "@/components/PhotoUpload";
+import { supabase } from "@/integrations/supabase/client";
 import { StepStatusBadge } from "./StepStatusBadge";
 import { StepTypeChip } from "./StepTypeChip";
 import { VideoEmbed, youTubeId } from "@/components/VideoEmbed";
@@ -17,6 +14,60 @@ import {
   type QuizRow,
   type StepRow,
 } from "@/lib/training.queries";
+
+function ManagerInitials({
+  initialedBy,
+  initialedAt,
+  canSignOff,
+  pending,
+  onLog,
+}: {
+  initialedBy: string | null | undefined;
+  initialedAt: string | null | undefined;
+  canSignOff: boolean;
+  pending: boolean;
+  onLog?: (() => void) | undefined;
+}) {
+  const nameQuery = useQuery({
+    queryKey: ["employee-name", initialedBy],
+    enabled: Boolean(initialedBy),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("employees")
+        .select("full_name, email")
+        .eq("id", initialedBy!)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.full_name ?? data?.email ?? null;
+    },
+  });
+
+  if (initialedBy) {
+    const when = initialedAt ? new Date(initialedAt).toLocaleDateString() : null;
+    return (
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <PenLine className="size-3.5 shrink-0" aria-hidden="true" />
+        Initialed by {nameQuery.data ?? "your manager"}
+        {when ? ` on ${when}` : ""}
+      </p>
+    );
+  }
+
+  if (!canSignOff) return null;
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={pending || !onLog}
+      onClick={onLog}
+    >
+      <PenLine className="size-4" aria-hidden="true" />
+      {pending ? "Saving…" : "Log manager initials"}
+    </Button>
+  );
+}
 
 function ComingSoon({ step, isAdmin }: { step: StepRow; isAdmin: boolean }) {
   const blocked = step.content_status === "blocked";
