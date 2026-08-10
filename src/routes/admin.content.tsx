@@ -73,6 +73,7 @@ interface Draft {
   content_notes: string;
   location_tag: string;
   video_url: string;
+  media_url: string | null;
 }
 
 function ContentEditorPage() {
@@ -130,6 +131,7 @@ function ContentEditorPage() {
       content_notes: step.content_notes ?? "",
       location_tag: step.location_tag ?? "",
       video_url: step.video_url ?? "",
+      media_url: step.media_url ?? null,
     });
   }, [step?.id, step?.updated_at]);
 
@@ -153,6 +155,7 @@ function ContentEditorPage() {
           content_notes: draft!.content_notes.trim() || null,
           location_tag: draft!.location_tag.trim() || null,
           video_url: draft!.video_url.trim() || null,
+          media_url: draft!.media_url,
         })
         .eq("id", selectedId);
       if (error) throw error;

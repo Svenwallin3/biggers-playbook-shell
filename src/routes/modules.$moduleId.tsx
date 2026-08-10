@@ -14,6 +14,7 @@ import { trackTheme } from "@/lib/track-theme";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getDayGroupedSteps,
+  logManagerInitials,
   moduleQueryOptions,
   planQueryOptions,
   progressQueryOptions,
@@ -128,6 +129,22 @@ function ModulePage() {
       void queryClient.invalidateQueries({ queryKey: ["training-queue"] });
     },
     onError: (error: Error) => toast.error("Couldn't sign off", { description: error.message }),
+  });
+
+  const logInitials = useMutation({
+    mutationFn: (stepId: string) =>
+      logManagerInitials({
+        employeeId: subjectId!,
+        stepId,
+        signedOffBy: employee!.id,
+        existingId: progressByStep.get(stepId)?.id,
+      }),
+    onSuccess: () => {
+      toast.success("Initials logged");
+      void queryClient.invalidateQueries({ queryKey: ["progress", subjectId] });
+    },
+    onError: (error: Error) =>
+      toast.error("Couldn't log initials", { description: error.message }),
   });
 
   if (moduleQuery.isPending) {
