@@ -127,8 +127,8 @@ function PreviewPage() {
       ) : null}
 
       {activeModule && activeStep ? (
-        <div className="grid gap-8 md:grid-cols-[248px_1fr]">
-          <div className="space-y-4">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-[248px_minmax(0,1fr)]">
+          <div className="min-w-0 space-y-4">
             {/* Mobile: horizontal scrolling module + step bars */}
             <nav className="space-y-2 md:hidden">
               <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -210,7 +210,7 @@ function PreviewPage() {
             </nav>
           </div>
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <div>
               <ModuleHeader
                 as="h2"
