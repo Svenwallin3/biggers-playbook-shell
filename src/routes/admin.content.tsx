@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -77,6 +78,7 @@ interface Draft {
 function ContentEditorPage() {
   const { employee, isManagerOrOwner, loading } = useAuth();
   const queryClient = useQueryClient();
+  const [showHidden, setShowHidden] = useState(false);
   const treeQuery = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
 
   const [selection, setSelection] = useState<{
@@ -226,10 +228,16 @@ function ContentEditorPage() {
 
       {treeQuery.isPending ? <p className="text-sm text-muted-foreground">Loading content…</p> : null}
 
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <nav className="space-y-5">
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr] lg:items-start">
+        <nav className="space-y-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1">
           <NewTrackDialog disabled={!canCreateTrack} onCreated={() => undefined} />
-          {tracks.map((track) => (
+          <div className="flex items-center justify-between gap-2 rounded-md border px-2 py-1.5">
+            <Label htmlFor="show-hidden" className="text-xs font-medium text-muted-foreground">
+              Show hidden
+            </Label>
+            <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
+          </div>
+          {tracks.filter((t) => showHidden || !t.is_deleted).map((track) => (
             <div key={track.id}>
               <button
                 type="button"
@@ -244,7 +252,7 @@ function ContentEditorPage() {
               </button>
               <div className="space-y-3">
                 {modules
-                  .filter((m) => m.track_id === track.id)
+                  .filter((m) => m.track_id === track.id && (showHidden || !m.is_deleted))
                   .map((m) => (
                     <div key={m.id}>
                       <button
@@ -259,7 +267,7 @@ function ContentEditorPage() {
                       </button>
                       <ul className="mt-1 space-y-0.5 border-l border-border pl-3">
                         {steps
-                          .filter((s) => s.module_id === m.id)
+                          .filter((s) => s.module_id === m.id && (showHidden || !s.is_deleted))
                           .map((s) => (
                             <li key={s.id}>
                               <button
