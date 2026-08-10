@@ -33,7 +33,7 @@ import { trainingQueueQueryOptions } from "@/lib/queue.queries";
 import { openIssuesForEmployeeQueryOptions } from "@/lib/delivery.queries";
 
 const MOTTO =
-  "We are hosts. Every guest who walks in is someone we're welcoming into our home, not a transaction to get through. Southern hospitality means they leave feeling looked after, at ease, and glad they came by.";
+  "We are hosts and the market is our home. Every guest who walks in is someone we're welcoming into our home. Southern hospitality means they leave feeling looked after, at ease, and glad they came by.";
 
 /** Pulls a leading "(context)" out of the standard so it reads as a tag, not prose. */
 function splitContext(text: string): { context: string | null; body: string } {
