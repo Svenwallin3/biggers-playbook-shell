@@ -99,22 +99,32 @@ export function ManagerDailyBrief({ employee }: { employee: Employee }) {
                     {splitContext(card.standard_text).body}
                   </p>
                 </div>
-                <div className="rounded-md border border-border/70 bg-card/70 px-3 py-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    How to run this
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed">{card.manager_tip}</p>
-                </div>
                 <div className="rounded-md border border-accent/40 bg-accent/8 px-3 py-2">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">
-                    Drive it home
+                    Tell the team what you&apos;ll be watching for
                   </p>
-                  <ul className="mt-1 list-disc space-y-1 pl-4 text-sm leading-relaxed">
-                    {DRIVE_IT_HOME.map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
+                  <p className="mt-1 text-sm leading-relaxed">
+                    Say it out loud, word for word: &ldquo;Today I&apos;m watching for{" "}
+                    {lowerFirst(splitContext(card.standard_text).body).replace(/\.$/, "")} — and
+                    I&apos;ll call out by name whoever I catch doing it.&rdquo;
+                  </p>
                 </div>
+                <Collapsible>
+                  <CollapsibleTrigger className="group flex w-full items-center gap-2 rounded-md border border-border/70 bg-card/70 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    How to run this &amp; drive it home
+                    <ChevronDown className="size-4 transition-transform group-data-[state=closed]:-rotate-90" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2 space-y-2">
+                    <p className="rounded-md border border-border/70 bg-card/70 px-3 py-2 text-sm leading-relaxed">
+                      {card.manager_tip}
+                    </p>
+                    <ul className="list-disc space-y-1 rounded-md border border-border/70 bg-card/70 px-3 py-2 pl-7 text-sm leading-relaxed">
+                      {DRIVE_IT_HOME.map((line) => (
+                        <li key={line}>{line}</li>
+                      ))}
+                    </ul>
+                  </CollapsibleContent>
+                </Collapsible>
               </>
             ) : department === "kitchen" && !huddleRunsToday("kitchen") ? (
               <p className="text-sm text-muted-foreground">
