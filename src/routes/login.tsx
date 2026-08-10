@@ -86,23 +86,41 @@ function LoginPage() {
     await sendLink();
   }
 
-  function openMagicLinkInPreview() {
+  async function openMagicLinkInPreview() {
     setError(null);
+    setBusy(true);
     try {
       const url = new URL(magicLink.trim());
       const isSupabaseLink =
         url.protocol === "https:" &&
         url.hostname === "kouyxrwnzjphuvnvxwyj.supabase.co" &&
         url.pathname.startsWith("/auth/v1/verify");
+      const tokenHash = url.searchParams.get("token_hash") ?? url.searchParams.get("token");
+      const type = url.searchParams.get("type");
 
-      if (!isSupabaseLink) {
+      if (!isSupabaseLink || !tokenHash || type !== "magiclink") {
         setError("Paste the complete Biggers Training sign-in link from the email.");
         return;
       }
 
-      window.location.assign(url.toString());
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: "magiclink",
+      });
+      if (verifyError) {
+        setError(
+          verifyError.message.toLowerCase().includes("expired")
+            ? "That link has already been used or expired. Send yourself a new link, then copy it without opening it and paste the new link here."
+            : verifyError.message,
+        );
+        return;
+      }
+
+      await navigate({ to: "/", replace: true });
     } catch {
       setError("Paste the complete Biggers Training sign-in link from the email.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -148,10 +166,10 @@ function LoginPage() {
                 <Button
                   type="button"
                   className="w-full"
-                  disabled={!magicLink.trim()}
+                  disabled={!magicLink.trim() || busy}
                   onClick={openMagicLinkInPreview}
                 >
-                  Open link in this preview
+                  {busy ? "Signing in…" : "Open link in this preview"}
                 </Button>
               </div>
               <Button variant="ghost" className="w-full" onClick={() => setSent(false)}>
@@ -230,10 +248,10 @@ function LoginPage() {
                 <Button
                   type="button"
                   className="w-full"
-                  disabled={!magicLink.trim()}
+                  disabled={!magicLink.trim() || busy}
                   onClick={openMagicLinkInPreview}
                 >
-                  Open link in this preview
+                  {busy ? "Signing in…" : "Open link in this preview"}
                 </Button>
               </div>
             </div>
