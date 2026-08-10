@@ -962,6 +962,8 @@ export type Database = {
           id: string
           is_deleted: boolean
           location_tag: string | null
+          media_recommendation: Database["public"]["Enums"]["media_recommendation"]
+          media_recommendation_note: string | null
           media_url: string | null
           module_id: string
           sequence_order: number
@@ -981,6 +983,8 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           location_tag?: string | null
+          media_recommendation?: Database["public"]["Enums"]["media_recommendation"]
+          media_recommendation_note?: string | null
           media_url?: string | null
           module_id: string
           sequence_order?: number
@@ -1000,6 +1004,8 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           location_tag?: string | null
+          media_recommendation?: Database["public"]["Enums"]["media_recommendation"]
+          media_recommendation_note?: string | null
           media_url?: string | null
           module_id?: string
           sequence_order?: number
@@ -1227,6 +1233,7 @@ export type Database = {
       content_status: "ready" | "needs_restructuring" | "missing" | "blocked"
       department: "universal" | "market" | "kitchen" | "delivery"
       employee_status: "active" | "inactive" | "merged"
+      media_recommendation: "none" | "photo" | "video"
       progress_status:
         | "not_started"
         | "in_progress"
@@ -1372,6 +1379,7 @@ export const Constants = {
       content_status: ["ready", "needs_restructuring", "missing", "blocked"],
       department: ["universal", "market", "kitchen", "delivery"],
       employee_status: ["active", "inactive", "merged"],
+      media_recommendation: ["none", "photo", "video"],
       progress_status: [
         "not_started",
         "in_progress",
