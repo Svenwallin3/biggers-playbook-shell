@@ -300,8 +300,21 @@ function ContentEditorPage() {
                                     : "text-muted-foreground"
                                 }`}
                               >
-                                <span className={s.is_deleted ? "line-through" : undefined}>
-                                  {s.title}
+                                <span className="flex items-center gap-1.5">
+                                  <span className={s.is_deleted ? "line-through" : undefined}>
+                                    {s.title}
+                                  </span>
+                                  {unmetMediaRecommendation(s) === "photo" ? (
+                                    <Camera
+                                      className="size-3.5 shrink-0 text-warning"
+                                      aria-label="Photo recommended, not added yet"
+                                    />
+                                  ) : unmetMediaRecommendation(s) === "video" ? (
+                                    <Film
+                                      className="size-3.5 shrink-0 text-warning"
+                                      aria-label="Video recommended, not added yet"
+                                    />
+                                  ) : null}
                                 </span>
                               </button>
                             </li>
