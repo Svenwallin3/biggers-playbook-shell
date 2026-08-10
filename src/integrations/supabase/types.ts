@@ -831,6 +831,64 @@ export type Database = {
           },
         ]
       }
+      sourcing_board_delete_requests: {
+        Row: {
+          entry_id: string
+          id: string
+          product_snapshot: string
+          reason: string | null
+          requested_at: string
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          entry_id: string
+          id?: string
+          product_snapshot: string
+          reason?: string | null
+          requested_at?: string
+          requested_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          entry_id?: string
+          id?: string
+          product_snapshot?: string
+          reason?: string | null
+          requested_at?: string
+          requested_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sourcing_board_delete_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "sourcing_board_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sourcing_board_delete_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sourcing_board_delete_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sourcing_board_entries: {
         Row: {
           category: string | null
