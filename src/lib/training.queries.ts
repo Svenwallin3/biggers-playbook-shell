@@ -81,8 +81,10 @@ export function getDayGroupedSteps<
 }
 
 /** Today's plan: the Universal track plus the employee's own path, in onboarding-day order. */
-export function planQueryOptions(path: string | null) {
-  const departments = departmentsForPath(path);
+export function planQueryOptions(path: string | null, allDepartments = false) {
+  const departments: Department[] = allDepartments
+    ? ["universal", "market", "kitchen", "delivery"]
+    : departmentsForPath(path);
   return queryOptions({
     queryKey: ["training-plan", departments],
     queryFn: async (): Promise<PlanModule[]> => {
