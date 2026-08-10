@@ -161,7 +161,7 @@ export function StepRenderer({
             </p>
           ) : null}
 
-          {step.step_type === "photo" ? (
+          {step.step_type === "photo" || step.media_url ? (
             <Card className="overflow-hidden">
               <CardContent className="space-y-3 px-0 py-0 sm:px-6 sm:py-6">
                 {step.media_url ? (
@@ -169,7 +169,7 @@ export function StepRenderer({
                     src={step.media_url}
                     alt={step.title}
                     loading="lazy"
-                    className="max-h-72 w-full object-cover sm:rounded-md"
+                    className="mx-auto block h-auto w-full max-w-2xl object-contain sm:rounded-md"
                   />
                 ) : (
                   <div className="flex h-48 items-center justify-center bg-muted text-muted-foreground sm:rounded-md">
