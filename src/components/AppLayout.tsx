@@ -242,6 +242,20 @@ export function AppLayout() {
           </nav>
         </div>
       </header>
+      {!session ? (
+        <div className="border-b border-warning/40 bg-warning-soft/60">
+          <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2 px-6 py-2 text-xs">
+            <span className="font-semibold">You&apos;re signed out.</span>
+            <span className="text-muted-foreground">
+              Checklists, SOPs, sourcing, and everything owner-only stay hidden until you sign in —
+              that&apos;s why these lists look empty.
+            </span>
+            <Link to="/login" className="font-semibold underline underline-offset-2">
+              Sign in
+            </Link>
+          </div>
+        </div>
+      ) : null}
       <main
         className={`mx-auto w-full flex-1 px-6 ${
           isAdminScreen ? "admin-dense max-w-7xl py-6" : "max-w-5xl py-8"
