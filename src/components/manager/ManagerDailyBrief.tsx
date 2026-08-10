@@ -34,6 +34,21 @@ import { openIssuesForEmployeeQueryOptions } from "@/lib/delivery.queries";
 const MOTTO =
   "We are hosts. Every guest who walks in is someone we're welcoming into our home, not a transaction to get through. Southern hospitality means they leave feeling looked after, at ease, and glad they came by.";
 
+/** Pulls a leading "(context)" out of the standard so it reads as a tag, not prose. */
+function splitContext(text: string): { context: string | null; body: string } {
+  const match = text.match(/^\(([^)]+)\)\s*/);
+  if (!match) return { context: null, body: text };
+  return { context: match[1] ?? null, body: text.slice(match[0].length) };
+}
+
+/** Leadership frame so the huddle gets led, not just read aloud. */
+const DRIVE_IT_HOME = [
+  "Say why it matters here: name what the guest actually feels when we get this right, and what they feel when we miss it.",
+  "Ask one person to say it back in their own words. If they can't, it won't happen on the floor today.",
+  "Name what you'll be watching for during the shift, and say you'll call it out when you see it done well.",
+  "Close the loop before they clock out: one specific person, one specific moment, out loud.",
+];
+
 export function ManagerDailyBrief({ employee }: { employee: Employee }) {
   const { isOwner, isManagerOrOwner } = useAuth();
   const department = huddleDepartmentForPath(employee.path);
@@ -75,8 +90,13 @@ export function ManagerDailyBrief({ employee }: { employee: Employee }) {
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Standard
                   </p>
+                  {splitContext(card.standard_text).context ? (
+                    <span className="mb-1 inline-block rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {splitContext(card.standard_text).context}
+                    </span>
+                  ) : null}
                   <p className="font-display text-lg font-semibold leading-snug">
-                    {card.standard_text}
+                    {splitContext(card.standard_text).body}
                   </p>
                 </div>
                 <div className="rounded-md border border-border/70 bg-card/70 px-3 py-2">
@@ -85,7 +105,21 @@ export function ManagerDailyBrief({ employee }: { employee: Employee }) {
                   </p>
                   <p className="mt-1 text-sm leading-relaxed">{card.manager_tip}</p>
                 </div>
+                <div className="rounded-md border border-accent/40 bg-accent/8 px-3 py-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">
+                    Drive it home
+                  </p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4 text-sm leading-relaxed">
+                    {DRIVE_IT_HOME.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
               </>
+            ) : department === "kitchen" && !huddleRunsToday("kitchen") ? (
+              <p className="text-sm text-muted-foreground">
+                No kitchen huddle today — kitchen huddles run Friday, Saturday, and Sunday.
+              </p>
             ) : (
               <p className="text-sm text-muted-foreground">
                 No huddle cards are set up for {department} yet.
