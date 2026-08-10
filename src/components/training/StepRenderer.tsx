@@ -1,21 +1,9 @@
 import {
-  AlertTriangle,
   CheckCircle2,
   Clapperboard,
-  Droplets,
-  Flame,
   Image as ImageIcon,
   ListChecks,
-  Package,
-  PlugZap,
-  Scissors,
-  Snowflake,
-  Sparkles,
-  Thermometer,
-  Timer,
   UserCheck,
-  Wind,
-  type LucideIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -57,22 +45,6 @@ function ComingSoon({ step, isAdmin }: { step: StepRow; isAdmin: boolean }) {
 }
 
 function Body({ lines }: { lines: string[] }) {
-  // Simple keyword → icon map so hazard/fact rows read visually, not as walls of text.
-  const iconRules: Array<{ match: RegExp; icon: LucideIcon }> = [
-    { match: /knife|cut|blade|slice|sharp/i, icon: Scissors },
-    { match: /burn|hot|fire|flame|fryer|oven|grill|stove/i, icon: Flame },
-    { match: /slip|wet|spill|mop|floor|water/i, icon: Droplets },
-    { match: /chemical|sanitiz|clean|bleach|caustic/i, icon: Sparkles },
-    { match: /electric|outlet|cord|plug|shock/i, icon: PlugZap },
-    { match: /cold|freezer|walk-?in|frozen/i, icon: Snowflake },
-    { match: /temp|thermometer|degree|°/i, icon: Thermometer },
-    { match: /lift|carry|box|stock|storage|load/i, icon: Package },
-    { match: /time|hour|minute|shift|day/i, icon: Timer },
-    { match: /steam|vent|air|smoke|gas/i, icon: Wind },
-  ];
-  const iconFor = (text: string): LucideIcon =>
-    iconRules.find((rule) => rule.match.test(text))?.icon ?? AlertTriangle;
-
   if (!lines.length) return null;
 
   if (lines.some((line) => line.startsWith("## "))) {
@@ -118,20 +90,12 @@ function Body({ lines }: { lines: string[] }) {
   if (lines.length >= 2 && pairs.every(Boolean)) {
     return (
       <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface/60">
-        {(pairs as { label: string; value: string }[]).map((pair, i) => {
-          const Icon = iconFor(`${pair.label} ${pair.value}`);
-          return (
-            <li key={i} className="flex items-start gap-3 px-3.5 py-3">
-              <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <Icon className="size-4" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <p className="font-display text-sm font-semibold leading-snug">{pair.label}</p>
-                <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{pair.value}</p>
-              </div>
-            </li>
-          );
-        })}
+        {(pairs as { label: string; value: string }[]).map((pair, i) => (
+          <li key={i} className="min-w-0 px-3.5 py-3">
+            <p className="font-display text-sm font-semibold leading-snug">{pair.label}</p>
+            <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{pair.value}</p>
+          </li>
+        ))}
       </ul>
     );
   }
