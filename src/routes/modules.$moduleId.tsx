@@ -278,8 +278,8 @@ function ModulePage() {
         </div>
       ) : null}
 
-      <div className="grid gap-8 md:grid-cols-[248px_1fr]">
-        <nav className="space-y-0.5 self-start rounded-lg border border-border bg-surface/60 p-2 md:sticky md:top-24">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-[248px_minmax(0,1fr)]">
+        <nav className="min-w-0 space-y-0.5 self-start rounded-lg border border-border bg-surface/60 p-2 md:sticky md:top-24">
           {steps.map((s) => (
             <Link
               key={s.id}
@@ -304,7 +304,7 @@ function ModulePage() {
           ))}
         </nav>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {active ? (
             <StepRenderer
               step={active}
