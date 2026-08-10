@@ -173,6 +173,10 @@ export function StepRenderer({
   canSignOff = false,
   signingOff = false,
   onSignOff,
+  initialedBy,
+  initialedAt,
+  loggingInitials = false,
+  onLogInitials,
   titleAs = "h2",
 }: {
   step: StepRow;
@@ -184,6 +188,11 @@ export function StepRenderer({
   canSignOff?: boolean;
   signingOff?: boolean;
   onSignOff?: () => void;
+  /** Manager-initials record on the viewed employee's progress row. */
+  initialedBy?: string | null | undefined;
+  initialedAt?: string | null | undefined;
+  loggingInitials?: boolean;
+  onLogInitials?: (() => void) | undefined;
   /** The step title is the dominant heading on module screens. */
   titleAs?: "h1" | "h2";
 }) {
@@ -258,6 +267,18 @@ export function StepRenderer({
           ) : null}
 
           <Body lines={lines} />
+
+          {step.supports_manager_initials ? (
+            <div className="pt-1">
+              <ManagerInitials
+                initialedBy={initialedBy}
+                initialedAt={initialedAt}
+                canSignOff={canSignOff}
+                pending={loggingInitials}
+                onLog={onLogInitials}
+              />
+            </div>
+          ) : null}
 
           {trainerSignoffTypes.includes(step.step_type) ? (
             <>
