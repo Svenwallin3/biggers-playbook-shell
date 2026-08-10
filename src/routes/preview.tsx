@@ -53,6 +53,23 @@ function PreviewPage() {
   const activeModule = modules.find((m) => m.id === moduleId) ?? modules[0];
   const activeStep = activeModule?.steps.find((s) => s.id === stepId) ?? activeModule?.steps[0];
 
+  const days: Array<{ key: string; label: string; moduleId: string; day: number | null }> = [];
+  for (const m of modules) {
+    const key = m.day_assignment === null ? "unassigned" : String(m.day_assignment);
+    if (days.some((d) => d.key === key)) continue;
+    days.push({
+      key,
+      label: m.day_assignment === null ? "Unassigned" : `Day ${m.day_assignment}`,
+      moduleId: m.id,
+      day: m.day_assignment,
+    });
+  }
+  days.sort((a, b) => (a.day ?? 999) - (b.day ?? 999));
+  const activeDayKey =
+    activeModule?.day_assignment === null || activeModule?.day_assignment === undefined
+      ? "unassigned"
+      : String(activeModule.day_assignment);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3">
@@ -86,6 +103,28 @@ function PreviewPage() {
           </Link>
         ))}
       </div>
+
+      {trackId && days.length > 1 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Jump to
+          </span>
+          {days.map((d) => (
+            <Link
+              key={d.key}
+              to="/preview"
+              search={{ track: trackId, module: d.moduleId, step: undefined }}
+              className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                d.key === activeDayKey
+                  ? "border-primary bg-primary/10 font-semibold text-foreground"
+                  : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+              }`}
+            >
+              {d.label}
+            </Link>
+          ))}
+        </div>
+      ) : null}
 
       {!trackId ? (
         <Card>
