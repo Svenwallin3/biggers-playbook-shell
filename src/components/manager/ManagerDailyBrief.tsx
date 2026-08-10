@@ -46,7 +46,6 @@ function splitContext(text: string): { context: string | null; body: string } {
 const DRIVE_IT_HOME = [
   "Say why it matters here: name what the guest actually feels when we get this right, and what they feel when we miss it.",
   "Ask one person to say it back in their own words. If they can't, it won't happen on the floor today.",
-  "Name what you'll be watching for during the shift, and say you'll call it out when you see it done well.",
   "Close the loop before they clock out: one specific person, one specific moment, out loud.",
 ];
 
