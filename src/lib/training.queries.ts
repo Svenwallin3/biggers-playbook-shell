@@ -301,6 +301,36 @@ export async function setStepProgress(input: {
 }
 
 /** Trainer sign-off: marks a step certified by the acting manager/owner. */
+/**
+ * Manager initials on an ungated step: records who/when without changing the
+ * step's progress status, so it never gates Next or ordering.
+ */
+export async function logManagerInitials(input: {
+  employeeId: string;
+  stepId: string;
+  signedOffBy: string;
+  existingId?: string | undefined;
+}) {
+  const now = new Date().toISOString();
+  if (input.existingId) {
+    const { error } = await supabase
+      .from("progress_records")
+      .update({ signed_off_by: input.signedOffBy, signed_off_at: now })
+      .eq("id", input.existingId);
+    if (error) throw error;
+    return;
+  }
+  const { error } = await supabase.from("progress_records").insert({
+    employee_id: input.employeeId,
+    step_id: input.stepId,
+    status: "in_progress" as Database["public"]["Enums"]["progress_status"],
+    started_at: now,
+    signed_off_by: input.signedOffBy,
+    signed_off_at: now,
+  });
+  if (error) throw error;
+}
+
 export async function signOffStep(input: {
   employeeId: string;
   stepId: string;

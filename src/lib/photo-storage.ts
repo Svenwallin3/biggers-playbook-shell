@@ -97,6 +97,9 @@ export function usePhotoUrl(path: string | null | undefined) {
     queryFn: async () => {
       if (!path) return null;
       if (/^https?:\/\//.test(path)) return path;
+      // Root-relative app/CDN assets (e.g. /__l5e/assets-v1/…) are served from
+      // this origin — pass them straight through instead of signing them.
+      if (path.startsWith("/")) return path;
       return signedPhotoUrl(path);
     },
   });
