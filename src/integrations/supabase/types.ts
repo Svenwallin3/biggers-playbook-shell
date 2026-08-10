@@ -966,6 +966,7 @@ export type Database = {
           module_id: string
           sequence_order: number
           step_type: Database["public"]["Enums"]["step_type"]
+          supports_manager_initials: boolean
           title: string
           updated_at: string
           video_url: string | null
@@ -984,6 +985,7 @@ export type Database = {
           module_id: string
           sequence_order?: number
           step_type?: Database["public"]["Enums"]["step_type"]
+          supports_manager_initials?: boolean
           title: string
           updated_at?: string
           video_url?: string | null
@@ -1002,6 +1004,7 @@ export type Database = {
           module_id?: string
           sequence_order?: number
           step_type?: Database["public"]["Enums"]["step_type"]
+          supports_manager_initials?: boolean
           title?: string
           updated_at?: string
           video_url?: string | null

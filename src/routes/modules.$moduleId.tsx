@@ -14,6 +14,7 @@ import { trackTheme } from "@/lib/track-theme";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getDayGroupedSteps,
+  logManagerInitials,
   moduleQueryOptions,
   planQueryOptions,
   progressQueryOptions,
@@ -128,6 +129,22 @@ function ModulePage() {
       void queryClient.invalidateQueries({ queryKey: ["training-queue"] });
     },
     onError: (error: Error) => toast.error("Couldn't sign off", { description: error.message }),
+  });
+
+  const logInitials = useMutation({
+    mutationFn: (stepId: string) =>
+      logManagerInitials({
+        employeeId: subjectId!,
+        stepId,
+        signedOffBy: employee!.id,
+        existingId: progressByStep.get(stepId)?.id,
+      }),
+    onSuccess: () => {
+      toast.success("Initials logged");
+      void queryClient.invalidateQueries({ queryKey: ["progress", subjectId] });
+    },
+    onError: (error: Error) =>
+      toast.error("Couldn't log initials", { description: error.message }),
   });
 
   if (moduleQuery.isPending) {
@@ -313,6 +330,14 @@ function ModulePage() {
               canSignOff={Boolean(!previewMode && isAdmin && subjectId)}
               signingOff={signOff.isPending}
               onSignOff={() => signOff.mutate(active.id)}
+              initialedBy={previewMode ? null : (activeRecord?.signed_off_by ?? null)}
+              initialedAt={previewMode ? null : (activeRecord?.signed_off_at ?? null)}
+              loggingInitials={logInitials.isPending}
+              onLogInitials={
+                !previewMode && isAdmin && subjectId
+                  ? () => logInitials.mutate(active.id)
+                  : undefined
+              }
             />
           ) : null}
           {showTrainerFollowUp ? (

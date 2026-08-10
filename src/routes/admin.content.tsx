@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PhotoUpload } from "@/components/PhotoUpload";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,6 +74,7 @@ interface Draft {
   content_notes: string;
   location_tag: string;
   video_url: string;
+  media_url: string | null;
 }
 
 function ContentEditorPage() {
@@ -130,6 +132,7 @@ function ContentEditorPage() {
       content_notes: step.content_notes ?? "",
       location_tag: step.location_tag ?? "",
       video_url: step.video_url ?? "",
+      media_url: step.media_url ?? null,
     });
   }, [step?.id, step?.updated_at]);
 
@@ -153,6 +156,7 @@ function ContentEditorPage() {
           content_notes: draft!.content_notes.trim() || null,
           location_tag: draft!.location_tag.trim() || null,
           video_url: draft!.video_url.trim() || null,
+          media_url: draft!.media_url,
         })
         .eq("id", selectedId);
       if (error) throw error;
@@ -438,6 +442,15 @@ function ContentEditorPage() {
                     placeholder="https://www.youtube.com/watch?v=…"
                   />
                 </div>
+
+                <PhotoUpload
+                  value={draft.media_url}
+                  onChange={(value) => patch({ media_url: value })}
+                  folder="steps"
+                  label="Photo (optional)"
+                  helpText="Shown above the step's written content. Any step type can carry a photo."
+                  disabled={!canEdit}
+                />
 
                 <div className="space-y-2">
                   <Label htmlFor="loc">Location tag</Label>

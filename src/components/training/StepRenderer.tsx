@@ -1,13 +1,10 @@
-import {
-  CheckCircle2,
-  Clapperboard,
-  Image as ImageIcon,
-  ListChecks,
-  UserCheck,
-} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { CheckCircle2, ListChecks, PenLine, UserCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { StoredPhoto } from "@/components/PhotoUpload";
+import { supabase } from "@/integrations/supabase/client";
 import { StepStatusBadge } from "./StepStatusBadge";
 import { StepTypeChip } from "./StepTypeChip";
 import { VideoEmbed, youTubeId } from "@/components/VideoEmbed";
@@ -17,6 +14,60 @@ import {
   type QuizRow,
   type StepRow,
 } from "@/lib/training.queries";
+
+function ManagerInitials({
+  initialedBy,
+  initialedAt,
+  canSignOff,
+  pending,
+  onLog,
+}: {
+  initialedBy: string | null | undefined;
+  initialedAt: string | null | undefined;
+  canSignOff: boolean;
+  pending: boolean;
+  onLog?: (() => void) | undefined;
+}) {
+  const nameQuery = useQuery({
+    queryKey: ["employee-name", initialedBy],
+    enabled: Boolean(initialedBy),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("employees")
+        .select("full_name, email")
+        .eq("id", initialedBy!)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.full_name ?? data?.email ?? null;
+    },
+  });
+
+  if (initialedBy) {
+    const when = initialedAt ? new Date(initialedAt).toLocaleDateString() : null;
+    return (
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <PenLine className="size-3.5 shrink-0" aria-hidden="true" />
+        Initialed by {nameQuery.data ?? "your manager"}
+        {when ? ` on ${when}` : ""}
+      </p>
+    );
+  }
+
+  if (!canSignOff) return null;
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={pending || !onLog}
+      onClick={onLog}
+    >
+      <PenLine className="size-4" aria-hidden="true" />
+      {pending ? "Saving…" : "Log manager initials"}
+    </Button>
+  );
+}
 
 function ComingSoon({ step, isAdmin }: { step: StepRow; isAdmin: boolean }) {
   const blocked = step.content_status === "blocked";
@@ -122,6 +173,10 @@ export function StepRenderer({
   canSignOff = false,
   signingOff = false,
   onSignOff,
+  initialedBy,
+  initialedAt,
+  loggingInitials = false,
+  onLogInitials,
   titleAs = "h2",
 }: {
   step: StepRow;
@@ -133,6 +188,11 @@ export function StepRenderer({
   canSignOff?: boolean;
   signingOff?: boolean;
   onSignOff?: () => void;
+  /** Manager-initials record on the viewed employee's progress row. */
+  initialedBy?: string | null | undefined;
+  initialedAt?: string | null | undefined;
+  loggingInitials?: boolean;
+  onLogInitials?: (() => void) | undefined;
   /** The step title is the dominant heading on module screens. */
   titleAs?: "h1" | "h2";
 }) {
@@ -161,43 +221,20 @@ export function StepRenderer({
             </p>
           ) : null}
 
-          {step.step_type === "photo" || step.media_url ? (
+          {/* Media is presence-driven: any step type may carry a photo and/or video. */}
+          {step.media_url ? (
             <Card className="overflow-hidden">
               <CardContent className="space-y-3 px-0 py-0 sm:px-6 sm:py-6">
-                {step.media_url ? (
-                  <img
-                    src={step.media_url}
-                    alt={step.title}
-                    loading="lazy"
-                    className="mx-auto block h-auto w-full max-w-2xl object-contain sm:rounded-md"
-                  />
-                ) : (
-                  <div className="flex h-48 items-center justify-center bg-muted text-muted-foreground sm:rounded-md">
-                    <ImageIcon className="size-8" />
-                  </div>
-                )}
+                <StoredPhoto
+                  path={step.media_url}
+                  alt={step.title}
+                  className="mx-auto block h-auto w-full max-w-2xl rounded-none border-0 object-contain sm:rounded-md"
+                />
               </CardContent>
             </Card>
           ) : null}
 
-          {step.step_type === "video" ? (
-            <Card className="overflow-hidden">
-              <CardContent className="space-y-3 px-0 py-0 sm:px-6 sm:py-6">
-                {youTubeId(step.video_url) ? (
-                  <VideoEmbed url={step.video_url} title={step.title} className="sm:rounded-md" />
-                ) : (
-                  <div className="flex h-48 items-center justify-center bg-muted text-muted-foreground sm:rounded-md">
-                    <Clapperboard className="size-8" />
-                  </div>
-                )}
-                <p className="px-4 pb-4 text-sm text-muted-foreground sm:px-0 sm:pb-0">
-                  Short skill clip
-                </p>
-              </CardContent>
-            </Card>
-          ) : null}
-
-          {step.step_type !== "video" ? (
+          {youTubeId(step.video_url) ? (
             <VideoEmbed url={step.video_url} title={step.title} />
           ) : null}
 
@@ -230,6 +267,18 @@ export function StepRenderer({
           ) : null}
 
           <Body lines={lines} />
+
+          {step.supports_manager_initials ? (
+            <div className="pt-1">
+              <ManagerInitials
+                initialedBy={initialedBy}
+                initialedAt={initialedAt}
+                canSignOff={canSignOff}
+                pending={loggingInitials}
+                onLog={onLogInitials}
+              />
+            </div>
+          ) : null}
 
           {trainerSignoffTypes.includes(step.step_type) ? (
             <>
