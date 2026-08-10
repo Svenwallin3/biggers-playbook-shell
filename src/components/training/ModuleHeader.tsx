@@ -7,6 +7,11 @@ type ModuleHeaderProps = {
   name: string;
   description?: string | null;
   as?: "h1" | "h2";
+  /**
+   * "compact" renders the module as a quiet context line so the step title
+   * below it is the single dominant heading on the screen.
+   */
+  variant?: "hero" | "compact";
 };
 
 /** Shared module header: context line, title, and description callout. */
@@ -17,6 +22,7 @@ export function ModuleHeader({
   name,
   description,
   as = "h1",
+  variant = "hero",
 }: ModuleHeaderProps) {
   const Heading = as;
   const theme = trackTheme(trackName);
@@ -24,6 +30,24 @@ export function ModuleHeader({
     as === "h1"
       ? "font-display text-2xl font-semibold tracking-tight sm:text-3xl"
       : "font-display text-2xl font-semibold tracking-tight";
+
+  if (variant === "compact") {
+    return (
+      <div className="flex items-start gap-2.5">
+        <span className={`mt-1 h-8 w-1.5 shrink-0 rounded-full ${theme.rail}`} aria-hidden />
+        <div className="min-w-0">
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${theme.label}`}>
+            {trackName}
+            {subPath ? ` · ${subPath}` : ""}
+            {dayAssignment ? ` · Day ${dayAssignment}` : ""}
+          </p>
+          <Heading className="font-display text-base font-semibold tracking-tight text-muted-foreground">
+            {name}
+          </Heading>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
