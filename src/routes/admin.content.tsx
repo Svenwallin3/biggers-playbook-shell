@@ -442,6 +442,15 @@ function ContentEditorPage() {
                   />
                 </div>
 
+                <PhotoUpload
+                  value={draft.media_url}
+                  onChange={(value) => patch({ media_url: value })}
+                  folder="steps"
+                  label="Photo (optional)"
+                  helpText="Shown above the step's written content. Any step type can carry a photo."
+                  disabled={!canEdit}
+                />
+
                 <div className="space-y-2">
                   <Label htmlFor="loc">Location tag</Label>
                   <Input

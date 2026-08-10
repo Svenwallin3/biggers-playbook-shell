@@ -330,6 +330,14 @@ function ModulePage() {
               canSignOff={Boolean(!previewMode && isAdmin && subjectId)}
               signingOff={signOff.isPending}
               onSignOff={() => signOff.mutate(active.id)}
+              initialedBy={previewMode ? null : (activeRecord?.signed_off_by ?? null)}
+              initialedAt={previewMode ? null : (activeRecord?.signed_off_at ?? null)}
+              loggingInitials={logInitials.isPending}
+              onLogInitials={
+                !previewMode && isAdmin && subjectId
+                  ? () => logInitials.mutate(active.id)
+                  : undefined
+              }
             />
           ) : null}
           {showTrainerFollowUp ? (
