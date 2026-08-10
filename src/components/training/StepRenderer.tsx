@@ -245,6 +245,13 @@ export function StepRenderer({
           <Body lines={lines} />
 
           {trainerSignoffTypes.includes(step.step_type) ? (
+            <>
+              {canSignOff && step.content_notes ? (
+                <div className="mt-8 rounded-md border border-dashed border-muted-foreground/30 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">Manager note:</span>{" "}
+                  {step.content_notes}
+                </div>
+              ) : null}
             <Card className="mt-8 overflow-hidden border-2 border-dashed border-accent/50 bg-accent/10">
               <div className="bg-accent/25 px-5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-accent-foreground">
                 Certification moment
@@ -276,6 +283,7 @@ export function StepRenderer({
                 </Button>
               </CardContent>
             </Card>
+            </>
           ) : null}
         </div>
       )}
