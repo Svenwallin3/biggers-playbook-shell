@@ -221,26 +221,24 @@ function ModulePage() {
           </p>
         </div>
       ) : null}
-      <div>
+      <div className="flex items-center justify-between gap-3">
         <Link to="/" className="text-xs text-muted-foreground hover:underline">
           ← Today&apos;s training
         </Link>
-        <div className="mt-2">
-          <ModuleHeader
-            as="h1"
-            trackName={mod.track?.name}
-            subPath={mod.sub_path}
-            dayAssignment={mod.day_assignment}
-            name={mod.name}
-            description={null}
-          />
-        </div>
       </div>
 
       <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur supports-backdrop-filter:bg-background/80 sm:-mx-6 sm:px-6">
         <div className="flex items-center gap-3">
-          <span className={`h-6 w-1.5 shrink-0 rounded-full ${theme.rail}`} aria-hidden />
-          <p className="min-w-0 flex-1 truncate font-display text-sm font-semibold">{mod.name}</p>
+          <div className="min-w-0 flex-1">
+            <ModuleHeader
+              as="h2"
+              variant="compact"
+              trackName={mod.track?.name}
+              subPath={mod.sub_path}
+              dayAssignment={mod.day_assignment}
+              name={mod.name}
+            />
+          </div>
           <p className="shrink-0 text-xs font-medium text-muted-foreground">
             Step {stepNumber} of {steps.length}
           </p>
@@ -308,6 +306,7 @@ function ModulePage() {
           {active ? (
             <StepRenderer
               step={active}
+              titleAs="h1"
               quizzes={quizzes.filter((q) => q.step_id === active.id)}
               isAdmin={isAdmin}
               signedOff={previewMode ? false : activeSignedOff}
@@ -323,35 +322,19 @@ function ModulePage() {
             </p>
           ) : null}
           {active ? (
-            <div className="flex items-center justify-between border-t border-border pt-4">
-              <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
-              <div className="flex items-center gap-2">
-                {needsTrainer ? (
-                  previewMode ? null : (
-                  <Button size="sm" variant="outline" disabled>
-                    Trainer sign-off required
-                  </Button>
-                  )
-                ) : activeComplete && !previewMode ? (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={!employee || toggle.isPending}
-                    onClick={() => toggle.mutate({ stepId: active.id, completed: false })}
-                  >
-                    Completed — undo
-                  </Button>
-                ) : null}
+            <div className="space-y-3 border-t border-border pt-4">
+              <div className="grid grid-cols-2 gap-3">
                 <Button
-                  size="sm"
                   variant="outline"
+                  className="h-11 w-full"
                   disabled={!prevStep || planQuery.isPending}
                   onClick={goPrevious}
                 >
+                  <ChevronLeft className="size-4" aria-hidden />
                   Previous
                 </Button>
                 <Button
-                  size="sm"
+                  className="h-11 w-full"
                   disabled={blockedOnTrainer || toggle.isPending || planQuery.isPending}
                   onClick={() => void goNext()}
                 >
@@ -360,7 +343,21 @@ function ModulePage() {
                     : isLastStep
                       ? "Finish"
                       : "Next"}
+                  {blockedOnTrainer ? null : <ChevronRight className="size-4" aria-hidden />}
                 </Button>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
+                {!needsTrainer && activeComplete && !previewMode ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={!employee || toggle.isPending}
+                    onClick={() => toggle.mutate({ stepId: active.id, completed: false })}
+                  >
+                    Completed — undo
+                  </Button>
+                ) : null}
               </div>
             </div>
           ) : null}
