@@ -239,7 +239,7 @@ function PreviewPage() {
                       Previous
                     </Link>
                   ) : (
-                    <span>
+                    <span className="inline-flex items-center gap-2">
                       <ChevronLeft className="size-4" aria-hidden />
                       Previous
                     </span>
@@ -255,7 +255,7 @@ function PreviewPage() {
                       <ChevronRight className="size-4" aria-hidden />
                     </Link>
                   ) : (
-                    <span>Finish</span>
+                    <span className="inline-flex items-center gap-2">Finish</span>
                   )}
                 </Button>
               </div>
