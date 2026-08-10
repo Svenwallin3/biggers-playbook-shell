@@ -25,9 +25,9 @@ export const Route = createFileRoute("/training-library")({
 });
 
 function TrainingLibraryPage() {
-  const { employee, loading } = useAuth();
+  const { employee, loading, isManagerOrOwner } = useAuth();
   const planQuery = useQuery({
-    ...planQueryOptions(employee?.path ?? null),
+    ...planQueryOptions(employee?.path ?? null, isManagerOrOwner),
     enabled: !!employee,
   });
 
@@ -62,8 +62,9 @@ function TrainingLibraryPage() {
           Browse all training
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Everything available to you — open any module to refresh on something you&apos;ve
-          already covered.
+          {isManagerOrOwner
+            ? "Every track company-wide — open any module to review what your team sees."
+            : "Everything available to you — open any module to refresh on something you've already covered."}
         </p>
       </div>
 
