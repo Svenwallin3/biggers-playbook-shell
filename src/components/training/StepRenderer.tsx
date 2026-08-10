@@ -212,43 +212,20 @@ export function StepRenderer({
             </p>
           ) : null}
 
-          {step.step_type === "photo" || step.media_url ? (
+          {/* Media is presence-driven: any step type may carry a photo and/or video. */}
+          {step.media_url ? (
             <Card className="overflow-hidden">
               <CardContent className="space-y-3 px-0 py-0 sm:px-6 sm:py-6">
-                {step.media_url ? (
-                  <img
-                    src={step.media_url}
-                    alt={step.title}
-                    loading="lazy"
-                    className="mx-auto block h-auto w-full max-w-2xl object-contain sm:rounded-md"
-                  />
-                ) : (
-                  <div className="flex h-48 items-center justify-center bg-muted text-muted-foreground sm:rounded-md">
-                    <ImageIcon className="size-8" />
-                  </div>
-                )}
+                <StoredPhoto
+                  path={step.media_url}
+                  alt={step.title}
+                  className="mx-auto block h-auto w-full max-w-2xl rounded-none border-0 object-contain sm:rounded-md"
+                />
               </CardContent>
             </Card>
           ) : null}
 
-          {step.step_type === "video" ? (
-            <Card className="overflow-hidden">
-              <CardContent className="space-y-3 px-0 py-0 sm:px-6 sm:py-6">
-                {youTubeId(step.video_url) ? (
-                  <VideoEmbed url={step.video_url} title={step.title} className="sm:rounded-md" />
-                ) : (
-                  <div className="flex h-48 items-center justify-center bg-muted text-muted-foreground sm:rounded-md">
-                    <Clapperboard className="size-8" />
-                  </div>
-                )}
-                <p className="px-4 pb-4 text-sm text-muted-foreground sm:px-0 sm:pb-0">
-                  Short skill clip
-                </p>
-              </CardContent>
-            </Card>
-          ) : null}
-
-          {step.step_type !== "video" ? (
+          {youTubeId(step.video_url) ? (
             <VideoEmbed url={step.video_url} title={step.title} />
           ) : null}
 
