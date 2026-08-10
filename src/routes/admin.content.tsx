@@ -78,6 +78,7 @@ interface Draft {
 function ContentEditorPage() {
   const { employee, isManagerOrOwner, loading } = useAuth();
   const queryClient = useQueryClient();
+  const [showHidden, setShowHidden] = useState(false);
   const treeQuery = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
 
   const [selection, setSelection] = useState<{
