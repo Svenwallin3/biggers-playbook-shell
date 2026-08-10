@@ -42,6 +42,11 @@ function splitContext(text: string): { context: string | null; body: string } {
   return { context: match[1] ?? null, body: text.slice(match[0].length) };
 }
 
+/** Lowercases the first letter so the standard reads inside a spoken sentence. */
+function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
 /** Leadership frame so the huddle gets led, not just read aloud. */
 const DRIVE_IT_HOME = [
   "Say why it matters here: name what the guest actually feels when we get this right, and what they feel when we miss it.",
