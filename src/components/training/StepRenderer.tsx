@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StoredPhoto } from "@/components/PhotoUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { StepStatusBadge } from "./StepStatusBadge";
+import { DangerZoneGraphic } from "./DangerZoneGraphic";
 import { StepTypeChip } from "./StepTypeChip";
 import { VideoEmbed, youTubeId } from "@/components/VideoEmbed";
 import {
@@ -133,7 +134,37 @@ function labelIcon(label: string): LucideIcon | null {
   return null;
 }
 
+const DANGER_ZONE_MARKER = "[[danger-zone]]";
+
 function Body({ lines }: { lines: string[] }) {
+  if (!lines.length) return null;
+  if (lines.some((line) => line.trim() === DANGER_ZONE_MARKER)) {
+    const blocks: { marker: boolean; lines: string[] }[] = [];
+    for (const line of lines) {
+      if (line.trim() === DANGER_ZONE_MARKER) {
+        blocks.push({ marker: true, lines: [] });
+      } else {
+        const last = blocks[blocks.length - 1];
+        if (!last || last.marker) blocks.push({ marker: false, lines: [line] });
+        else last.lines.push(line);
+      }
+    }
+    return (
+      <div className="space-y-4">
+        {blocks.map((block, i) =>
+          block.marker ? (
+            <DangerZoneGraphic key={i} />
+          ) : (
+            <BodyBlock key={i} lines={block.lines} />
+          ),
+        )}
+      </div>
+    );
+  }
+  return <BodyBlock lines={lines} />;
+}
+
+function BodyBlock({ lines }: { lines: string[] }) {
   if (!lines.length) return null;
 
   if (lines.some((line) => line.startsWith("## "))) {

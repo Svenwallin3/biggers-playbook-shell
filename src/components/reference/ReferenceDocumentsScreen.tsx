@@ -38,6 +38,7 @@ import { LineItemEditor } from "@/components/reference/LineItemEditor";
 import { AddSectionButton } from "@/components/reference/AddSectionButton";
 import { NewDocumentDialog } from "@/components/reference/NewDocumentDialog";
 import { SectionBodyEditor } from "@/components/reference/SectionBodyEditor";
+import { DangerZoneGraphic } from "@/components/training/DangerZoneGraphic";
 import { useAuth } from "@/hooks/useAuth";
 import {
   checklistCompletionsQueryOptions,
@@ -339,9 +340,13 @@ function Detail({
                       .split("\n")
                       .map((line) => line.trim())
                       .filter(Boolean)
-                      .map((line, idx) => (
-                        <p key={idx}>{line}</p>
-                      ))}
+                      .map((line, idx) =>
+                        line === "[[danger-zone]]" ? (
+                          <DangerZoneGraphic key={idx} />
+                        ) : (
+                          <p key={idx}>{line}</p>
+                        ),
+                      )}
                   </div>
                 ) : null}
 
