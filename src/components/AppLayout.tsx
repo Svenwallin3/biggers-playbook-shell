@@ -28,6 +28,7 @@ export function AppLayout() {
     "/admin",
     "/approvals",
     "/compliance",
+    "/huddle-notes",
     "/merge-tool",
     "/suggest",
     "/team",
@@ -55,12 +56,18 @@ export function AppLayout() {
   const adminItems: NavItem[] = isOwner
     ? [
         { label: "Team", to: "/team" },
+        { label: "Huddle & Notes", to: "/huddle-notes" },
         { label: "Compliance", to: "/compliance" },
         { label: "Merge", to: "/merge-tool" },
       ]
     : isGeneralManager
-      ? [{ label: "Team", to: "/team" }]
-      : [];
+      ? [
+          { label: "Team", to: "/team" },
+          { label: "Huddle & Notes", to: "/huddle-notes" },
+        ]
+      : isManagerOrOwner
+        ? [{ label: "Huddle & Notes", to: "/huddle-notes" }]
+        : [];
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
   const groupActive = (items: NavItem[]) => items.some((i) => isActive(i.to));
