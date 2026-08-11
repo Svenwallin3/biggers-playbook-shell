@@ -82,10 +82,6 @@ export function versionHistoryQueryOptions(entityType: string, entityId: string 
   });
 }
 
-export function employeesQueryOptions() {
-  return employeesQueryOptionsImpl();
-}
-
 /** A non-GM manager proposes new title/content_body text for a step. */
 export async function submitStepSuggestion(input: {
   stepId: string;
@@ -105,7 +101,7 @@ export async function submitStepSuggestion(input: {
   if (error) throw error;
 }
 
-function employeesQueryOptionsImpl() {
+export function employeesQueryOptions() {
   return queryOptions({
     queryKey: ["employees"],
     queryFn: async (): Promise<EmployeeRow[]> => {
