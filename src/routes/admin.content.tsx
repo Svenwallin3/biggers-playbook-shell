@@ -45,7 +45,11 @@ import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/training.queries";
-import { contentTreeQueryOptions, versionHistoryQueryOptions } from "@/lib/admin.queries";
+import {
+  contentTreeQueryOptions,
+  submitStepSuggestion,
+  versionHistoryQueryOptions,
+} from "@/lib/admin.queries";
 
 export const Route = createFileRoute("/admin/content")({
   validateSearch: (search: Record<string, unknown>): { stepId?: string | undefined } => ({
@@ -352,7 +356,7 @@ function ContentEditorPage() {
           {selectedTrack ? (
             <TrackEditPanel
               track={selectedTrack}
-              canEdit={canEditDepartment(selectedTrack.department)}
+              canEdit={canEditDirectInDepartment(selectedTrack.department)}
               employeeId={employee?.id}
             />
           ) : null}
@@ -370,7 +374,7 @@ function ContentEditorPage() {
               <ModuleEditPanel
                 module={selectedModule}
                 trackName={selectedModule.track?.name}
-                canEdit={canEditDepartment(selectedModule.track?.department)}
+                canEdit={canEditDirectInDepartment(selectedModule.track?.department)}
                 employeeId={employee?.id}
               />
             </div>
@@ -385,7 +389,11 @@ function ContentEditorPage() {
                 </div>
                 <CardDescription>
                   {stepModule?.track?.name} · {stepModule?.name}
-                  {!canEditDirect ? " — read-only: outside your department" : ""}
+                  {canEditDirect
+                    ? ""
+                    : canSuggest
+                      ? " — You can suggest a change to the title and content below — it goes to the Owner approval queue."
+                      : " — read-only: outside your department"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -395,7 +403,7 @@ function ContentEditorPage() {
                     id="title"
                     value={draft.title}
                     maxLength={140}
-                    disabled={!canEditDirect}
+                    disabled={!canEditDirect && !canSuggest}
                     onChange={(e) => patch({ title: e.target.value })}
                   />
                 </div>
@@ -448,11 +456,25 @@ function ContentEditorPage() {
                     rows={6}
                     value={draft.content_body}
                     maxLength={4000}
-                    disabled={!canEditDirect}
+                    disabled={!canEditDirect && !canSuggest}
                     onChange={(e) => patch({ content_body: e.target.value })}
                     placeholder="One numbered step per line."
                   />
                 </div>
+
+                {canSuggest ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="why">How do you know it should change?</Label>
+                    <Textarea
+                      id="why"
+                      rows={3}
+                      value={suggestionWhy}
+                      maxLength={1000}
+                      onChange={(e) => setSuggestionWhy(e.target.value)}
+                      placeholder="What you'd check before you'd sign off on it."
+                    />
+                  </div>
+                ) : null}
 
                 <div className="space-y-2">
                   <Label htmlFor="notes">Content notes (admin-only)</Label>
@@ -541,9 +563,21 @@ function ContentEditorPage() {
                 <Separator />
 
                 <div className="flex flex-wrap gap-2">
-                  <Button disabled={!canEditDirect || save.isPending} onClick={() => save.mutate()}>
-                    {save.isPending ? "Saving…" : "Save changes"}
-                  </Button>
+                  {canSuggest ? (
+                    <Button
+                      disabled={suggest.isPending || !employee}
+                      onClick={() => suggest.mutate()}
+                    >
+                      {suggest.isPending ? "Submitting…" : "Submit for approval"}
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled={!canEditDirect || save.isPending}
+                      onClick={() => save.mutate()}
+                    >
+                      {save.isPending ? "Saving…" : "Save changes"}
+                    </Button>
+                  )}
                   {step.is_deleted ? (
                     <Button
                       variant="outline"
