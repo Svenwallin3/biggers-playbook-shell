@@ -22,6 +22,7 @@ export const Route = createFileRoute("/reference/checklists")({
       documentType="checklist"
       heading="Checklists"
       blurb="Run-the-shift checklists, grouped by what they're for."
+      subCategoryFilter={{ exclude: ["Manager Walkthrough Guides"] }}
     />
   ),
 });
