@@ -550,6 +550,10 @@ function ContentEditorPage() {
             </Card>
           ) : null}
 
+          {step && draft && draft.step_type === "quiz" ? (
+            <QuizQuestionsPanel key={step.id} stepId={step.id} />
+          ) : null}
+
           {selection.kind === "step" ? (
           <Card>
             <CardHeader>
