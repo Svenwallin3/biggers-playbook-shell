@@ -23,7 +23,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { trackTheme } from "@/lib/track-theme";
-import type { ModuleRow, TrackRow } from "@/lib/training.queries";
+import type { ModuleRow, StepRow, TrackRow } from "@/lib/training.queries";
 
 type ModuleWithTrack = ModuleRow & { track: TrackRow | undefined };
 
@@ -99,29 +99,34 @@ function SortableRow({
 export function SortableContentTree({
   tracks,
   modules,
+  steps,
   selection,
   onSelect,
   canReorderTracks,
   canReorderModulesIn,
   renderTrackLabel,
   renderModuleLabel,
+  renderStepLabel,
   renderModuleChildren,
   renderTrackFooter,
 }: {
   tracks: TrackRow[];
   modules: ModuleWithTrack[];
+  steps: StepRow[];
   selection: Selection;
   onSelect: (s: Selection) => void;
   canReorderTracks: boolean;
   canReorderModulesIn: (track: TrackRow) => boolean;
   renderTrackLabel: (track: TrackRow) => ReactNode;
   renderModuleLabel: (m: ModuleWithTrack) => ReactNode;
+  renderStepLabel: (s: StepRow) => ReactNode;
   renderModuleChildren: (m: ModuleWithTrack, track: TrackRow) => ReactNode;
   renderTrackFooter: (track: TrackRow) => ReactNode;
 }) {
   const queryClient = useQueryClient();
   const [trackOrder, setTrackOrder] = useState<string[]>([]);
   const [moduleOrder, setModuleOrder] = useState<Record<string, string[]>>({});
+  const [stepOrder, setStepOrder] = useState<Record<string, string[]>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -134,6 +139,12 @@ export function SortableContentTree({
     for (const m of modules) (map[m.track_id] ??= []).push(m.id);
     return map;
   }, [tracks, modules]);
+  const serverStepOrder = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const m of modules) map[m.id] = [];
+    for (const s of steps) (map[s.module_id] ??= []).push(s.id);
+    return map;
+  }, [modules, steps]);
 
   useEffect(() => {
     if (!saving) setTrackOrder(serverTrackOrder);
@@ -141,9 +152,13 @@ export function SortableContentTree({
   useEffect(() => {
     if (!saving) setModuleOrder(serverModuleOrder);
   }, [serverModuleOrder, saving]);
+  useEffect(() => {
+    if (!saving) setStepOrder(serverStepOrder);
+  }, [serverStepOrder, saving]);
 
   const trackById = useMemo(() => new Map(tracks.map((t) => [t.id, t])), [tracks]);
   const moduleById = useMemo(() => new Map(modules.map((m) => [m.id, m])), [modules]);
+  const stepById = useMemo(() => new Map(steps.map((s) => [s.id, s])), [steps]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -153,6 +168,7 @@ export function SortableContentTree({
   const revert = () => {
     setTrackOrder(serverTrackOrder);
     setModuleOrder(serverModuleOrder);
+    setStepOrder(serverStepOrder);
   };
 
   const refresh = () => {
@@ -161,7 +177,11 @@ export function SortableContentTree({
   };
 
   const persist = async (
-    updates: { table: "tracks" | "modules"; id: string; values: Record<string, unknown> }[],
+    updates: {
+      table: "tracks" | "modules" | "steps";
+      id: string;
+      values: Record<string, unknown>;
+    }[],
   ) => {
     setSaving(true);
     try {
@@ -184,6 +204,7 @@ export function SortableContentTree({
 
   const activeIsTrack = activeId?.startsWith("t-") ?? false;
   const activeModule = activeId?.startsWith("m-") ? moduleById.get(activeId.slice(2)) : undefined;
+  const activeStep = activeId?.startsWith("s-") ? stepById.get(activeId.slice(2)) : undefined;
 
   const trackAcceptsActiveModule = (track: TrackRow) =>
     !activeModule || (canReorderModulesIn(track) && !!activeModule.track && canReorderModulesIn(activeModule.track));
@@ -197,6 +218,39 @@ export function SortableContentTree({
     const activeKey = String(active.id);
     const overKey = String(over.id);
     if (activeKey === overKey) return;
+
+    // ---- Step reorder (same module only) ----
+    if (activeKey.startsWith("s-")) {
+      const movedStepId = activeKey.slice(2);
+      const movedStep = stepById.get(movedStepId);
+      if (!movedStep) return;
+      const parentModule = moduleById.get(movedStep.module_id);
+      const parentTrack = parentModule?.track;
+      if (!parentModule || !parentTrack || !canReorderModulesIn(parentTrack)) {
+        toast.error("Couldn't reorder", {
+          description: "That module is outside your department.",
+        });
+        return;
+      }
+      // Resolve the drop target to a module; anything outside this module is a no-op.
+      const overModuleId = overKey.startsWith("s-")
+        ? stepById.get(overKey.slice(2))?.module_id
+        : overKey.startsWith("m-")
+          ? overKey.slice(2)
+          : undefined;
+      if (overModuleId !== parentModule.id) return;
+
+      const list = [...(stepOrder[parentModule.id] ?? [])];
+      const from = list.indexOf(movedStepId);
+      const to = overKey.startsWith("s-") ? list.indexOf(overKey.slice(2)) : list.length - 1;
+      if (from < 0 || to < 0) return;
+      list.splice(to, 0, list.splice(from, 1)[0]!);
+      setStepOrder({ ...stepOrder, [parentModule.id]: list });
+      void persist(
+        list.map((id, i) => ({ table: "steps" as const, id, values: { sequence_order: i + 1 } })),
+      );
+      return;
+    }
 
     // ---- Track reorder ----
     if (activeKey.startsWith("t-")) {
@@ -264,7 +318,7 @@ export function SortableContentTree({
 
   const overlayLabel = activeIsTrack
     ? trackById.get(activeId!.slice(2))?.name
-    : activeModule?.name;
+    : (activeModule?.name ?? activeStep?.title);
 
   return (
     <DndContext
@@ -328,7 +382,38 @@ export function SortableContentTree({
                             {renderModuleLabel(m)}
                           </button>
                         </SortableRow>
-                        {renderModuleChildren(m, track)}
+                        <ul className="ml-7 mt-1 space-y-0.5 border-l border-border pl-3">
+                          <SortableContext
+                            items={(stepOrder[m.id] ?? []).map((id) => `s-${id}`)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {(stepOrder[m.id] ?? [])
+                              .map((id) => stepById.get(id))
+                              .filter((s): s is StepRow => Boolean(s))
+                              .map((s) => (
+                                <li key={s.id}>
+                                  <SortableRow
+                                    id={`s-${s.id}`}
+                                    enabled={canReorderModulesIn(track)}
+                                    handleLabel={`Reorder step ${s.title}`}
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => onSelect({ kind: "step", id: s.id })}
+                                      className={`w-full rounded px-2 py-1 text-left text-sm transition-colors hover:bg-muted ${
+                                        selection.kind === "step" && selection.id === s.id
+                                          ? "bg-muted font-medium"
+                                          : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {renderStepLabel(s)}
+                                    </button>
+                                  </SortableRow>
+                                </li>
+                              ))}
+                          </SortableContext>
+                          <li>{renderModuleChildren(m, track)}</li>
+                        </ul>
                       </div>
                     ))}
                   </SortableContext>

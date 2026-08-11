@@ -267,6 +267,7 @@ function ContentEditorPage() {
           <SortableContentTree
             tracks={tracks.filter((t) => showHidden || !t.is_deleted)}
             modules={modules.filter((m) => showHidden || !m.is_deleted)}
+            steps={steps.filter((s) => showHidden || !s.is_deleted)}
             selection={selection}
             onSelect={setSelection}
             canReorderTracks={canReorderTracks}
@@ -288,51 +289,29 @@ function ContentEditorPage() {
                 onCreated={() => undefined}
               />
             )}
+            renderStepLabel={(s) => (
+              <span className="flex items-center gap-1.5">
+                <span className={s.is_deleted ? "line-through" : undefined}>{s.title}</span>
+                {unmetMediaRecommendation(s) === "photo" ? (
+                  <Camera
+                    className="size-3.5 shrink-0 text-warning"
+                    aria-label="Photo recommended, not added yet"
+                  />
+                ) : unmetMediaRecommendation(s) === "video" ? (
+                  <Film
+                    className="size-3.5 shrink-0 text-warning"
+                    aria-label="Video recommended, not added yet"
+                  />
+                ) : null}
+              </span>
+            )}
             renderModuleChildren={(m, track) => (
-              <ul className="ml-7 mt-1 space-y-0.5 border-l border-border pl-3">
-                        {steps
-                          .filter((s) => s.module_id === m.id && (showHidden || !s.is_deleted))
-                          .map((s) => (
-                            <li key={s.id}>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedId(s.id)}
-                                className={`w-full rounded px-2 py-1 text-left text-sm transition-colors hover:bg-muted ${
-                                  selectedId === s.id
-                                    ? "bg-muted font-medium"
-                                    : "text-muted-foreground"
-                                }`}
-                              >
-                                <span className="flex items-center gap-1.5">
-                                  <span className={s.is_deleted ? "line-through" : undefined}>
-                                    {s.title}
-                                  </span>
-                                  {unmetMediaRecommendation(s) === "photo" ? (
-                                    <Camera
-                                      className="size-3.5 shrink-0 text-warning"
-                                      aria-label="Photo recommended, not added yet"
-                                    />
-                                  ) : unmetMediaRecommendation(s) === "video" ? (
-                                    <Film
-                                      className="size-3.5 shrink-0 text-warning"
-                                      aria-label="Video recommended, not added yet"
-                                    />
-                                  ) : null}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                        <li>
-                          <NewStepDialog
-                            moduleId={m.id}
-                            nextSequence={
-                              steps.filter((s) => s.module_id === m.id).length + 1
-                            }
-                            disabled={!canEditDepartment(track.department)}
-                            onCreated={(id) => setSelectedId(id)}
-                          />
-                        </li>
-              </ul>
+              <NewStepDialog
+                moduleId={m.id}
+                nextSequence={steps.filter((s) => s.module_id === m.id).length + 1}
+                disabled={!canEditDepartment(track.department)}
+                onCreated={(id) => setSelectedId(id)}
+              />
             )}
           />
         </nav>
