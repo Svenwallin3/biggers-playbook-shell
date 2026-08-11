@@ -359,7 +359,7 @@ function ContentEditorPage() {
                 </div>
                 <CardDescription>
                   {stepModule?.track?.name} · {stepModule?.name}
-                  {!canEdit ? " — read-only: outside your department" : ""}
+                  {!canEditDirect ? " — read-only: outside your department" : ""}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -369,7 +369,7 @@ function ContentEditorPage() {
                     id="title"
                     value={draft.title}
                     maxLength={140}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect}
                     onChange={(e) => patch({ title: e.target.value })}
                   />
                 </div>
@@ -379,7 +379,7 @@ function ContentEditorPage() {
                     <Label>Step type</Label>
                     <Select
                       value={draft.step_type}
-                      disabled={!canEdit}
+                      disabled={!canEditDirect}
                       onValueChange={(v) => patch({ step_type: v as StepType })}
                     >
                       <SelectTrigger>
@@ -398,7 +398,7 @@ function ContentEditorPage() {
                     <Label>Content status</Label>
                     <Select
                       value={draft.content_status}
-                      disabled={!canEdit}
+                      disabled={!canEditDirect}
                       onValueChange={(v) => patch({ content_status: v as ContentStatus })}
                     >
                       <SelectTrigger>
@@ -422,7 +422,7 @@ function ContentEditorPage() {
                     rows={6}
                     value={draft.content_body}
                     maxLength={4000}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect}
                     onChange={(e) => patch({ content_body: e.target.value })}
                     placeholder="One numbered step per line."
                   />
@@ -435,7 +435,7 @@ function ContentEditorPage() {
                     rows={3}
                     value={draft.content_notes}
                     maxLength={1000}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect}
                     onChange={(e) => patch({ content_notes: e.target.value })}
                   />
                 </div>
@@ -446,7 +446,7 @@ function ContentEditorPage() {
                     id="video"
                     value={draft.video_url}
                     maxLength={300}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect}
                     onChange={(e) => patch({ video_url: e.target.value })}
                     placeholder="https://www.youtube.com/watch?v=…"
                   />
@@ -458,7 +458,7 @@ function ContentEditorPage() {
                   folder="steps"
                   label="Photo (optional)"
                   helpText="Shown above the step's written content. Any step type can carry a photo."
-                  disabled={!canEdit}
+                  disabled={!canEditDirect}
                 />
 
                 <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
@@ -468,7 +468,7 @@ function ContentEditorPage() {
                     </Label>
                     <Select
                       value={draft.media_recommendation}
-                      disabled={!canEdit}
+                      disabled={!canEditDirect}
                       onValueChange={(v) =>
                         patch({ media_recommendation: v as Draft["media_recommendation"] })
                       }
@@ -494,7 +494,7 @@ function ContentEditorPage() {
                     className="mt-2 h-8 border-0 bg-transparent px-0 text-xs text-muted-foreground shadow-none focus-visible:ring-0"
                     value={draft.media_recommendation_note}
                     maxLength={200}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect}
                     onChange={(e) => patch({ media_recommendation_note: e.target.value })}
                     placeholder="Why this step wants media (optional)"
                     aria-label="Media recommendation note"
@@ -507,7 +507,7 @@ function ContentEditorPage() {
                     id="loc"
                     value={draft.location_tag}
                     maxLength={60}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect}
                     onChange={(e) => patch({ location_tag: e.target.value })}
                   />
                 </div>
@@ -515,13 +515,13 @@ function ContentEditorPage() {
                 <Separator />
 
                 <div className="flex flex-wrap gap-2">
-                  <Button disabled={!canEdit || save.isPending} onClick={() => save.mutate()}>
+                  <Button disabled={!canEditDirect || save.isPending} onClick={() => save.mutate()}>
                     {save.isPending ? "Saving…" : "Save changes"}
                   </Button>
                   {step.is_deleted ? (
                     <Button
                       variant="outline"
-                      disabled={!canEdit || softDelete.isPending}
+                      disabled={!canEditDirect || softDelete.isPending}
                       onClick={() => softDelete.mutate(false)}
                     >
                       Restore step
@@ -529,7 +529,7 @@ function ContentEditorPage() {
                   ) : (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" disabled={!canEdit}>
+                        <Button variant="outline" disabled={!canEditDirect}>
                           Soft-delete step
                         </Button>
                       </AlertDialogTrigger>
@@ -597,7 +597,7 @@ function ContentEditorPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={!canEdit || restore.isPending}
+                          disabled={!canEditDirect || restore.isPending}
                           onClick={() => restore.mutate(snap)}
                         >
                           Restore this version
