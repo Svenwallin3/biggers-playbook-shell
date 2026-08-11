@@ -47,19 +47,20 @@ function suggestedBody(s: SuggestionWithContext) {
 }
 
 function ApprovalsPage() {
-  const { employee, loading } = useAuth();
+  const { employee, loading, isGeneralManager } = useAuth();
   const queryClient = useQueryClient();
   const isOwner = employee?.auth_tier === "owner";
+  const canSeeRemovals = isOwner || isGeneralManager;
   const pendingQuery = useQuery({ ...suggestionsQueryOptions("pending"), enabled: isOwner });
   const removalQuery = useQuery({
     ...pendingSourcingDeleteRequestsQueryOptions(),
-    enabled: isOwner,
+    enabled: canSeeRemovals,
   });
   const removals = removalQuery.data ?? [];
   const requesterIds = [...new Set(removals.map((r) => r.requested_by))];
   const requestersQuery = useQuery({
     queryKey: ["employees-by-id", requesterIds],
-    enabled: isOwner && requesterIds.length > 0,
+    enabled: canSeeRemovals && requesterIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
@@ -129,7 +130,7 @@ function ApprovalsPage() {
 
   if (loading) return null;
 
-  if (!isOwner) {
+  if (!canSeeRemovals) {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
@@ -146,19 +147,20 @@ function ApprovalsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Approval queue</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Owner-only. Every content change routes through here, including a manager editing their
-          own department.
+          {isOwner
+            ? "Owner-only. Every content change routes through here, including a manager editing their own department."
+            : "Sourcing Board removal requests from your managers come here for your approval."}
         </p>
       </div>
 
-      {pendingQuery.isPending ? (
+      {isOwner && pendingQuery.isPending ? (
         <p className="text-sm text-muted-foreground">Loading suggestions…</p>
       ) : null}
-      {pendingQuery.isError ? (
+      {isOwner && pendingQuery.isError ? (
         <p className="text-sm text-destructive">Couldn&apos;t load the queue.</p>
       ) : null}
 
-      {!pendingQuery.isPending && pending.length === 0 ? (
+      {isOwner && !pendingQuery.isPending && pending.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
             Nothing pending. Queue is clear.
@@ -167,7 +169,7 @@ function ApprovalsPage() {
       ) : null}
 
       <div className="space-y-5">
-        {pending.map((s) => {
+        {(isOwner ? pending : []).map((s) => {
           const current = bodyLines({ content_body: s.step?.content_body ?? null });
           const isFlag = s.field_what.startsWith("FLAG:");
           return (
@@ -250,10 +252,16 @@ function ApprovalsPage() {
         })}
       </div>
 
-      {removals.length > 0 ? (
-        <div className="space-y-5">
-          <h2 className="text-lg font-semibold tracking-tight">Sourcing Board removal requests</h2>
-          {removals.map((r) => {
+      <div className="space-y-5">
+        <h2 className="text-lg font-semibold tracking-tight">Sourcing Board removal requests</h2>
+        {!removalQuery.isPending && removals.length === 0 ? (
+          <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              Nothing pending. Queue is clear.
+            </CardContent>
+          </Card>
+        ) : null}
+        {removals.map((r) => {
             const requester = requestersQuery.data?.find((e) => e.id === r.requested_by);
             return (
               <Card key={r.id}>
@@ -299,8 +307,7 @@ function ApprovalsPage() {
               </Card>
             );
           })}
-        </div>
-      ) : null}
+      </div>
     </div>
   );
 }
