@@ -38,6 +38,7 @@ import { LineItemEditor } from "@/components/reference/LineItemEditor";
 import { AddSectionButton } from "@/components/reference/AddSectionButton";
 import { NewDocumentDialog } from "@/components/reference/NewDocumentDialog";
 import { SectionBodyEditor } from "@/components/reference/SectionBodyEditor";
+import { DangerZoneGraphic } from "@/components/training/DangerZoneGraphic";
 import { useAuth } from "@/hooks/useAuth";
 import {
   checklistCompletionsQueryOptions,
