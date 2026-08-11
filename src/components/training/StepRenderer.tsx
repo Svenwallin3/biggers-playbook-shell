@@ -1,5 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, ListChecks, PenLine, UserCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  ListChecks,
+  MapPin,
+  PenLine,
+  Scale,
+  ShieldAlert,
+  Slice,
+  Snowflake,
+  SprayCan,
+  Thermometer,
+  UserCheck,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -95,6 +111,28 @@ function ComingSoon({ step, isAdmin }: { step: StepRow; isAdmin: boolean }) {
   );
 }
 
+/** Decorative label-keyword → icon map for card-grid content. */
+const labelIcons: { keywords: string[]; icon: LucideIcon }[] = [
+  { keywords: ["temp", "temperature"], icon: Thermometer },
+  { keywords: ["time", "duration", "minutes", "hours"], icon: Clock },
+  { keywords: ["knife", "cut", "slice"], icon: Slice },
+  { keywords: ["storage", "cooler", "fridge", "freezer"], icon: Snowflake },
+  { keywords: ["allergen", "allergy"], icon: AlertTriangle },
+  { keywords: ["clean", "cleaning", "sanitiz"], icon: SprayCan },
+  { keywords: ["ppe", "safety", "hazard", "danger"], icon: ShieldAlert },
+  { keywords: ["equipment", "machine"], icon: Wrench },
+  { keywords: ["location", "where"], icon: MapPin },
+  { keywords: ["quantity", "amount", "portion"], icon: Scale },
+];
+
+function labelIcon(label: string): LucideIcon | null {
+  const text = label.toLowerCase();
+  for (const entry of labelIcons) {
+    if (entry.keywords.some((k) => text.includes(k))) return entry.icon;
+  }
+  return null;
+}
+
 function Body({ lines }: { lines: string[] }) {
   if (!lines.length) return null;
 
@@ -141,12 +179,18 @@ function Body({ lines }: { lines: string[] }) {
   if (lines.length >= 2 && pairs.every(Boolean)) {
     return (
       <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface/60">
-        {(pairs as { label: string; value: string }[]).map((pair, i) => (
-          <li key={i} className="min-w-0 px-3.5 py-3">
-            <p className="font-display text-sm font-semibold leading-snug">{pair.label}</p>
-            <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{pair.value}</p>
-          </li>
-        ))}
+        {(pairs as { label: string; value: string }[]).map((pair, i) => {
+          const Icon = labelIcon(pair.label);
+          return (
+            <li key={i} className="min-w-0 px-3.5 py-3">
+              <p className="flex items-center gap-1.5 font-display text-sm font-semibold leading-snug">
+                {Icon ? <Icon className="size-4 shrink-0 text-primary" aria-hidden="true" /> : null}
+                {pair.label}
+              </p>
+              <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{pair.value}</p>
+            </li>
+          );
+        })}
       </ul>
     );
   }

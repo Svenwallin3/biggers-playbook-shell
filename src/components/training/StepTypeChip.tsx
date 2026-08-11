@@ -1,10 +1,9 @@
 import {
   Camera,
-  CheckSquare,
+  ClipboardCheck,
   FileText,
   HelpCircle,
-  PlayCircle,
-  UserCheck,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 
@@ -15,15 +14,15 @@ type Style = { icon: LucideIcon; label: string; className: string };
 const styles: Record<StepRow["step_type"], Style> = {
   text: { icon: FileText, label: "Read", className: "bg-secondary text-secondary-foreground" },
   photo: { icon: Camera, label: "Photo", className: "bg-info-soft text-info" },
-  video: { icon: PlayCircle, label: "Watch", className: "bg-primary/12 text-primary" },
+  video: { icon: Video, label: "Watch", className: "bg-primary/12 text-primary" },
   quiz: { icon: HelpCircle, label: "Quiz", className: "bg-warning-soft text-warning" },
   doing_signoff: {
-    icon: UserCheck,
+    icon: ClipboardCheck,
     label: "Trainer sign-off",
     className: "bg-accent/20 text-accent-foreground",
   },
   supervised_live_practice: {
-    icon: CheckSquare,
+    icon: ClipboardCheck,
     label: "Live practice",
     className: "bg-accent/20 text-accent-foreground",
   },
