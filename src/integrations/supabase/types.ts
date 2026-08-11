@@ -1041,6 +1041,7 @@ export type Database = {
           field_what: string
           id: string
           module_id: string | null
+          payload: Json | null
           reference_document_id: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -1057,6 +1058,7 @@ export type Database = {
           field_what: string
           id?: string
           module_id?: string | null
+          payload?: Json | null
           reference_document_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -1073,6 +1075,7 @@ export type Database = {
           field_what?: string
           id?: string
           module_id?: string | null
+          payload?: Json | null
           reference_document_id?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
