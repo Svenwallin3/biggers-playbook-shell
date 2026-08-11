@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Eye, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Pencil, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -372,7 +372,17 @@ function ModulePage() {
                 </Button>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
+                  {isAdmin ? (
+                    <Button asChild size="sm" variant="ghost" title="Edit this step">
+                      <Link to="/admin/content" search={{ stepId: active.id }}>
+                        <Pencil className="size-4" aria-hidden />
+                        Edit
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
                 {!needsTrainer && activeComplete && !previewMode ? (
                   <Button
                     size="sm"
