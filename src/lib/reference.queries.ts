@@ -151,6 +151,7 @@ export async function submitReferenceSuggestion(input: {
   what: string;
   how: string | null;
   howYouKnow: string | null;
+  payload?: SuggestionPayload;
 }) {
   const { error } = await supabase.from("suggestion_queue").insert({
     reference_document_id: input.documentId,
@@ -158,6 +159,7 @@ export async function submitReferenceSuggestion(input: {
     field_what: input.what,
     field_how: input.how,
     field_how_you_know: input.howYouKnow,
+    payload: input.payload ?? null,
     status: "pending",
   });
   if (error) throw error;
