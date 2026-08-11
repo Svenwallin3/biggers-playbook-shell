@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -129,6 +129,13 @@ export function SortableContentTree({
   const [stepOrder, setStepOrder] = useState<Record<string, string[]>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const selectedRef = useRef<HTMLButtonElement | null>(null);
+
+  // Bring the selected step into view — matters when arriving via ?stepId=…
+  useEffect(() => {
+    if (selection.kind !== "step" || !selection.id) return;
+    selectedRef.current?.scrollIntoView({ block: "nearest" });
+  }, [selection.kind, selection.id, steps.length]);
 
   // Server order is the source of truth; local copies only exist so a drop can
   // reflow instantly and be reverted if the database rejects it.
