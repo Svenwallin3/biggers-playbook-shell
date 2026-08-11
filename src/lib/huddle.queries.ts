@@ -110,3 +110,138 @@ export async function deleteManagerNote(input: { id: string; deletedBy: string |
     .eq("id", input.id);
   if (error) throw error;
 }
+
+/* ------------------------------------------------------------------ */
+/* Authoring screen (/huddle-notes) — lists include soft-deleted rows. */
+/* ------------------------------------------------------------------ */
+
+export function allHuddleCardsQueryOptions() {
+  return queryOptions({
+    queryKey: ["admin-huddle-cards"],
+    queryFn: async (): Promise<HuddleCardRow[]> => {
+      const { data, error } = await supabase
+        .from("huddle_cards")
+        .select("*")
+        .order("sequence_order");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function allManagerNotesQueryOptions() {
+  return queryOptions({
+    queryKey: ["admin-manager-notes"],
+    queryFn: async (): Promise<ManagerNoteRow[]> => {
+      const { data, error } = await supabase
+        .from("manager_notes")
+        .select("*")
+        .order("effective_date", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export type HuddleCardInput = {
+  category: string;
+  standardText: string;
+  managerTip: string;
+  departments: string[];
+  sequenceOrder: number;
+};
+
+export async function createHuddleCard(input: HuddleCardInput & { createdBy: string | null }) {
+  const { error } = await supabase.from("huddle_cards").insert({
+    category: input.category,
+    standard_text: input.standardText,
+    manager_tip: input.managerTip,
+    departments: input.departments,
+    sequence_order: input.sequenceOrder,
+    created_by: input.createdBy,
+  });
+  if (error) throw error;
+}
+
+export async function updateHuddleCard(id: string, input: HuddleCardInput) {
+  const { error } = await supabase
+    .from("huddle_cards")
+    .update({
+      category: input.category,
+      standard_text: input.standardText,
+      manager_tip: input.managerTip,
+      departments: input.departments,
+      sequence_order: input.sequenceOrder,
+    })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function setHuddleCardDeleted(input: {
+  id: string;
+  deleted: boolean;
+  actorId: string | null;
+}) {
+  const { error } = await supabase
+    .from("huddle_cards")
+    .update(
+      input.deleted
+        ? { is_deleted: true, deleted_by: input.actorId, deleted_at: new Date().toISOString() }
+        : { is_deleted: false, deleted_by: null, deleted_at: null },
+    )
+    .eq("id", input.id);
+  if (error) throw error;
+}
+
+export type ManagerNoteInput = {
+  noteText: string;
+  effectiveDate: string;
+  departments: string[];
+  locationTag: string | null;
+};
+
+export async function updateManagerNote(id: string, input: ManagerNoteInput) {
+  const { error } = await supabase
+    .from("manager_notes")
+    .update({
+      note_text: input.noteText,
+      effective_date: input.effectiveDate,
+      departments: input.departments,
+      location_tag: input.locationTag,
+    })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function createManagerNoteFull(
+  input: ManagerNoteInput & { createdBy: string | null },
+) {
+  const { error } = await supabase.from("manager_notes").insert({
+    note_text: input.noteText,
+    effective_date: input.effectiveDate,
+    departments: input.departments,
+    location_tag: input.locationTag,
+    created_by: input.createdBy,
+  });
+  if (error) throw error;
+}
+
+export async function setManagerNoteDeleted(input: {
+  id: string;
+  deleted: boolean;
+  actorId: string | null;
+}) {
+  const { error } = await supabase
+    .from("manager_notes")
+    .update(
+      input.deleted
+        ? { is_deleted: true, deleted_by: input.actorId, deleted_at: new Date().toISOString() }
+        : { is_deleted: false, deleted_by: null, deleted_at: null },
+    )
+    .eq("id", input.id);
+  if (error) throw error;
+}
+
+export function todayISODate() {
+  return todayISO();
+}
