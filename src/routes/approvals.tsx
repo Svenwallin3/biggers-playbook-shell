@@ -134,7 +134,7 @@ function ApprovalsPage() {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          The approval queue is Owner-only.
+          The approval queue is for Owners and General Managers.
         </CardContent>
       </Card>
     );
