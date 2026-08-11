@@ -382,7 +382,38 @@ export function SortableContentTree({
                             {renderModuleLabel(m)}
                           </button>
                         </SortableRow>
-                        {renderModuleChildren(m, track)}
+                        <ul className="ml-7 mt-1 space-y-0.5 border-l border-border pl-3">
+                          <SortableContext
+                            items={(stepOrder[m.id] ?? []).map((id) => `s-${id}`)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {(stepOrder[m.id] ?? [])
+                              .map((id) => stepById.get(id))
+                              .filter((s): s is StepRow => Boolean(s))
+                              .map((s) => (
+                                <li key={s.id}>
+                                  <SortableRow
+                                    id={`s-${s.id}`}
+                                    enabled={canReorderModulesIn(track)}
+                                    handleLabel={`Reorder step ${s.title}`}
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => onSelect({ kind: "step", id: s.id })}
+                                      className={`w-full rounded px-2 py-1 text-left text-sm transition-colors hover:bg-muted ${
+                                        selection.kind === "step" && selection.id === s.id
+                                          ? "bg-muted font-medium"
+                                          : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {renderStepLabel(s)}
+                                    </button>
+                                  </SortableRow>
+                                </li>
+                              ))}
+                          </SortableContext>
+                          <li>{renderModuleChildren(m, track)}</li>
+                        </ul>
                       </div>
                     ))}
                   </SortableContext>
