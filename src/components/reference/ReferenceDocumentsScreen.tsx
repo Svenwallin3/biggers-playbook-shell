@@ -397,13 +397,15 @@ export function ReferenceDocumentsScreen({
   documentType,
   heading,
   blurb,
+  subCategoryFilter,
 }: {
   documentType: ReferenceDocumentType;
   heading: string;
   blurb: string;
+  subCategoryFilter?: SubCategoryFilter;
 }) {
   const { employee, isManagerOrOwner, isOwner } = useAuth();
-  const query = useQuery(referenceDocumentsQueryOptions(documentType));
+  const query = useQuery(referenceDocumentsQueryOptions(documentType, subCategoryFilter));
   const [openId, setOpenId] = useState<string | null>(null);
   const [term, setTerm] = useState("");
   // Owners have no department_scope, so "my department only" would filter to nothing —
