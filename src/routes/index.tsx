@@ -25,6 +25,7 @@ import { ProgressRing } from "@/components/training/ProgressRing";
 import { trackTheme } from "@/lib/track-theme";
 import { LocationChoice, PathChoice } from "@/components/PathChoice";
 import { ManagerDailyBrief } from "@/components/manager/ManagerDailyBrief";
+import { MascotImage } from "@/components/brand/MascotImage";
 import { ReportDeliveryIssueDialog } from "@/components/sourcing/ReportDeliveryIssueDialog";
 import { useAuth } from "@/hooks/useAuth";
 import type { PlanModule, ProgressRow } from "@/lib/training.queries";
