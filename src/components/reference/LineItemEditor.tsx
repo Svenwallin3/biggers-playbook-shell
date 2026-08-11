@@ -136,7 +136,7 @@ export function LineItemEditor({
             <DialogTitle>{section.title || "Section"}</DialogTitle>
             <DialogDescription>
               {canWriteDirect
-                ? "Owner edit — saves straight to the checklist and records version history."
+                ? "Direct edit — saves straight away and records version history."
                 : "Manager edit — this goes to the Owner approval queue before it goes live."}
             </DialogDescription>
           </DialogHeader>
