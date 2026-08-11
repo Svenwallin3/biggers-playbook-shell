@@ -104,6 +104,14 @@ export function NewDocumentDialog({
           departments,
           locationTag: location,
           howYouKnow: why.trim() || null,
+          payload: {
+            type: "new_document",
+            documentType,
+            title: title.trim(),
+            subCategory: subCategory.trim() || null,
+            departments,
+            locationTag: location,
+          },
         });
         toast.success("Sent to the Owner approval queue.");
       }

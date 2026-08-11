@@ -81,6 +81,12 @@ export function SectionBodyEditor({
           what: `${doc.title} — “${title.trim() || section?.title || "Section"}” body text`,
           how: body.trim() || null,
           howYouKnow: why.trim() || null,
+          payload: {
+            type: "section_body",
+            sectionIndex,
+            title: title.trim(),
+            body_text: body.trim() || null,
+          },
         });
         toast.success("Sent to the Owner approval queue.");
       }
