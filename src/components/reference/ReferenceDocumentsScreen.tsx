@@ -51,6 +51,8 @@ import {
 import {
   docSections,
   groupBy,
+  departmentLabel,
+  locationLabel,
   referenceDocumentsQueryOptions,
   sectionLineItems,
   sharedLabel,
@@ -80,7 +82,16 @@ function CompletedTodayTag() {
   );
 }
 
-function ChecklistPrintSheet({ doc }: { doc: ReferenceDocumentRow }) {
+function LocationTag({ location }: { location: string | null }) {
+  if (!location) return null;
+  return (
+    <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      {locationLabel(location)}
+    </span>
+  );
+}
+
+function DocumentPrintSheet({ doc, withSignoffLine }: { doc: ReferenceDocumentRow; withSignoffLine: boolean }) {
   const sections = docSections(doc);
   return (
     <div className="print-sheet">
@@ -90,22 +101,41 @@ function ChecklistPrintSheet({ doc }: { doc: ReferenceDocumentRow }) {
           {doc.sub_category}
         </p>
       ) : null}
-      <p style={{ fontSize: "10pt", margin: "0 0 16pt" }}>
-        Date: ______________ &nbsp;&nbsp; Completed by: ______________________
-      </p>
-      {sections.map((section, i) => (
-        <div key={i} style={{ marginBottom: "16pt" }}>
-          <h2 style={{ fontSize: "13pt", margin: "0 0 6pt" }}>{section.title}</h2>
-          <ol style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "11pt" }}>
-            {sectionLineItems(section).map((item, idx) => (
-              <li key={idx} style={{ margin: "0 0 6pt" }}>
-                <span className="print-box" />
-                {idx + 1}. {item.text}
-              </li>
-            ))}
-          </ol>
-        </div>
-      ))}
+      {withSignoffLine ? (
+        <p style={{ fontSize: "10pt", margin: "0 0 16pt" }}>
+          Date: ______________ &nbsp;&nbsp; Completed by: ______________________
+        </p>
+      ) : null}
+      {sections.map((section, i) => {
+        const items = sectionLineItems(section);
+        return (
+          <div key={i} style={{ marginBottom: "16pt" }}>
+            <h2 style={{ fontSize: "13pt", margin: "0 0 6pt" }}>{section.title}</h2>
+            {items.length > 0 ? (
+              <ol style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "11pt" }}>
+                {items.map((item, idx) => (
+                  <li key={idx} style={{ margin: "0 0 6pt" }}>
+                    <span className="print-box" />
+                    {idx + 1}. {item.text}
+                  </li>
+                ))}
+              </ol>
+            ) : section.body_text ? (
+              <div style={{ fontSize: "11pt" }}>
+                {section.body_text
+                  .split("\n")
+                  .map((line) => line.trim())
+                  .filter((line) => line && line !== "[[danger-zone]]")
+                  .map((line, idx) => (
+                    <p key={idx} style={{ margin: "0 0 6pt" }}>
+                      {line}
+                    </p>
+                  ))}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -113,29 +143,36 @@ function ChecklistPrintSheet({ doc }: { doc: ReferenceDocumentRow }) {
 function Detail({
   doc,
   documentType,
+  ephemeral,
   onBack,
 }: {
   doc: ReferenceDocumentRow;
   documentType: ReferenceDocumentType;
+  ephemeral: boolean;
   onBack: () => void;
 }) {
   const { employee, isManagerOrOwner, isOwner } = useAuth();
   const queryClient = useQueryClient();
   const [deleting, setDeleting] = useState(false);
+  // Manager Guides: checkboxes are a scratch pad, nothing is persisted or submitted.
+  const [localChecks, setLocalChecks] = useState<Record<string, boolean>>({});
   const sections = docSections(doc);
   const isChecklist = documentType === "checklist";
+  const tracksInstance = isChecklist && !ephemeral;
 
   // Shared instance for today (per location when the doc carries a location_tag).
   const instanceQuery = useQuery(
-    todaysChecklistInstanceQueryOptions(doc.id, doc.location_tag ?? null, isChecklist),
+    todaysChecklistInstanceQueryOptions(doc.id, doc.location_tag ?? null, tracksInstance),
   );
   const instance = instanceQuery.data ?? null;
-  const completionsQuery = useQuery(checklistCompletionsQueryOptions(instance?.id));
+  const completionsQuery = useQuery(
+    checklistCompletionsQueryOptions(tracksInstance ? instance?.id : undefined),
+  );
   const completions = completionsQuery.data ?? [];
   const doneMap = new Map(
     completions.map((c) => [completionKey(c.section_index, c.line_order), c.completed]),
   );
-  const submitted = instance?.status === "submitted";
+  const submitted = tracksInstance && instance?.status === "submitted";
 
   const totalLines = isChecklist
     ? sections.reduce((n, s) => n + sectionLineItems(s).length, 0)
@@ -144,9 +181,10 @@ function Detail({
     ? sections.reduce(
         (n, s, si) =>
           n +
-          sectionLineItems(s).filter((item, idx) =>
-            doneMap.get(completionKey(si, item.order ?? idx)),
-          ).length,
+          sectionLineItems(s).filter((item, idx) => {
+            const key = completionKey(si, item.order ?? idx);
+            return ephemeral ? localChecks[key] : doneMap.get(key);
+          }).length,
         0,
       )
     : 0;
@@ -191,7 +229,7 @@ function Detail({
 
   return (
     <>
-      {isChecklist ? <ChecklistPrintSheet doc={doc} /> : null}
+      <DocumentPrintSheet doc={doc} withSignoffLine={tracksInstance} />
       <div className="space-y-6 print-hidden">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
@@ -199,12 +237,10 @@ function Detail({
           Back
         </Button>
         <div className="flex items-center gap-2">
-          {isChecklist ? (
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Printer className="size-4" />
-              Print
-            </Button>
-          ) : null}
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="size-4" />
+            Print
+          </Button>
         {isOwner ? (
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -244,6 +280,12 @@ function Detail({
           <SharedTag departments={doc.departments} />
         </div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">{doc.title}</h1>
+        {ephemeral ? (
+          <p className="text-xs text-muted-foreground">
+            Check items off as you go — this is just your place-keeper and isn&apos;t saved or
+            submitted anywhere.
+          </p>
+        ) : null}
         {isManagerOrOwner && doc.content_notes ? (
           <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
             <span className="font-medium text-foreground">Admin note:</span> {doc.content_notes}
@@ -251,7 +293,7 @@ function Detail({
         ) : null}
       </div>
 
-      {isChecklist && submitted ? (
+      {submitted ? (
         <div className="flex items-start gap-2 rounded-md border border-success/40 bg-success-soft px-3 py-2 text-sm text-success">
           <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
           <p>
@@ -303,8 +345,13 @@ function Detail({
                   <ol className="space-y-1">
                     {sectionLineItems(section).map((item, idx) => {
                       const lineOrder = item.order ?? idx;
-                      const checked = Boolean(doneMap.get(completionKey(i, lineOrder)));
-                      const disabled = submitted || !instance || toggle.isPending;
+                      const key = completionKey(i, lineOrder);
+                      const checked = ephemeral
+                        ? Boolean(localChecks[key])
+                        : Boolean(doneMap.get(key));
+                      const disabled = ephemeral
+                        ? false
+                        : submitted || !instance || toggle.isPending;
                       return (
                         <li key={idx}>
                           <label
@@ -316,13 +363,17 @@ function Detail({
                               className="mt-0.5"
                               checked={checked}
                               disabled={disabled}
-                              onCheckedChange={(v) =>
+                              onCheckedChange={(v) => {
+                                if (ephemeral) {
+                                  setLocalChecks((prev) => ({ ...prev, [key]: v === true }));
+                                  return;
+                                }
                                 toggle.mutate({
                                   sectionIndex: i,
                                   lineOrder,
                                   completed: v === true,
-                                })
-                              }
+                                });
+                              }}
                             />
                             <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/12 text-[11px] font-semibold text-primary">
                               {idx + 1}
@@ -372,7 +423,7 @@ function Detail({
             </div>
           ) : null}
 
-          {isChecklist && !submitted && totalLines > 0 ? (
+          {tracksInstance && !submitted && totalLines > 0 ? (
             <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-card px-3 py-3">
               <Button
                 onClick={() => submit.mutate()}
@@ -399,11 +450,17 @@ export function ReferenceDocumentsScreen({
   heading,
   blurb,
   subCategoryFilter,
+  ephemeralChecklist = false,
+  groupByDepartment = false,
 }: {
   documentType: ReferenceDocumentType;
   heading: string;
   blurb: string;
   subCategoryFilter?: SubCategoryFilter;
+  /** Manager Guides: checkboxes are local-only, nothing is submitted or persisted. */
+  ephemeralChecklist?: boolean;
+  /** Manager Guides: group by department instead of sub_category, and tag by location. */
+  groupByDepartment?: boolean;
 }) {
   const { employee, isManagerOrOwner, isOwner } = useAuth();
   const query = useQuery(referenceDocumentsQueryOptions(documentType, subCategoryFilter));
@@ -424,16 +481,30 @@ export function ReferenceDocumentsScreen({
   const docs = q ? scoped.filter((d) => d.title.toLowerCase().includes(q)) : scoped;
 
   const submittedQuery = useQuery(
-    submittedTodayQueryOptions(documentType === "checklist" ? all.map((d) => d.id) : []),
+    submittedTodayQueryOptions(
+      documentType === "checklist" && !ephemeralChecklist ? all.map((d) => d.id) : [],
+    ),
   );
   const submittedToday = submittedQuery.data ?? new Set<string>();
 
   const openDoc = all.find((d) => d.id === openId) ?? null;
   if (openDoc) {
-    return <Detail doc={openDoc} documentType={documentType} onBack={() => setOpenId(null)} />;
+    return (
+      <Detail
+        doc={openDoc}
+        documentType={documentType}
+        ephemeral={ephemeralChecklist}
+        onBack={() => setOpenId(null)}
+      />
+    );
   }
 
-  const groups = groupBy(docs, (d) => d.sub_category?.trim() || "Uncategorized");
+  const groups = groupByDepartment
+    ? groupBy(docs, (d) => {
+        const dept = (d.departments ?? []).find((x) => x && x !== "universal") ?? d.departments?.[0];
+        return dept ? departmentLabel(dept) : "Other";
+      })
+    : groupBy(docs, (d) => d.sub_category?.trim() || "Uncategorized");
   const Icon = documentType === "checklist" ? ListChecks : FileText;
 
   return (
@@ -516,8 +587,14 @@ export function ReferenceDocumentsScreen({
                         <Icon className="size-4 shrink-0 text-muted-foreground" />
                         <span className="text-sm font-medium hover:underline">{doc.title}</span>
                         <StepStatusBadge status={doc.content_status} />
-                        <SharedTag departments={doc.departments} />
-                        {documentType === "checklist" && submittedToday.has(doc.id) ? (
+                        {groupByDepartment ? (
+                          <LocationTag location={doc.location_tag ?? null} />
+                        ) : (
+                          <SharedTag departments={doc.departments} />
+                        )}
+                        {documentType === "checklist" &&
+                        !ephemeralChecklist &&
+                        submittedToday.has(doc.id) ? (
                           <CompletedTodayTag />
                         ) : null}
                       </button>

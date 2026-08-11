@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Salad } from "lucide-react";
+import { Printer, Salad } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -163,7 +163,26 @@ function PresentationPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      {entries.length > 0 ? (
+        <div className="print-sheet">
+          <h1 style={{ fontSize: "20pt", margin: "0 0 12pt" }}>Portioning &amp; Presentation</h1>
+          {groups.map(([category, rows]) => (
+            <div key={category} style={{ marginBottom: "16pt" }}>
+              <h2 style={{ fontSize: "13pt", margin: "0 0 6pt" }}>{category}</h2>
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, fontSize: "11pt" }}>
+                {rows.map((entry) => (
+                  <li key={entry.id} style={{ margin: "0 0 6pt" }}>
+                    <strong>{entry.item_name}</strong>
+                    {entry.portion_note ? ` — ${entry.portion_note}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <div className="space-y-6 print-hidden">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight">
@@ -173,7 +192,15 @@ function PresentationPage() {
             What a correct portion looks like, item by item.
           </p>
         </div>
-        {isManagerOrOwner ? <Button onClick={openNew}>Add entry</Button> : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {entries.length > 0 ? (
+            <Button variant="outline" onClick={() => window.print()}>
+              <Printer className="size-4" />
+              Print
+            </Button>
+          ) : null}
+          {isManagerOrOwner ? <Button onClick={openNew}>Add entry</Button> : null}
+        </div>
       </div>
 
       {query.isPending ? (
@@ -241,6 +268,7 @@ function PresentationPage() {
         open={open}
         onOpenChange={setOpen}
       />
-    </div>
+      </div>
+    </>
   );
 }
