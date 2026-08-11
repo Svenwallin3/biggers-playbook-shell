@@ -58,6 +58,7 @@ import {
   visibleToDepartment,
   type ReferenceDocumentRow,
   type ReferenceDocumentType,
+  type SubCategoryFilter,
 } from "@/lib/reference.queries";
 
 function SharedTag({ departments }: { departments: string[] | null }) {
