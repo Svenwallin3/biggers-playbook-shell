@@ -293,8 +293,20 @@ export const Route = createFileRoute("/compliance")({
 });
 
 function CompliancePage() {
-  const { isManagerOrOwner, isOwner, loading } = useAuth();
+  const { employee, isManagerOrOwner, isOwner, isGeneralManager, loading } = useAuth();
+  const queryClient = useQueryClient();
   const query = useQuery({ ...assignmentsQueryOptions(), enabled: isManagerOrOwner });
+  const canAssign = isGeneralManager || isOwner;
+
+  const endAssignment = useMutation({
+    mutationFn: (id: string) =>
+      endAssignableModuleAssignment({ id, actorId: employee?.id ?? null }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      toast.success("Assignment ended — the record is kept, not deleted.");
+    },
+    onError: (error: Error) => toast.error("Couldn't end it", { description: error.message }),
+  });
 
   if (loading) return null;
   if (!isManagerOrOwner) {
@@ -325,11 +337,14 @@ function CompliancePage() {
       {isOwner ? <SignoffBacklogSection /> : null}
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Assignments</CardTitle>
-          <CardDescription>
-            {rows.length} active assignment{rows.length === 1 ? "" : "s"}.
-          </CardDescription>
+        <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
+          <div>
+            <CardTitle className="text-base">Assignments</CardTitle>
+            <CardDescription>
+              {rows.length} active assignment{rows.length === 1 ? "" : "s"}.
+            </CardDescription>
+          </div>
+          {canAssign ? <NewAssignmentDialog actorId={employee?.id ?? null} /> : null}
         </CardHeader>
         <CardContent>
           {query.isPending ? (
@@ -339,6 +354,59 @@ function CompliancePage() {
               No restricted modules have been assigned yet.
             </p>
           ) : (
+            <>
+            <ul className="space-y-3 md:hidden">
+              {rows.map((row) => {
+                const c = completion?.get(row.id) ?? { done: 0, total: 0 };
+                const pct = c.total ? Math.round((c.done / c.total) * 100) : 0;
+                const complete = c.total > 0 && c.done === c.total;
+                const overdue = !complete && !!row.due_date && row.due_date < today;
+                return (
+                  <li key={row.id} className="space-y-2 rounded-md border p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">
+                          {row.employee?.full_name ?? row.employee?.email ?? "Unknown"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {row.module?.name ?? "—"}
+                          {row.module?.track ? ` · ${row.module.track.name}` : ""}
+                        </p>
+                      </div>
+                      {complete ? (
+                        <Badge>Certified</Badge>
+                      ) : overdue ? (
+                        <Badge variant="destructive">Overdue</Badge>
+                      ) : (
+                        <Badge variant="secondary">In progress</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Progress value={pct} className="h-2" />
+                      <span className="text-xs text-muted-foreground">
+                        {c.done}/{c.total}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        Due {row.due_date ? new Date(row.due_date).toLocaleDateString() : "—"}
+                      </span>
+                      {canAssign ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={endAssignment.isPending}
+                          onClick={() => endAssignment.mutate(row.id)}
+                        >
+                          End assignment
+                        </Button>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -348,6 +416,7 @@ function CompliancePage() {
                   <TableHead>Due</TableHead>
                   <TableHead>Progress</TableHead>
                   <TableHead>Status</TableHead>
+                  {canAssign ? <TableHead className="text-right">Action</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -385,11 +454,25 @@ function CompliancePage() {
                           <Badge variant="secondary">In progress</Badge>
                         )}
                       </TableCell>
+                      {canAssign ? (
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={endAssignment.isPending}
+                            onClick={() => endAssignment.mutate(row.id)}
+                          >
+                            End assignment
+                          </Button>
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   );
                 })}
               </TableBody>
             </Table>
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
