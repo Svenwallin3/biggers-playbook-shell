@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApprovalsRouteImport } from './routes/approvals'
 import { Route as ComplianceRouteImport } from './routes/compliance'
+import { Route as HuddleNotesRouteImport } from './routes/huddle-notes'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MergeToolRouteImport } from './routes/merge-tool'
 import { Route as PreviewRouteImport } from './routes/preview'
@@ -44,6 +45,11 @@ const ApprovalsRoute = ApprovalsRouteImport.update({
 const ComplianceRoute = ComplianceRouteImport.update({
   id: '/compliance',
   path: '/compliance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HuddleNotesRoute = HuddleNotesRouteImport.update({
+  id: '/huddle-notes',
+  path: '/huddle-notes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
   '/compliance': typeof ComplianceRoute
+  '/huddle-notes': typeof HuddleNotesRoute
   '/login': typeof LoginRoute
   '/merge-tool': typeof MergeToolRoute
   '/preview': typeof PreviewRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
   '/compliance': typeof ComplianceRoute
+  '/huddle-notes': typeof HuddleNotesRoute
   '/login': typeof LoginRoute
   '/merge-tool': typeof MergeToolRoute
   '/preview': typeof PreviewRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
   '/compliance': typeof ComplianceRoute
+  '/huddle-notes': typeof HuddleNotesRoute
   '/login': typeof LoginRoute
   '/merge-tool': typeof MergeToolRoute
   '/preview': typeof PreviewRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/'
     | '/approvals'
     | '/compliance'
+    | '/huddle-notes'
     | '/login'
     | '/merge-tool'
     | '/preview'
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/'
     | '/approvals'
     | '/compliance'
+    | '/huddle-notes'
     | '/login'
     | '/merge-tool'
     | '/preview'
@@ -257,6 +268,7 @@ export interface FileRouteTypes {
     | '/'
     | '/approvals'
     | '/compliance'
+    | '/huddle-notes'
     | '/login'
     | '/merge-tool'
     | '/preview'
@@ -281,6 +293,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApprovalsRoute: typeof ApprovalsRoute
   ComplianceRoute: typeof ComplianceRoute
+  HuddleNotesRoute: typeof HuddleNotesRoute
   LoginRoute: typeof LoginRoute
   MergeToolRoute: typeof MergeToolRoute
   PreviewRoute: typeof PreviewRoute
@@ -317,6 +330,13 @@ declare module '@tanstack/react-router' {
       path: '/compliance'
       fullPath: '/compliance'
       preLoaderRoute: typeof ComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/huddle-notes': {
+      id: '/huddle-notes'
+      path: '/huddle-notes'
+      fullPath: '/huddle-notes'
+      preLoaderRoute: typeof HuddleNotesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -472,6 +492,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApprovalsRoute: ApprovalsRoute,
   ComplianceRoute: ComplianceRoute,
+  HuddleNotesRoute: HuddleNotesRoute,
   LoginRoute: LoginRoute,
   MergeToolRoute: MergeToolRoute,
   PreviewRoute: PreviewRoute,
@@ -489,13 +510,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
