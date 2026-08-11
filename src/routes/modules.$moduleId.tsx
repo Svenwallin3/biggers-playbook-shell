@@ -375,12 +375,16 @@ function ModulePage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
                   {isAdmin ? (
-                    <Button asChild size="sm" variant="ghost" title="Edit this step">
-                      <Link to="/admin/content" search={{ stepId: active.id }}>
-                        <Pencil className="size-4" aria-hidden />
-                        Edit
-                      </Link>
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button asChild size="icon" variant="ghost" aria-label="Edit this step">
+                          <Link to="/admin/content" search={{ stepId: active.id }}>
+                            <Pencil className="size-4" aria-hidden />
+                          </Link>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Edit</TooltipContent>
+                    </Tooltip>
                   ) : null}
                 </div>
                 {!needsTrainer && activeComplete && !previewMode ? (
