@@ -82,6 +82,25 @@ export function versionHistoryQueryOptions(entityType: string, entityId: string 
   });
 }
 
+/** A non-GM manager proposes new title/content_body text for a step. */
+export async function submitStepSuggestion(input: {
+  stepId: string;
+  submittedBy: string;
+  title: string;
+  contentBody: string;
+  howYouKnow: string | null;
+}) {
+  const { error } = await supabase.from("suggestion_queue").insert({
+    step_id: input.stepId,
+    submitted_by: input.submittedBy,
+    field_what: input.title,
+    field_how: input.contentBody,
+    field_how_you_know: input.howYouKnow,
+    status: "pending",
+  });
+  if (error) throw error;
+}
+
 export function employeesQueryOptions() {
   return queryOptions({
     queryKey: ["employees"],

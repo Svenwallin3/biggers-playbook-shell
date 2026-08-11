@@ -45,7 +45,11 @@ import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/training.queries";
-import { contentTreeQueryOptions, versionHistoryQueryOptions } from "@/lib/admin.queries";
+import {
+  contentTreeQueryOptions,
+  submitStepSuggestion,
+  versionHistoryQueryOptions,
+} from "@/lib/admin.queries";
 
 export const Route = createFileRoute("/admin/content")({
   validateSearch: (search: Record<string, unknown>): { stepId?: string | undefined } => ({
@@ -110,6 +114,7 @@ function ContentEditorPage() {
   const selectedId = selection.kind === "step" ? selection.id : "";
   const setSelectedId = (id: string) => setSelection({ kind: "step", id });
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [suggestionWhy, setSuggestionWhy] = useState("");
 
   const tracks = treeQuery.data?.tracks ?? [];
   const modules = treeQuery.data?.modules ?? [];
@@ -122,20 +127,28 @@ function ContentEditorPage() {
   const stepModule = modules.find((m) => m.id === step?.module_id);
   const historyQuery = useQuery(versionHistoryQueryOptions("steps", selectedId || undefined));
 
-  // Owners edit anything; managers only their own department. RLS enforces this
-  // too — the UI just avoids offering an edit that would be rejected.
-  const canEdit =
-    employee?.auth_tier === "owner" ||
-    (employee?.auth_tier === "manager" &&
-      !!stepModule?.track &&
-      stepModule.track.department === employee.department_scope);
-
   // Same rule, applied to the row being created into (RLS enforces it too).
   const canEditDepartment = (department: string | null | undefined) =>
     employee?.auth_tier === "owner" ||
     (employee?.auth_tier === "manager" &&
       !!department &&
       department === employee.department_scope);
+
+  // Direct-edit authority for existing content (post-2026-08-11 tightening): Owner or GM only.
+  // Creating new content is still any-manager — see canEditDepartment above.
+  const canEditDirectInDepartment = (department: string | null | undefined) =>
+    employee?.auth_tier === "owner" ||
+    (isGeneralManager && !!department && department === employee?.department_scope);
+
+  const canEditDirect = canEditDirectInDepartment(stepModule?.track?.department);
+  // A regular (non-GM) manager, own department, sees an editable title/content_body form
+  // that submits to the approval queue instead of a direct save.
+  const canSuggest =
+    isManagerOrOwner &&
+    !canEditDirect &&
+    !!stepModule?.track &&
+    stepModule.track.department === employee?.department_scope;
+
   const canCreateTrack = employee?.auth_tier === "owner" || employee?.auth_tier === "manager";
 
   // Drag-and-drop authorisation (UX layer only — the database is the boundary).
@@ -238,6 +251,23 @@ function ContentEditorPage() {
     onError: (error: Error) => toast.error("Couldn't restore", { description: error.message }),
   });
 
+  const suggest = useMutation({
+    mutationFn: async () => {
+      await submitStepSuggestion({
+        stepId: selectedId,
+        submittedBy: employee!.id,
+        title: draft!.title.trim(),
+        contentBody: draft!.content_body.trim(),
+        howYouKnow: suggestionWhy.trim() || null,
+      });
+    },
+    onSuccess: () => {
+      setSuggestionWhy("");
+      toast.success("Sent to the Owner approval queue.");
+    },
+    onError: (error: Error) => toast.error("Couldn't submit", { description: error.message }),
+  });
+
   if (loading) return null;
   if (!isManagerOrOwner) {
     return (
@@ -326,7 +356,7 @@ function ContentEditorPage() {
           {selectedTrack ? (
             <TrackEditPanel
               track={selectedTrack}
-              canEdit={canEditDepartment(selectedTrack.department)}
+              canEdit={canEditDirectInDepartment(selectedTrack.department)}
               employeeId={employee?.id}
             />
           ) : null}
@@ -344,7 +374,7 @@ function ContentEditorPage() {
               <ModuleEditPanel
                 module={selectedModule}
                 trackName={selectedModule.track?.name}
-                canEdit={canEditDepartment(selectedModule.track?.department)}
+                canEdit={canEditDirectInDepartment(selectedModule.track?.department)}
                 employeeId={employee?.id}
               />
             </div>
@@ -359,7 +389,11 @@ function ContentEditorPage() {
                 </div>
                 <CardDescription>
                   {stepModule?.track?.name} · {stepModule?.name}
-                  {!canEdit ? " — read-only: outside your department" : ""}
+                  {canEditDirect
+                    ? ""
+                    : canSuggest
+                      ? " — You can suggest a change to the title and content below — it goes to the Owner approval queue."
+                      : " — read-only: outside your department"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -369,7 +403,7 @@ function ContentEditorPage() {
                     id="title"
                     value={draft.title}
                     maxLength={140}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect && !canSuggest}
                     onChange={(e) => patch({ title: e.target.value })}
                   />
                 </div>
@@ -379,7 +413,7 @@ function ContentEditorPage() {
                     <Label>Step type</Label>
                     <Select
                       value={draft.step_type}
-                      disabled={!canEdit}
+                      disabled={!canEditDirect}
                       onValueChange={(v) => patch({ step_type: v as StepType })}
                     >
                       <SelectTrigger>
@@ -398,7 +432,7 @@ function ContentEditorPage() {
                     <Label>Content status</Label>
                     <Select
                       value={draft.content_status}
-                      disabled={!canEdit}
+                      disabled={!canEditDirect}
                       onValueChange={(v) => patch({ content_status: v as ContentStatus })}
                     >
                       <SelectTrigger>
@@ -422,11 +456,25 @@ function ContentEditorPage() {
                     rows={6}
                     value={draft.content_body}
                     maxLength={4000}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect && !canSuggest}
                     onChange={(e) => patch({ content_body: e.target.value })}
                     placeholder="One numbered step per line."
                   />
                 </div>
+
+                {canSuggest ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="why">How do you know it should change?</Label>
+                    <Textarea
+                      id="why"
+                      rows={3}
+                      value={suggestionWhy}
+                      maxLength={1000}
+                      onChange={(e) => setSuggestionWhy(e.target.value)}
+                      placeholder="What you'd check before you'd sign off on it."
+                    />
+                  </div>
+                ) : null}
 
                 <div className="space-y-2">
                   <Label htmlFor="notes">Content notes (admin-only)</Label>
@@ -435,7 +483,7 @@ function ContentEditorPage() {
                     rows={3}
                     value={draft.content_notes}
                     maxLength={1000}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect}
                     onChange={(e) => patch({ content_notes: e.target.value })}
                   />
                 </div>
@@ -446,7 +494,7 @@ function ContentEditorPage() {
                     id="video"
                     value={draft.video_url}
                     maxLength={300}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect}
                     onChange={(e) => patch({ video_url: e.target.value })}
                     placeholder="https://www.youtube.com/watch?v=…"
                   />
@@ -458,7 +506,7 @@ function ContentEditorPage() {
                   folder="steps"
                   label="Photo (optional)"
                   helpText="Shown above the step's written content. Any step type can carry a photo."
-                  disabled={!canEdit}
+                  disabled={!canEditDirect}
                 />
 
                 <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
@@ -468,7 +516,7 @@ function ContentEditorPage() {
                     </Label>
                     <Select
                       value={draft.media_recommendation}
-                      disabled={!canEdit}
+                      disabled={!canEditDirect}
                       onValueChange={(v) =>
                         patch({ media_recommendation: v as Draft["media_recommendation"] })
                       }
@@ -494,7 +542,7 @@ function ContentEditorPage() {
                     className="mt-2 h-8 border-0 bg-transparent px-0 text-xs text-muted-foreground shadow-none focus-visible:ring-0"
                     value={draft.media_recommendation_note}
                     maxLength={200}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect}
                     onChange={(e) => patch({ media_recommendation_note: e.target.value })}
                     placeholder="Why this step wants media (optional)"
                     aria-label="Media recommendation note"
@@ -507,7 +555,7 @@ function ContentEditorPage() {
                     id="loc"
                     value={draft.location_tag}
                     maxLength={60}
-                    disabled={!canEdit}
+                    disabled={!canEditDirect}
                     onChange={(e) => patch({ location_tag: e.target.value })}
                   />
                 </div>
@@ -515,13 +563,25 @@ function ContentEditorPage() {
                 <Separator />
 
                 <div className="flex flex-wrap gap-2">
-                  <Button disabled={!canEdit || save.isPending} onClick={() => save.mutate()}>
-                    {save.isPending ? "Saving…" : "Save changes"}
-                  </Button>
+                  {canSuggest ? (
+                    <Button
+                      disabled={suggest.isPending || !employee}
+                      onClick={() => suggest.mutate()}
+                    >
+                      {suggest.isPending ? "Submitting…" : "Submit for approval"}
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled={!canEditDirect || save.isPending}
+                      onClick={() => save.mutate()}
+                    >
+                      {save.isPending ? "Saving…" : "Save changes"}
+                    </Button>
+                  )}
                   {step.is_deleted ? (
                     <Button
                       variant="outline"
-                      disabled={!canEdit || softDelete.isPending}
+                      disabled={!canEditDirect || softDelete.isPending}
                       onClick={() => softDelete.mutate(false)}
                     >
                       Restore step
@@ -529,7 +589,7 @@ function ContentEditorPage() {
                   ) : (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" disabled={!canEdit}>
+                        <Button variant="outline" disabled={!canEditDirect}>
                           Soft-delete step
                         </Button>
                       </AlertDialogTrigger>
@@ -597,7 +657,7 @@ function ContentEditorPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={!canEdit || restore.isPending}
+                          disabled={!canEditDirect || restore.isPending}
                           onClick={() => restore.mutate(snap)}
                         >
                           Restore this version
