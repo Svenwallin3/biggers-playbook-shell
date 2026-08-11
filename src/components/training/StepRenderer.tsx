@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StoredPhoto } from "@/components/PhotoUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { StepStatusBadge } from "./StepStatusBadge";
+import { DangerZoneGraphic } from "./DangerZoneGraphic";
 import { StepTypeChip } from "./StepTypeChip";
 import { VideoEmbed, youTubeId } from "@/components/VideoEmbed";
 import {
