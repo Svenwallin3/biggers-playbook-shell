@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { bodyLines } from "@/lib/training.queries";
 import { suggestionsQueryOptions, type SuggestionWithContext } from "@/lib/admin.queries";
+import type { ReferenceSection, SuggestionPayload } from "@/lib/reference.queries";
 import {
   decideSourcingDeleteRequest,
   pendingSourcingDeleteRequestsQueryOptions,
@@ -105,6 +107,59 @@ function ApprovalsPage() {
           .eq("id", s.step.id);
         if (stepError) throw stepError;
       }
+
+      if (decision === "approved" && !s.step) {
+        const payload = s.payload as SuggestionPayload | null;
+
+        if (
+          (payload?.type === "line_items" || payload?.type === "section_body") &&
+          s.reference_document_id
+        ) {
+          const { data: current, error: fetchError } = await supabase
+            .from("reference_documents")
+            .select("sections")
+            .eq("id", s.reference_document_id)
+            .single();
+          if (fetchError) throw fetchError;
+          const sections = (
+            Array.isArray(current.sections) ? [...current.sections] : []
+          ) as ReferenceSection[];
+          const existing = sections[payload.sectionIndex];
+          if (existing) {
+            sections[payload.sectionIndex] =
+              payload.type === "line_items"
+                ? { ...existing, line_items: payload.items }
+                : { ...existing, title: payload.title, body_text: payload.body_text };
+          }
+          const { error } = await supabase
+            .from("reference_documents")
+            .update({ sections: sections as unknown as Json })
+            .eq("id", s.reference_document_id);
+          if (error) throw error;
+        } else if (payload?.type === "document_meta" && s.reference_document_id) {
+          const { error } = await supabase
+            .from("reference_documents")
+            .update({
+              title: payload.title,
+              sub_category: payload.subCategory,
+              departments: payload.departments,
+              location_tag: payload.locationTag,
+            })
+            .eq("id", s.reference_document_id);
+          if (error) throw error;
+        } else if (payload?.type === "new_document") {
+          const { error } = await supabase.from("reference_documents").insert({
+            document_type: payload.documentType,
+            title: payload.title,
+            sub_category: payload.subCategory,
+            departments: payload.departments,
+            location_tag: payload.locationTag,
+            sections: [],
+            content_status: "missing",
+          });
+          if (error) throw error;
+        }
+      }
       const { error } = await supabase
         .from("suggestion_queue")
         .update({
@@ -119,9 +174,10 @@ function ApprovalsPage() {
       void queryClient.invalidateQueries({ queryKey: ["suggestions"] });
       void queryClient.invalidateQueries({ queryKey: ["content-tree"] });
       void queryClient.invalidateQueries({ queryKey: ["module"] });
+      void queryClient.invalidateQueries({ queryKey: ["reference-documents"] });
       toast.success(
         vars.decision === "approved"
-          ? "Approved — the step is live and the previous version is logged."
+          ? "Approved — the change is live and the previous version is logged."
           : "Rejected — content untouched, the suggestion is kept on record.",
       );
     },
@@ -176,13 +232,20 @@ function ApprovalsPage() {
             <Card key={s.id}>
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle className="text-base">{s.step?.title ?? s.field_what}</CardTitle>
+                  <CardTitle className="text-base">
+                    {s.step?.title ?? s.reference_document?.title ?? s.field_what}
+                  </CardTitle>
                   <Badge variant={isFlag ? "outline" : "secondary"}>
                     {isFlag ? "Staff flag" : "Pending"}
                   </Badge>
                 </div>
                 <CardDescription>
-                  {s.step?.module?.track?.name} · {s.step?.module?.name} — submitted by{" "}
+                  {s.step
+                    ? `${s.step.module?.track?.name} · ${s.step.module?.name}`
+                    : s.reference_document
+                      ? `Reference Library · ${s.reference_document.document_type === "checklist" ? "Checklist" : "SOP"}`
+                      : "New document"}{" "}
+                  — submitted by{" "}
                   {s.submitter?.full_name ?? s.submitter?.email ?? "unknown"} (
                   {s.submitter?.auth_tier}) on {new Date(s.created_at).toLocaleDateString()}
                 </CardDescription>
@@ -232,7 +295,7 @@ function ApprovalsPage() {
                 <div className="flex gap-2">
                   <Button
                     size="sm"
-                    disabled={decide.isPending || !s.step}
+                    disabled={decide.isPending || (!s.step && !s.payload)}
                     onClick={() => decide.mutate({ s, decision: "approved" })}
                   >
                     Approve &amp; publish

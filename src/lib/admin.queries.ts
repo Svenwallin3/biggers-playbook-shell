@@ -44,6 +44,7 @@ export function contentTreeQueryOptions() {
 
 export type SuggestionWithContext = SuggestionRow & {
   step: (StepRow & { module: (ModuleRow & { track: TrackRow | null }) | null }) | null;
+  reference_document: { id: string; title: string; document_type: string } | null;
   submitter: Pick<EmployeeRow, "id" | "full_name" | "email" | "auth_tier"> | null;
 };
 
@@ -54,7 +55,7 @@ export function suggestionsQueryOptions(status: Database["public"]["Enums"]["sug
       const { data, error } = await supabase
         .from("suggestion_queue")
         .select(
-          "*, step:steps(*, module:modules(*, track:tracks(*))), submitter:employees!suggestion_queue_submitted_by_fkey(id, full_name, email, auth_tier)",
+          "*, step:steps(*, module:modules(*, track:tracks(*))), reference_document:reference_documents(id, title, document_type), submitter:employees!suggestion_queue_submitted_by_fkey(id, full_name, email, auth_tier)",
         )
         .eq("status", status)
         .order("created_at", { ascending: false });
