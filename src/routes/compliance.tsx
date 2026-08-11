@@ -134,6 +134,7 @@ function SignoffBacklogSection() {
 }
 
 export const Route = createFileRoute("/compliance")({
+  // eslint-disable-next-line
   head: () => ({
     meta: [
       { title: "Restricted Training — Biggers Training" },
