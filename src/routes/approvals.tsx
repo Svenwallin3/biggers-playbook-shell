@@ -124,15 +124,12 @@ function ApprovalsPage() {
           const sections = (
             Array.isArray(current.sections) ? [...current.sections] : []
           ) as ReferenceSection[];
-          if (sections[payload.sectionIndex]) {
+          const existing = sections[payload.sectionIndex];
+          if (existing) {
             sections[payload.sectionIndex] =
               payload.type === "line_items"
-                ? { ...sections[payload.sectionIndex], line_items: payload.items }
-                : {
-                    ...sections[payload.sectionIndex],
-                    title: payload.title,
-                    body_text: payload.body_text,
-                  };
+                ? { ...existing, line_items: payload.items }
+                : { ...existing, title: payload.title, body_text: payload.body_text };
           }
           const { error } = await supabase
             .from("reference_documents")
