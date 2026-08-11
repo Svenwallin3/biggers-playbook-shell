@@ -37,6 +37,7 @@ import { VideoEmbed } from "@/components/VideoEmbed";
 import { LineItemEditor } from "@/components/reference/LineItemEditor";
 import { AddSectionButton } from "@/components/reference/AddSectionButton";
 import { NewDocumentDialog } from "@/components/reference/NewDocumentDialog";
+import { DocumentMetaEditDialog } from "@/components/reference/DocumentMetaEditDialog";
 import { SectionBodyEditor } from "@/components/reference/SectionBodyEditor";
 import { DangerZoneGraphic } from "@/components/training/DangerZoneGraphic";
 import { useAuth } from "@/hooks/useAuth";
@@ -281,6 +282,11 @@ function Detail({
           <SharedTag departments={doc.departments} />
         </div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">{doc.title}</h1>
+        {isManagerOrOwner ? (
+          <div className="-mt-1">
+            <DocumentMetaEditDialog doc={doc} documentType={documentType} />
+          </div>
+        ) : null}
         {ephemeral ? (
           <p className="text-xs text-muted-foreground">
             Check items off as you go — this is just your place-keeper and isn&apos;t saved or
@@ -597,28 +603,33 @@ export function ReferenceDocumentsScreen({
                 {rows.map((doc) => (
                   <Card key={doc.id}>
                     <CardContent className="py-4">
-                      <button
-                        type="button"
-                        onClick={() => setOpenId(doc.id)}
-                        className="flex w-full flex-wrap items-center gap-2 text-left"
-                      >
-                        <Icon className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="text-sm font-medium hover:underline">{doc.title}</span>
-                        <StepStatusBadge status={doc.content_status} />
-                        {groupByDepartment ? (
-                          <LocationTag location={doc.location_tag ?? null} />
-                        ) : (
-                          <>
-                            <SharedTag departments={doc.departments} />
+                      <div className="flex w-full items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setOpenId(doc.id)}
+                          className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-left"
+                        >
+                          <Icon className="size-4 shrink-0 text-muted-foreground" />
+                          <span className="text-sm font-medium hover:underline">{doc.title}</span>
+                          <StepStatusBadge status={doc.content_status} />
+                          {groupByDepartment ? (
                             <LocationTag location={doc.location_tag ?? null} />
-                          </>
-                        )}
-                        {documentType === "checklist" &&
-                        !ephemeralChecklist &&
-                        submittedToday.has(doc.id) ? (
-                          <CompletedTodayTag />
+                          ) : (
+                            <>
+                              <SharedTag departments={doc.departments} />
+                              <LocationTag location={doc.location_tag ?? null} />
+                            </>
+                          )}
+                          {documentType === "checklist" &&
+                          !ephemeralChecklist &&
+                          submittedToday.has(doc.id) ? (
+                            <CompletedTodayTag />
+                          ) : null}
+                        </button>
+                        {isManagerOrOwner ? (
+                          <DocumentMetaEditDialog doc={doc} documentType={documentType} />
                         ) : null}
-                      </button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
