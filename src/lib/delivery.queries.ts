@@ -73,6 +73,45 @@ export async function createDeliveryIssue(input: {
   if (error) throw error;
 }
 
+/** Every open delivery issue company-wide (admin/ops view). */
+export function allOpenDeliveryIssuesQueryOptions() {
+  return queryOptions({
+    queryKey: ["delivery-issues", "open", "all"],
+    queryFn: async (): Promise<DeliveryIssueWithPeople[]> => {
+      const { data, error } = await supabase
+        .from("delivery_issues")
+        .select(withPeople)
+        .eq("status", "open")
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as DeliveryIssueWithPeople[];
+    },
+  });
+}
+
+async function _unusedCreateDeliveryIssue(input: {
+  productVendor: string;
+  issueDescription: string;
+  photoUrl: string | null;
+  photoUrl2?: string | null;
+  truckDate?: string | null;
+  reportedBy: string | null;
+  assignedTo: string | null;
+}) {
+  const { error } = await supabase.from("delivery_issues").insert({
+    product_vendor: input.productVendor,
+    issue_description: input.issueDescription,
+    photo_url: input.photoUrl,
+    photo_url_2: input.photoUrl2 ?? null,
+    truck_date: input.truckDate ?? null,
+    reported_by: input.reportedBy,
+    assigned_to: input.assignedTo,
+    status: "open",
+  });
+  if (error) throw error;
+}
+
 export async function resolveDeliveryIssue(id: string) {
   const { error } = await supabase
     .from("delivery_issues")
