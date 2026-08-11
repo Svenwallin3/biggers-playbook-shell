@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Printer, Salad } from "lucide-react";
+import { Pencil, Printer, Salad } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import {
   createPresentationEntry,
@@ -242,16 +243,22 @@ function PresentationPage() {
                         ) : null}
                       </div>
                       {isManagerOrOwner ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditing(entry);
-                            setOpen(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Edit entry"
+                              onClick={() => {
+                                setEditing(entry);
+                                setOpen(true);
+                              }}
+                            >
+                              <Pencil className="size-4" aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit</TooltipContent>
+                        </Tooltip>
                       ) : null}
                     </CardContent>
                   </Card>
