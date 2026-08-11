@@ -28,6 +28,7 @@ export function AppLayout() {
     "/admin",
     "/approvals",
     "/compliance",
+    "/delivery-issues",
     "/huddle-notes",
     "/merge-tool",
     "/suggest",
@@ -57,6 +58,7 @@ export function AppLayout() {
     ? [
         { label: "Team", to: "/team" },
         { label: "Huddle & Notes", to: "/huddle-notes" },
+        { label: "Delivery Issues", to: "/delivery-issues" },
         { label: "Compliance", to: "/compliance" },
         { label: "Merge", to: "/merge-tool" },
       ]
@@ -64,9 +66,13 @@ export function AppLayout() {
       ? [
           { label: "Team", to: "/team" },
           { label: "Huddle & Notes", to: "/huddle-notes" },
+          { label: "Delivery Issues", to: "/delivery-issues" },
         ]
       : isManagerOrOwner
-        ? [{ label: "Huddle & Notes", to: "/huddle-notes" }]
+        ? [
+            { label: "Huddle & Notes", to: "/huddle-notes" },
+            { label: "Delivery Issues", to: "/delivery-issues" },
+          ]
         : [];
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
