@@ -54,7 +54,9 @@ export function DocumentMetaEditDialog({
   doc: ReferenceDocumentRow;
   documentType: ReferenceDocumentType;
 }) {
-  const { employee, isOwner } = useAuth();
+  const { employee, isOwner, isGeneralManager } = useAuth();
+  // GMs now write reference-document edits directly (own department, RLS-enforced).
+  const canWriteDirect = isOwner || isGeneralManager;
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(doc.title);
@@ -90,7 +92,7 @@ export function DocumentMetaEditDialog({
     setBusy(true);
     const location = locationTag === SHARED ? null : locationTag;
     try {
-      if (isOwner) {
+      if (canWriteDirect) {
         await updateReferenceDocumentMeta({
           id: doc.id,
           title: title.trim(),
@@ -163,7 +165,7 @@ export function DocumentMetaEditDialog({
           <DialogHeader>
             <DialogTitle>Document details</DialogTitle>
             <DialogDescription>
-              {isOwner
+              {canWriteDirect
                 ? "Owner edit — saves straight away and records version history."
                 : "Manager edit — this goes to the Owner approval queue before it goes live."}
             </DialogDescription>
@@ -216,7 +218,7 @@ export function DocumentMetaEditDialog({
               </Collapsible>
             )}
 
-            {!isOwner ? (
+            {!canWriteDirect ? (
               <div className="space-y-1.5">
                 <Label htmlFor={`meta-why-${doc.id}`}>How do you know it should change?</Label>
                 <Textarea
@@ -235,7 +237,7 @@ export function DocumentMetaEditDialog({
               Cancel
             </Button>
             <Button onClick={() => void save()} disabled={busy || !employee}>
-              {busy ? "Saving…" : isOwner ? "Save details" : "Submit for approval"}
+              {busy ? "Saving…" : canWriteDirect ? "Save details" : "Submit for approval"}
             </Button>
           </DialogFooter>
         </DialogContent>

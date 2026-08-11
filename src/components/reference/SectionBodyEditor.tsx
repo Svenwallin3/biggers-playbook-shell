@@ -36,7 +36,9 @@ export function SectionBodyEditor({
   doc: ReferenceDocumentRow;
   sectionIndex: number;
 }) {
-  const { employee, isOwner } = useAuth();
+  const { employee, isOwner, isGeneralManager } = useAuth();
+  // GMs now write reference-document edits directly (own department, RLS-enforced).
+  const canWriteDirect = isOwner || isGeneralManager;
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -64,7 +66,7 @@ export function SectionBodyEditor({
     if (!employee) return;
     setBusy(true);
     try {
-      if (isOwner) {
+      if (canWriteDirect) {
         await saveReferenceSections({
           documentId: doc.id,
           sections: nextSections(),
@@ -113,7 +115,7 @@ export function SectionBodyEditor({
           <DialogHeader>
             <DialogTitle>{section.title || "Section"}</DialogTitle>
             <DialogDescription>
-              {isOwner
+              {canWriteDirect
                 ? "Owner edit — saves straight to the SOP and records version history."
                 : "Manager edit — this goes to the Owner approval queue before it goes live."}
             </DialogDescription>
@@ -138,7 +140,7 @@ export function SectionBodyEditor({
                 placeholder="One idea per line. Spell out every abbreviation the first time it's used."
               />
             </div>
-            {!isOwner ? (
+            {!canWriteDirect ? (
               <div className="space-y-1.5">
                 <Label htmlFor="section-why">How do you know it should change?</Label>
                 <Textarea
@@ -157,7 +159,7 @@ export function SectionBodyEditor({
               Cancel
             </Button>
             <Button onClick={() => void save()} disabled={busy || !employee}>
-              {busy ? "Saving…" : isOwner ? "Save section" : "Submit for approval"}
+              {busy ? "Saving…" : canWriteDirect ? "Save section" : "Submit for approval"}
             </Button>
           </DialogFooter>
         </DialogContent>
