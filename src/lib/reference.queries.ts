@@ -153,6 +153,13 @@ export async function submitReferenceSuggestion(input: {
   howYouKnow: string | null;
   payload?: SuggestionPayload;
 }) {
+  documentId: string;
+  submittedBy: string;
+  what: string;
+  how: string | null;
+  howYouKnow: string | null;
+  payload?: SuggestionPayload;
+}) {
   const { error } = await supabase.from("suggestion_queue").insert({
     reference_document_id: input.documentId,
     submitted_by: input.submittedBy,
