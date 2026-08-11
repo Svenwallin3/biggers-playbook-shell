@@ -58,6 +58,7 @@ import {
   sharedLabel,
   softDeleteReferenceDocument,
   visibleToDepartment,
+  visibleToLocation,
   type ReferenceDocumentRow,
   type ReferenceDocumentType,
   type SubCategoryFilter,
@@ -470,13 +471,21 @@ export function ReferenceDocumentsScreen({
   // default them to all departments until they explicitly toggle.
   const [overrideShowAll, setOverrideShowAll] = useState<boolean | null>(null);
   const showAllDepartments = overrideShowAll ?? isOwner;
+  const [overrideShowAllLocations, setOverrideShowAllLocations] = useState<boolean | null>(null);
+  const showAllLocations = overrideShowAllLocations ?? isOwner;
 
   const all = query.data ?? [];
   const department = employee?.department_scope ?? null;
-  const scoped =
+  const deptScoped =
     isManagerOrOwner && showAllDepartments
       ? all
       : all.filter((d) => visibleToDepartment(d.departments, department));
+  const scoped =
+    groupByDepartment || (isManagerOrOwner && showAllLocations)
+      ? deptScoped
+      : deptScoped.filter((d) =>
+          visibleToLocation(d.location_tag ?? null, employee?.location_id ?? null),
+        );
   const q = term.trim().toLowerCase();
   const docs = q ? scoped.filter((d) => d.title.toLowerCase().includes(q)) : scoped;
 
@@ -523,6 +532,15 @@ export function ReferenceDocumentsScreen({
             >
               {showAllDepartments ? "My department only" : "Show all departments"}
             </Button>
+            {!groupByDepartment ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOverrideShowAllLocations(!showAllLocations)}
+              >
+                {showAllLocations ? "My location only" : "Show all locations"}
+              </Button>
+            ) : null}
             <NewDocumentDialog
               documentType={documentType}
               label={documentType === "checklist" ? "Checklist" : "SOP"}
@@ -590,7 +608,10 @@ export function ReferenceDocumentsScreen({
                         {groupByDepartment ? (
                           <LocationTag location={doc.location_tag ?? null} />
                         ) : (
-                          <SharedTag departments={doc.departments} />
+                          <>
+                            <SharedTag departments={doc.departments} />
+                            <LocationTag location={doc.location_tag ?? null} />
+                          </>
                         )}
                         {documentType === "checklist" &&
                         !ephemeralChecklist &&

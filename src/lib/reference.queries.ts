@@ -119,6 +119,13 @@ export function visibleToDepartment(departments: string[] | null, department: st
   return departments.includes(department);
 }
 
+/** A staff member sees docs tagged to their own location (plus untagged/shared). */
+export function visibleToLocation(locationTag: string | null, employeeLocationId: string | null) {
+  if (!locationTag) return true;
+  if (!employeeLocationId) return false;
+  return locationTag === employeeLocationId;
+}
+
 /**
  * Owners can save a checklist/SOP section edit directly. Managers submit the same
  * change through the existing suggestion queue instead — no direct write.
