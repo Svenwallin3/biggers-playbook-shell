@@ -163,6 +163,46 @@ export async function submitReferenceSuggestion(input: {
   if (error) throw error;
 }
 
+/** Owner-only direct edit of a document's own title / group / departments / location. */
+export async function updateReferenceDocumentMeta(input: {
+  id: string;
+  title: string;
+  subCategory: string | null;
+  departments: string[];
+  locationTag: string | null;
+  updatedBy: string | null;
+}) {
+  const { error } = await supabase
+    .from("reference_documents")
+    .update({
+      title: input.title,
+      sub_category: input.subCategory,
+      departments: input.departments,
+      location_tag: input.locationTag,
+      updated_by: input.updatedBy,
+    })
+    .eq("id", input.id);
+  if (error) throw error;
+}
+
+async function _unusedSubmitReferenceSuggestion(input: {
+  documentId: string;
+  submittedBy: string;
+  what: string;
+  how: string | null;
+  howYouKnow: string | null;
+}) {
+  const { error } = await supabase.from("suggestion_queue").insert({
+    reference_document_id: input.documentId,
+    submitted_by: input.submittedBy,
+    field_what: input.what,
+    field_how: input.how,
+    field_how_you_know: input.howYouKnow,
+    status: "pending",
+  });
+  if (error) throw error;
+}
+
 export async function createPresentationEntry(input: {
   category: string;
   itemName: string;
