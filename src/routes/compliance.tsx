@@ -1,9 +1,38 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -13,8 +42,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
-import { assignmentsQueryOptions } from "@/lib/admin.queries";
+import {
+  assignableEmployeesQueryOptions,
+  assignableModulesQueryOptions,
+  assignmentsQueryOptions,
+  createAssignableModuleAssignment,
+  endAssignableModuleAssignment,
+} from "@/lib/admin.queries";
 import { signoffBacklogQueryOptions } from "@/lib/backlog.queries";
+import { cn } from "@/lib/utils";
 
 const departmentLabels: Record<string, string> = {
   universal: "Unassigned / Universal",
@@ -104,6 +140,137 @@ function SignoffBacklogSection() {
   );
 }
 
+function NewAssignmentDialog({ actorId }: { actorId: string | null }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [employeeOpen, setEmployeeOpen] = useState(false);
+  const [employeeId, setEmployeeId] = useState("");
+  const [moduleId, setModuleId] = useState("");
+  const [dueDate, setDueDate] = useState("");
+
+  const employees = useQuery({ ...assignableEmployeesQueryOptions(), enabled: open });
+  const modules = useQuery({ ...assignableModulesQueryOptions(), enabled: open });
+  const selectedEmployee = (employees.data ?? []).find((e) => e.id === employeeId);
+
+  const create = useMutation({
+    mutationFn: async () => {
+      if (!employeeId) throw new Error("Pick an employee.");
+      if (!moduleId) throw new Error("Pick a module.");
+      await createAssignableModuleAssignment({
+        employeeId,
+        moduleId,
+        dueDate: dueDate || null,
+        assignedBy: actorId,
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      setOpen(false);
+      setEmployeeId("");
+      setModuleId("");
+      setDueDate("");
+      toast.success("Assignment created.");
+    },
+    onError: (error: Error) => toast.error("Couldn't assign", { description: error.message }),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button size="sm" onClick={() => setOpen(true)}>
+        New assignment
+      </Button>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>New assignment</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Employee</Label>
+            <Popover open={employeeOpen} onOpenChange={setEmployeeOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-between font-normal">
+                  <span className="truncate">
+                    {selectedEmployee
+                      ? (selectedEmployee.full_name ?? selectedEmployee.email)
+                      : "Select an employee"}
+                  </span>
+                  <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search employees…" />
+                  <CommandList>
+                    <CommandEmpty>No employee found.</CommandEmpty>
+                    <CommandGroup>
+                      {(employees.data ?? []).map((e) => {
+                        const label = e.full_name ?? e.email;
+                        return (
+                          <CommandItem
+                            key={e.id}
+                            value={label}
+                            onSelect={() => {
+                              setEmployeeId(e.id);
+                              setEmployeeOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                employeeId === e.id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                            {label}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="assign-module">Module</Label>
+            <Select value={moduleId} onValueChange={setModuleId}>
+              <SelectTrigger id="assign-module">
+                <SelectValue placeholder="Select a restricted module" />
+              </SelectTrigger>
+              <SelectContent>
+                {(modules.data ?? []).map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name}
+                    {m.track ? ` — ${m.track.name}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="assign-due">Due date (optional)</Label>
+            <Input
+              id="assign-due"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button disabled={create.isPending} onClick={() => create.mutate()}>
+            {create.isPending ? "Assigning…" : "Assign"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export const Route = createFileRoute("/compliance")({
   head: () => ({
     meta: [
@@ -126,8 +293,20 @@ export const Route = createFileRoute("/compliance")({
 });
 
 function CompliancePage() {
-  const { isManagerOrOwner, isOwner, loading } = useAuth();
+  const { employee, isManagerOrOwner, isOwner, isGeneralManager, loading } = useAuth();
+  const queryClient = useQueryClient();
   const query = useQuery({ ...assignmentsQueryOptions(), enabled: isManagerOrOwner });
+  const canAssign = isGeneralManager || isOwner;
+
+  const endAssignment = useMutation({
+    mutationFn: (id: string) =>
+      endAssignableModuleAssignment({ id, actorId: employee?.id ?? null }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      toast.success("Assignment ended — the record is kept, not deleted.");
+    },
+    onError: (error: Error) => toast.error("Couldn't end it", { description: error.message }),
+  });
 
   if (loading) return null;
   if (!isManagerOrOwner) {
@@ -158,11 +337,14 @@ function CompliancePage() {
       {isOwner ? <SignoffBacklogSection /> : null}
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Assignments</CardTitle>
-          <CardDescription>
-            {rows.length} active assignment{rows.length === 1 ? "" : "s"}.
-          </CardDescription>
+        <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
+          <div>
+            <CardTitle className="text-base">Assignments</CardTitle>
+            <CardDescription>
+              {rows.length} active assignment{rows.length === 1 ? "" : "s"}.
+            </CardDescription>
+          </div>
+          {canAssign ? <NewAssignmentDialog actorId={employee?.id ?? null} /> : null}
         </CardHeader>
         <CardContent>
           {query.isPending ? (
@@ -172,6 +354,59 @@ function CompliancePage() {
               No restricted modules have been assigned yet.
             </p>
           ) : (
+            <>
+            <ul className="space-y-3 md:hidden">
+              {rows.map((row) => {
+                const c = completion?.get(row.id) ?? { done: 0, total: 0 };
+                const pct = c.total ? Math.round((c.done / c.total) * 100) : 0;
+                const complete = c.total > 0 && c.done === c.total;
+                const overdue = !complete && !!row.due_date && row.due_date < today;
+                return (
+                  <li key={row.id} className="space-y-2 rounded-md border p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">
+                          {row.employee?.full_name ?? row.employee?.email ?? "Unknown"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {row.module?.name ?? "—"}
+                          {row.module?.track ? ` · ${row.module.track.name}` : ""}
+                        </p>
+                      </div>
+                      {complete ? (
+                        <Badge>Certified</Badge>
+                      ) : overdue ? (
+                        <Badge variant="destructive">Overdue</Badge>
+                      ) : (
+                        <Badge variant="secondary">In progress</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Progress value={pct} className="h-2" />
+                      <span className="text-xs text-muted-foreground">
+                        {c.done}/{c.total}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        Due {row.due_date ? new Date(row.due_date).toLocaleDateString() : "—"}
+                      </span>
+                      {canAssign ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={endAssignment.isPending}
+                          onClick={() => endAssignment.mutate(row.id)}
+                        >
+                          End assignment
+                        </Button>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -181,6 +416,7 @@ function CompliancePage() {
                   <TableHead>Due</TableHead>
                   <TableHead>Progress</TableHead>
                   <TableHead>Status</TableHead>
+                  {canAssign ? <TableHead className="text-right">Action</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -218,11 +454,25 @@ function CompliancePage() {
                           <Badge variant="secondary">In progress</Badge>
                         )}
                       </TableCell>
+                      {canAssign ? (
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={endAssignment.isPending}
+                            onClick={() => endAssignment.mutate(row.id)}
+                          >
+                            End assignment
+                          </Button>
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   );
                 })}
               </TableBody>
             </Table>
+            </div>
+            </>
           )}
         </CardContent>
       </Card>

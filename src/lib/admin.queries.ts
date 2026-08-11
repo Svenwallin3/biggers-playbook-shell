@@ -136,6 +136,73 @@ export type AssignmentWithContext = AssignmentRow & {
   module: (ModuleRow & { track: TrackRow | null }) | null;
 };
 
+/** Active, non-deleted employees — the pool an assignment can be given to. */
+export function assignableEmployeesQueryOptions() {
+  return queryOptions({
+    queryKey: ["assignable-employees"],
+    queryFn: async (): Promise<Pick<EmployeeRow, "id" | "full_name" | "email">[]> => {
+      const { data, error } = await supabase
+        .from("employees")
+        .select("id, full_name, email")
+        .eq("is_deleted", false)
+        .eq("status", "active")
+        .order("full_name", { nullsFirst: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export type AssignableModule = ModuleRow & { track: TrackRow | null };
+
+/** Restricted / position modules that can be handed to an individual employee. */
+export function assignableModulesQueryOptions() {
+  return queryOptions({
+    queryKey: ["assignable-modules"],
+    queryFn: async (): Promise<AssignableModule[]> => {
+      const { data, error } = await supabase
+        .from("modules")
+        .select("*, track:tracks(*)")
+        .eq("is_assignable", true)
+        .eq("is_deleted", false)
+        .order("name");
+      if (error) throw error;
+      return (data ?? []) as unknown as AssignableModule[];
+    },
+  });
+}
+
+export async function createAssignableModuleAssignment(input: {
+  employeeId: string;
+  moduleId: string;
+  dueDate: string | null;
+  assignedBy: string | null;
+}) {
+  const { error } = await supabase.from("assignable_module_assignments").insert({
+    employee_id: input.employeeId,
+    module_id: input.moduleId,
+    due_date: input.dueDate,
+    assigned_by: input.assignedBy,
+  });
+  if (error) throw error;
+}
+
+/** Soft-end an assignment (seasonal pull, mis-assignment) — never a hard delete. */
+export async function endAssignableModuleAssignment(input: {
+  id: string;
+  actorId: string | null;
+}) {
+  const { error } = await supabase
+    .from("assignable_module_assignments")
+    .update({
+      is_deleted: true,
+      deleted_by: input.actorId,
+      deleted_at: new Date().toISOString(),
+    })
+    .eq("id", input.id);
+  if (error) throw error;
+}
+
 /** Restricted / assignable modules (forklift, alcohol receiving, …) and who holds them. */
 export function assignmentsQueryOptions() {
   return queryOptions({
