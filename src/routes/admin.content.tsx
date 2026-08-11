@@ -40,6 +40,7 @@ import {
   stepTypeOptions,
 } from "@/components/admin/ContentCreateDialogs";
 import { ModuleEditPanel, TrackEditPanel } from "@/components/admin/EntityEditPanels";
+import { SortableContentTree } from "@/components/admin/SortableContentTree";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/training.queries";
@@ -91,7 +92,7 @@ function unmetMediaRecommendation(s: {
 }
 
 function ContentEditorPage() {
-  const { employee, isManagerOrOwner, loading } = useAuth();
+  const { employee, isManagerOrOwner, isOwner, isGeneralManager, loading } = useAuth();
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
   const treeQuery = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
@@ -130,6 +131,11 @@ function ContentEditorPage() {
       !!department &&
       department === employee.department_scope);
   const canCreateTrack = employee?.auth_tier === "owner" || employee?.auth_tier === "manager";
+
+  // Drag-and-drop authorisation (UX layer only — the database is the boundary).
+  const canReorderTracks = isOwner || isGeneralManager;
+  const canReorderModulesIn = (track: { department: string | null }) =>
+    isOwner || isGeneralManager || canEditDepartment(track.department);
 
   useEffect(() => {
     if (!selection.id && steps.length) setSelectedId(steps[0]!.id);
@@ -258,35 +264,32 @@ function ContentEditorPage() {
             </Label>
             <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
           </div>
-          {tracks.filter((t) => showHidden || !t.is_deleted).map((track) => (
-            <div key={track.id}>
-              <button
-                type="button"
-                onClick={() => setSelection({ kind: "track", id: track.id })}
-                className={`mb-2 w-full rounded px-2 py-1 text-left text-xs font-medium uppercase tracking-wide transition-colors hover:bg-muted ${
-                  selection.kind === "track" && selection.id === track.id
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground"
-                }`}
-              >
-                <span className={track.is_deleted ? "line-through" : undefined}>{track.name}</span>
-              </button>
-              <div className="space-y-3">
-                {modules
-                  .filter((m) => m.track_id === track.id && (showHidden || !m.is_deleted))
-                  .map((m) => (
-                    <div key={m.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelection({ kind: "module", id: m.id })}
-                        className={`w-full rounded px-2 py-1 text-left text-sm font-medium transition-colors hover:bg-muted ${
-                          selection.kind === "module" && selection.id === m.id ? "bg-muted" : ""
-                        }`}
-                      >
-                        <span className={m.is_deleted ? "line-through" : undefined}>{m.name}</span>
-                        {m.is_deleted ? " (hidden)" : ""}
-                      </button>
-                      <ul className="mt-1 space-y-0.5 border-l border-border pl-3">
+          <SortableContentTree
+            tracks={tracks.filter((t) => showHidden || !t.is_deleted)}
+            modules={modules.filter((m) => showHidden || !m.is_deleted)}
+            selection={selection}
+            onSelect={setSelection}
+            canReorderTracks={canReorderTracks}
+            canReorderModulesIn={canReorderModulesIn}
+            renderTrackLabel={(track) => (
+              <span className={track.is_deleted ? "line-through" : undefined}>{track.name}</span>
+            )}
+            renderModuleLabel={(m) => (
+              <>
+                <span className={m.is_deleted ? "line-through" : undefined}>{m.name}</span>
+                {m.is_deleted ? " (hidden)" : ""}
+              </>
+            )}
+            renderTrackFooter={(track) => (
+              <NewModuleDialog
+                trackId={track.id}
+                nextSequence={modules.filter((m) => m.track_id === track.id).length + 1}
+                disabled={!canEditDepartment(track.department)}
+                onCreated={() => undefined}
+              />
+            )}
+            renderModuleChildren={(m, track) => (
+              <ul className="ml-7 mt-1 space-y-0.5 border-l border-border pl-3">
                         {steps
                           .filter((s) => s.module_id === m.id && (showHidden || !s.is_deleted))
                           .map((s) => (
@@ -329,18 +332,9 @@ function ContentEditorPage() {
                             onCreated={(id) => setSelectedId(id)}
                           />
                         </li>
-                      </ul>
-                    </div>
-                  ))}
-                <NewModuleDialog
-                  trackId={track.id}
-                  nextSequence={modules.filter((m) => m.track_id === track.id).length + 1}
-                  disabled={!canEditDepartment(track.department)}
-                  onCreated={() => undefined}
-                />
-              </div>
-            </div>
-          ))}
+              </ul>
+            )}
+          />
         </nav>
 
         <div className="space-y-6">
