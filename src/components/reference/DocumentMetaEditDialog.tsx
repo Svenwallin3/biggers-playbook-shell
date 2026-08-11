@@ -116,6 +116,13 @@ export function DocumentMetaEditDialog({
           what: `${doc.title} — document details (title/group/departments/location)`,
           how: summary,
           howYouKnow: why.trim() || null,
+          payload: {
+            type: "document_meta",
+            title: title.trim(),
+            subCategory: subCategory.trim() || null,
+            departments,
+            locationTag: location,
+          },
         });
         toast.success("Sent to the Owner approval queue.");
       }

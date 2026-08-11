@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 export type ReferenceDocumentRow = Database["public"]["Tables"]["reference_documents"]["Row"];
 export type PresentationEntryRow =
@@ -145,12 +145,33 @@ export async function saveReferenceSections(input: {
   if (error) throw error;
 }
 
+/** Structured proposed change stored on suggestion_queue.payload for deterministic apply. */
+export type SuggestionPayload =
+  | { type: "line_items"; sectionIndex: number; items: { text: string; order: number }[] }
+  | { type: "section_body"; sectionIndex: number; title: string; body_text: string | null }
+  | {
+      type: "document_meta";
+      title: string;
+      subCategory: string | null;
+      departments: string[];
+      locationTag: string | null;
+    }
+  | {
+      type: "new_document";
+      documentType: "checklist" | "sop";
+      title: string;
+      subCategory: string | null;
+      departments: string[];
+      locationTag: string | null;
+    };
+
 export async function submitReferenceSuggestion(input: {
   documentId: string;
   submittedBy: string;
   what: string;
   how: string | null;
   howYouKnow: string | null;
+  payload?: SuggestionPayload;
 }) {
   const { error } = await supabase.from("suggestion_queue").insert({
     reference_document_id: input.documentId,
@@ -158,6 +179,7 @@ export async function submitReferenceSuggestion(input: {
     field_what: input.what,
     field_how: input.how,
     field_how_you_know: input.howYouKnow,
+    payload: (input.payload ?? null) as unknown as Json,
     status: "pending",
   });
   if (error) throw error;
@@ -249,6 +271,7 @@ export async function submitNewDocumentSuggestion(input: {
   departments: string[];
   locationTag?: string | null;
   howYouKnow: string | null;
+  payload?: SuggestionPayload;
 }) {
   const label = input.documentType === "checklist" ? "checklist" : "SOP";
   const what = [
@@ -264,6 +287,7 @@ export async function submitNewDocumentSuggestion(input: {
     field_what: what,
     field_how: null,
     field_how_you_know: input.howYouKnow,
+    payload: (input.payload ?? null) as unknown as Json,
     status: "pending",
   });
   if (error) throw error;

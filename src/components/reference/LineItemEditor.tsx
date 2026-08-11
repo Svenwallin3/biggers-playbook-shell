@@ -101,6 +101,14 @@ export function LineItemEditor({
           what: `${doc.title} — “${section?.title ?? "Section"}” line items`,
           how: proposed || null,
           howYouKnow: why.trim() || null,
+          payload: {
+            type: "line_items",
+            sectionIndex,
+            items: items
+              .map((text) => text.trim())
+              .filter(Boolean)
+              .map((text, order) => ({ text, order })),
+          },
         });
         toast.success("Sent to the Owner approval queue.");
       }
