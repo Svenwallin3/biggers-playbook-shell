@@ -23,6 +23,8 @@ export const Route = createFileRoute("/reference/manager-guides")({
       heading="Manager Guides"
       blurb="Trainer scripts for running walkthroughs, role-plays, and sign-offs. Not day-to-day staff reference."
       subCategoryFilter={{ include: ["Manager Walkthrough Guides"] }}
+      ephemeralChecklist
+      groupByDepartment
     />
   ),
 });

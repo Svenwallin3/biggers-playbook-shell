@@ -450,11 +450,17 @@ export function ReferenceDocumentsScreen({
   heading,
   blurb,
   subCategoryFilter,
+  ephemeralChecklist = false,
+  groupByDepartment = false,
 }: {
   documentType: ReferenceDocumentType;
   heading: string;
   blurb: string;
   subCategoryFilter?: SubCategoryFilter;
+  /** Manager Guides: checkboxes are local-only, nothing is submitted or persisted. */
+  ephemeralChecklist?: boolean;
+  /** Manager Guides: group by department instead of sub_category, and tag by location. */
+  groupByDepartment?: boolean;
 }) {
   const { employee, isManagerOrOwner, isOwner } = useAuth();
   const query = useQuery(referenceDocumentsQueryOptions(documentType, subCategoryFilter));
@@ -475,16 +481,30 @@ export function ReferenceDocumentsScreen({
   const docs = q ? scoped.filter((d) => d.title.toLowerCase().includes(q)) : scoped;
 
   const submittedQuery = useQuery(
-    submittedTodayQueryOptions(documentType === "checklist" ? all.map((d) => d.id) : []),
+    submittedTodayQueryOptions(
+      documentType === "checklist" && !ephemeralChecklist ? all.map((d) => d.id) : [],
+    ),
   );
   const submittedToday = submittedQuery.data ?? new Set<string>();
 
   const openDoc = all.find((d) => d.id === openId) ?? null;
   if (openDoc) {
-    return <Detail doc={openDoc} documentType={documentType} onBack={() => setOpenId(null)} />;
+    return (
+      <Detail
+        doc={openDoc}
+        documentType={documentType}
+        ephemeral={ephemeralChecklist}
+        onBack={() => setOpenId(null)}
+      />
+    );
   }
 
-  const groups = groupBy(docs, (d) => d.sub_category?.trim() || "Uncategorized");
+  const groups = groupByDepartment
+    ? groupBy(docs, (d) => {
+        const dept = (d.departments ?? []).find((x) => x && x !== "universal") ?? d.departments?.[0];
+        return dept ? departmentLabel(dept) : "Other";
+      })
+    : groupBy(docs, (d) => d.sub_category?.trim() || "Uncategorized");
   const Icon = documentType === "checklist" ? ListChecks : FileText;
 
   return (
@@ -567,8 +587,14 @@ export function ReferenceDocumentsScreen({
                         <Icon className="size-4 shrink-0 text-muted-foreground" />
                         <span className="text-sm font-medium hover:underline">{doc.title}</span>
                         <StepStatusBadge status={doc.content_status} />
-                        <SharedTag departments={doc.departments} />
-                        {documentType === "checklist" && submittedToday.has(doc.id) ? (
+                        {groupByDepartment ? (
+                          <LocationTag location={doc.location_tag ?? null} />
+                        ) : (
+                          <SharedTag departments={doc.departments} />
+                        )}
+                        {documentType === "checklist" &&
+                        !ephemeralChecklist &&
+                        submittedToday.has(doc.id) ? (
                           <CompletedTodayTag />
                         ) : null}
                       </button>
