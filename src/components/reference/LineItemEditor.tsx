@@ -36,7 +36,9 @@ export function LineItemEditor({
   doc: ReferenceDocumentRow;
   sectionIndex: number;
 }) {
-  const { employee, isOwner } = useAuth();
+  const { employee, isOwner, isGeneralManager } = useAuth();
+  // GMs now write reference-document edits directly (own department, RLS-enforced).
+  const canWriteDirect = isOwner || isGeneralManager;
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<string[]>([]);
@@ -79,7 +81,7 @@ export function LineItemEditor({
     if (!employee) return;
     setBusy(true);
     try {
-      if (isOwner) {
+      if (canWriteDirect) {
         await saveReferenceSections({
           documentId: doc.id,
           sections: nextSections(),
@@ -133,7 +135,7 @@ export function LineItemEditor({
           <DialogHeader>
             <DialogTitle>{section.title || "Section"}</DialogTitle>
             <DialogDescription>
-              {isOwner
+              {canWriteDirect
                 ? "Owner edit — saves straight to the checklist and records version history."
                 : "Manager edit — this goes to the Owner approval queue before it goes live."}
             </DialogDescription>
@@ -181,7 +183,7 @@ export function LineItemEditor({
             </Button>
           </div>
 
-          {!isOwner ? (
+          {!canWriteDirect ? (
             <div className="space-y-1.5">
               <p className="text-xs font-medium">How do you know it should change?</p>
               <Textarea
@@ -198,7 +200,7 @@ export function LineItemEditor({
               Cancel
             </Button>
             <Button onClick={() => void save()} disabled={busy || !employee}>
-              {busy ? "Saving…" : isOwner ? "Save section" : "Submit for approval"}
+              {busy ? "Saving…" : canWriteDirect ? "Save section" : "Submit for approval"}
             </Button>
           </DialogFooter>
         </DialogContent>
