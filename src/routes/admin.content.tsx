@@ -41,6 +41,7 @@ import {
 } from "@/components/admin/ContentCreateDialogs";
 import { ModuleEditPanel, TrackEditPanel } from "@/components/admin/EntityEditPanels";
 import { SortableContentTree } from "@/components/admin/SortableContentTree";
+import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/training.queries";
@@ -547,6 +548,10 @@ function ContentEditorPage() {
                 </div>
               </CardContent>
             </Card>
+          ) : null}
+
+          {step && draft && draft.step_type === "quiz" ? (
+            <QuizQuestionsPanel key={step.id} stepId={step.id} />
           ) : null}
 
           {selection.kind === "step" ? (
