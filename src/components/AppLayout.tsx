@@ -164,6 +164,13 @@ export function AppLayout() {
                           {employee?.full_name ?? session.user.email}
                           {tier ? ` · ${tier}` : ""}
                         </p>
+                        <Link
+                          to="/me"
+                          onClick={() => setMobileOpen(false)}
+                          className={`mt-1 block ${linkClass} ${isActive("/me") ? activeClass : ""}`}
+                        >
+                          Me
+                        </Link>
                         <button
                           type="button"
                           onClick={async () => {
@@ -231,7 +238,12 @@ export function AppLayout() {
                   <ChevronDown className="size-3.5" aria-hidden />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuSeparator className="first:hidden" />
+                  <DropdownMenuItem asChild>
+                    <Link to="/me" className={isActive("/me") ? "font-semibold" : ""}>
+                      Me
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => void handleSignOut()}>
                     Sign out
                   </DropdownMenuItem>
