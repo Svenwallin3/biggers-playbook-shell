@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApprovalsRouteImport } from './routes/approvals'
 import { Route as ComplianceRouteImport } from './routes/compliance'
+import { Route as DeliveryIssuesRouteImport } from './routes/delivery-issues'
 import { Route as HuddleNotesRouteImport } from './routes/huddle-notes'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MeRouteImport } from './routes/me'
@@ -46,6 +47,11 @@ const ApprovalsRoute = ApprovalsRouteImport.update({
 const ComplianceRoute = ComplianceRouteImport.update({
   id: '/compliance',
   path: '/compliance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryIssuesRoute = DeliveryIssuesRouteImport.update({
+  id: '/delivery-issues',
+  path: '/delivery-issues',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HuddleNotesRoute = HuddleNotesRouteImport.update({
@@ -153,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
   '/compliance': typeof ComplianceRoute
+  '/delivery-issues': typeof DeliveryIssuesRoute
   '/huddle-notes': typeof HuddleNotesRoute
   '/login': typeof LoginRoute
   '/me': typeof MeRoute
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
   '/compliance': typeof ComplianceRoute
+  '/delivery-issues': typeof DeliveryIssuesRoute
   '/huddle-notes': typeof HuddleNotesRoute
   '/login': typeof LoginRoute
   '/me': typeof MeRoute
@@ -203,6 +211,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
   '/compliance': typeof ComplianceRoute
+  '/delivery-issues': typeof DeliveryIssuesRoute
   '/huddle-notes': typeof HuddleNotesRoute
   '/login': typeof LoginRoute
   '/me': typeof MeRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/'
     | '/approvals'
     | '/compliance'
+    | '/delivery-issues'
     | '/huddle-notes'
     | '/login'
     | '/me'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/'
     | '/approvals'
     | '/compliance'
+    | '/delivery-issues'
     | '/huddle-notes'
     | '/login'
     | '/me'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/'
     | '/approvals'
     | '/compliance'
+    | '/delivery-issues'
     | '/huddle-notes'
     | '/login'
     | '/me'
@@ -305,6 +317,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApprovalsRoute: typeof ApprovalsRoute
   ComplianceRoute: typeof ComplianceRoute
+  DeliveryIssuesRoute: typeof DeliveryIssuesRoute
   HuddleNotesRoute: typeof HuddleNotesRoute
   LoginRoute: typeof LoginRoute
   MeRoute: typeof MeRoute
@@ -343,6 +356,13 @@ declare module '@tanstack/react-router' {
       path: '/compliance'
       fullPath: '/compliance'
       preLoaderRoute: typeof ComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery-issues': {
+      id: '/delivery-issues'
+      path: '/delivery-issues'
+      fullPath: '/delivery-issues'
+      preLoaderRoute: typeof DeliveryIssuesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/huddle-notes': {
@@ -512,6 +532,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApprovalsRoute: ApprovalsRoute,
   ComplianceRoute: ComplianceRoute,
+  DeliveryIssuesRoute: DeliveryIssuesRoute,
   HuddleNotesRoute: HuddleNotesRoute,
   LoginRoute: LoginRoute,
   MeRoute: MeRoute,
