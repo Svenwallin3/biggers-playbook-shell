@@ -90,28 +90,6 @@ export function allOpenDeliveryIssuesQueryOptions() {
   });
 }
 
-async function _unusedCreateDeliveryIssue(input: {
-  productVendor: string;
-  issueDescription: string;
-  photoUrl: string | null;
-  photoUrl2?: string | null;
-  truckDate?: string | null;
-  reportedBy: string | null;
-  assignedTo: string | null;
-}) {
-  const { error } = await supabase.from("delivery_issues").insert({
-    product_vendor: input.productVendor,
-    issue_description: input.issueDescription,
-    photo_url: input.photoUrl,
-    photo_url_2: input.photoUrl2 ?? null,
-    truck_date: input.truckDate ?? null,
-    reported_by: input.reportedBy,
-    assigned_to: input.assignedTo,
-    status: "open",
-  });
-  if (error) throw error;
-}
-
 export async function resolveDeliveryIssue(id: string) {
   const { error } = await supabase
     .from("delivery_issues")
