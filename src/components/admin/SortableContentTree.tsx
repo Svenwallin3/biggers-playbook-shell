@@ -399,6 +399,11 @@ export function SortableContentTree({
                                   >
                                     <button
                                       type="button"
+                                      ref={
+                                        selection.kind === "step" && selection.id === s.id
+                                          ? selectedRef
+                                          : undefined
+                                      }
                                       onClick={() => onSelect({ kind: "step", id: s.id })}
                                       className={`w-full rounded px-2 py-1 text-left text-sm transition-colors hover:bg-muted ${
                                         selection.kind === "step" && selection.id === s.id

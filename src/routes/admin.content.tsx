@@ -48,6 +48,10 @@ import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/trainin
 import { contentTreeQueryOptions, versionHistoryQueryOptions } from "@/lib/admin.queries";
 
 export const Route = createFileRoute("/admin/content")({
+  validateSearch: (search: Record<string, unknown>): { stepId?: string | undefined } => ({
+    // Deep link from the step viewer: open straight to this step's edit panel.
+    stepId: typeof search["stepId"] === "string" ? search["stepId"] : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Content Editor — Biggers Training" },
@@ -94,6 +98,7 @@ function unmetMediaRecommendation(s: {
 
 function ContentEditorPage() {
   const { employee, isManagerOrOwner, isOwner, isGeneralManager, loading } = useAuth();
+  const { stepId } = Route.useSearch();
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
   const treeQuery = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
@@ -101,7 +106,7 @@ function ContentEditorPage() {
   const [selection, setSelection] = useState<{
     kind: "step" | "module" | "track";
     id: string;
-  }>({ kind: "step", id: "" });
+  }>({ kind: "step", id: stepId ?? "" });
   const selectedId = selection.kind === "step" ? selection.id : "";
   const setSelectedId = (id: string) => setSelection({ kind: "step", id });
   const [draft, setDraft] = useState<Draft | null>(null);
