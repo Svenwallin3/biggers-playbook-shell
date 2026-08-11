@@ -30,6 +30,7 @@ import { Route as AdminGapsRouteImport } from './routes/admin.gaps'
 import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
 import { Route as ReferenceIndexRouteImport } from './routes/reference.index'
 import { Route as ReferenceChecklistsRouteImport } from './routes/reference.checklists'
+import { Route as ReferenceManagerGuidesRouteImport } from './routes/reference.manager-guides'
 import { Route as ReferencePresentationRouteImport } from './routes/reference.presentation'
 import { Route as ReferenceSopsRouteImport } from './routes/reference.sops'
 import { Route as ReferenceSourcingRouteImport } from './routes/reference.sourcing'
@@ -139,6 +140,11 @@ const ReferenceChecklistsRoute = ReferenceChecklistsRouteImport.update({
   path: '/checklists',
   getParentRoute: () => ReferenceRoute,
 } as any)
+const ReferenceManagerGuidesRoute = ReferenceManagerGuidesRouteImport.update({
+  id: '/manager-guides',
+  path: '/manager-guides',
+  getParentRoute: () => ReferenceRoute,
+} as any)
 const ReferencePresentationRoute = ReferencePresentationRouteImport.update({
   id: '/presentation',
   path: '/presentation',
@@ -176,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
   '/reference/checklists': typeof ReferenceChecklistsRoute
+  '/reference/manager-guides': typeof ReferenceManagerGuidesRoute
   '/reference/presentation': typeof ReferencePresentationRoute
   '/reference/sops': typeof ReferenceSopsRoute
   '/reference/sourcing': typeof ReferenceSourcingRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
   '/reference/checklists': typeof ReferenceChecklistsRoute
+  '/reference/manager-guides': typeof ReferenceManagerGuidesRoute
   '/reference/presentation': typeof ReferencePresentationRoute
   '/reference/sops': typeof ReferenceSopsRoute
   '/reference/sourcing': typeof ReferenceSourcingRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/admin/gaps': typeof AdminGapsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
   '/reference/checklists': typeof ReferenceChecklistsRoute
+  '/reference/manager-guides': typeof ReferenceManagerGuidesRoute
   '/reference/presentation': typeof ReferencePresentationRoute
   '/reference/sops': typeof ReferenceSopsRoute
   '/reference/sourcing': typeof ReferenceSourcingRoute
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | '/admin/gaps'
     | '/modules/$moduleId'
     | '/reference/checklists'
+    | '/reference/manager-guides'
     | '/reference/presentation'
     | '/reference/sops'
     | '/reference/sourcing'
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/admin/gaps'
     | '/modules/$moduleId'
     | '/reference/checklists'
+    | '/reference/manager-guides'
     | '/reference/presentation'
     | '/reference/sops'
     | '/reference/sourcing'
@@ -307,6 +318,7 @@ export interface FileRouteTypes {
     | '/admin/gaps'
     | '/modules/$moduleId'
     | '/reference/checklists'
+    | '/reference/manager-guides'
     | '/reference/presentation'
     | '/reference/sops'
     | '/reference/sourcing'
@@ -484,6 +496,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReferenceChecklistsRouteImport
       parentRoute: typeof ReferenceRoute
     }
+    '/reference/manager-guides': {
+      id: '/reference/manager-guides'
+      path: '/manager-guides'
+      fullPath: '/reference/manager-guides'
+      preLoaderRoute: typeof ReferenceManagerGuidesRouteImport
+      parentRoute: typeof ReferenceRoute
+    }
     '/reference/presentation': {
       id: '/reference/presentation'
       path: '/presentation'
@@ -510,6 +529,7 @@ declare module '@tanstack/react-router' {
 
 interface ReferenceRouteChildren {
   ReferenceChecklistsRoute: typeof ReferenceChecklistsRoute
+  ReferenceManagerGuidesRoute: typeof ReferenceManagerGuidesRoute
   ReferencePresentationRoute: typeof ReferencePresentationRoute
   ReferenceSopsRoute: typeof ReferenceSopsRoute
   ReferenceSourcingRoute: typeof ReferenceSourcingRoute
@@ -518,6 +538,7 @@ interface ReferenceRouteChildren {
 
 const ReferenceRouteChildren: ReferenceRouteChildren = {
   ReferenceChecklistsRoute: ReferenceChecklistsRoute,
+  ReferenceManagerGuidesRoute: ReferenceManagerGuidesRoute,
   ReferencePresentationRoute: ReferencePresentationRoute,
   ReferenceSopsRoute: ReferenceSopsRoute,
   ReferenceSourcingRoute: ReferenceSourcingRoute,

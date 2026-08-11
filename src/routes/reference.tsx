@@ -5,6 +5,7 @@ const tabs = [
   { label: "Checklists", to: "/reference/checklists" as const },
   { label: "SOPs", to: "/reference/sops" as const },
   { label: "Portioning & Presentation", to: "/reference/presentation" as const },
+  { label: "Manager Guides", to: "/reference/manager-guides" as const },
 ];
 
 export const Route = createFileRoute("/reference")({

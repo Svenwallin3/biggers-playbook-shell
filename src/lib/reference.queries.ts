@@ -48,9 +48,27 @@ export function sharedLabel(departments: string[] | null) {
   return `Shared: ${departments.map(departmentLabel).join(" + ")}`;
 }
 
-export function referenceDocumentsQueryOptions(documentType: ReferenceDocumentType) {
+export type SubCategoryFilter = {
+  /** Only show docs whose sub_category matches one of these. */
+  include?: string[];
+  /** Hide docs whose sub_category matches one of these. */
+  exclude?: string[];
+};
+
+function matchesSubCategory(value: string | null, filter?: SubCategoryFilter) {
+  if (!filter) return true;
+  const key = value?.trim() ?? "";
+  if (filter.include && !filter.include.includes(key)) return false;
+  if (filter.exclude && filter.exclude.includes(key)) return false;
+  return true;
+}
+
+export function referenceDocumentsQueryOptions(
+  documentType: ReferenceDocumentType,
+  subCategoryFilter?: SubCategoryFilter,
+) {
   return queryOptions({
-    queryKey: ["reference-documents", documentType],
+    queryKey: ["reference-documents", documentType, subCategoryFilter ?? null],
     queryFn: async (): Promise<ReferenceDocumentRow[]> => {
       const { data, error } = await supabase
         .from("reference_documents")
@@ -60,7 +78,7 @@ export function referenceDocumentsQueryOptions(documentType: ReferenceDocumentTy
         .order("sub_category", { nullsFirst: false })
         .order("title");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).filter((d) => matchesSubCategory(d.sub_category, subCategoryFilter));
     },
   });
 }
