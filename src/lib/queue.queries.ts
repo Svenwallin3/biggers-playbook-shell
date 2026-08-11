@@ -11,7 +11,7 @@ import {
   type TrackRow,
 } from "@/lib/training.queries";
 
-function departmentsForPath(path: string | null): Department[] {
+export function departmentsForPath(path: string | null): Department[] {
   const p = (path ?? "").toLowerCase();
   if (p.startsWith("kitchen")) return ["universal", "kitchen"];
   if (p.startsWith("deliver")) return ["universal", "delivery"];
