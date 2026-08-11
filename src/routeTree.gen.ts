@@ -14,6 +14,7 @@ import { Route as ApprovalsRouteImport } from './routes/approvals'
 import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as HuddleNotesRouteImport } from './routes/huddle-notes'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MeRouteImport } from './routes/me'
 import { Route as MergeToolRouteImport } from './routes/merge-tool'
 import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as ReferenceRouteImport } from './routes/reference'
@@ -55,6 +56,11 @@ const HuddleNotesRoute = HuddleNotesRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MergeToolRoute = MergeToolRouteImport.update({
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/compliance': typeof ComplianceRoute
   '/huddle-notes': typeof HuddleNotesRoute
   '/login': typeof LoginRoute
+  '/me': typeof MeRoute
   '/merge-tool': typeof MergeToolRoute
   '/preview': typeof PreviewRoute
   '/reference': typeof ReferenceRouteWithChildren
@@ -173,6 +180,7 @@ export interface FileRoutesByTo {
   '/compliance': typeof ComplianceRoute
   '/huddle-notes': typeof HuddleNotesRoute
   '/login': typeof LoginRoute
+  '/me': typeof MeRoute
   '/merge-tool': typeof MergeToolRoute
   '/preview': typeof PreviewRoute
   '/search': typeof SearchRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/compliance': typeof ComplianceRoute
   '/huddle-notes': typeof HuddleNotesRoute
   '/login': typeof LoginRoute
+  '/me': typeof MeRoute
   '/merge-tool': typeof MergeToolRoute
   '/preview': typeof PreviewRoute
   '/reference': typeof ReferenceRouteWithChildren
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/huddle-notes'
     | '/login'
+    | '/me'
     | '/merge-tool'
     | '/preview'
     | '/reference'
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/huddle-notes'
     | '/login'
+    | '/me'
     | '/merge-tool'
     | '/preview'
     | '/search'
@@ -270,6 +281,7 @@ export interface FileRouteTypes {
     | '/compliance'
     | '/huddle-notes'
     | '/login'
+    | '/me'
     | '/merge-tool'
     | '/preview'
     | '/reference'
@@ -295,6 +307,7 @@ export interface RootRouteChildren {
   ComplianceRoute: typeof ComplianceRoute
   HuddleNotesRoute: typeof HuddleNotesRoute
   LoginRoute: typeof LoginRoute
+  MeRoute: typeof MeRoute
   MergeToolRoute: typeof MergeToolRoute
   PreviewRoute: typeof PreviewRoute
   ReferenceRoute: typeof ReferenceRouteWithChildren
@@ -344,6 +357,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/merge-tool': {
@@ -494,6 +514,7 @@ const rootRouteChildren: RootRouteChildren = {
   ComplianceRoute: ComplianceRoute,
   HuddleNotesRoute: HuddleNotesRoute,
   LoginRoute: LoginRoute,
+  MeRoute: MeRoute,
   MergeToolRoute: MergeToolRoute,
   PreviewRoute: PreviewRoute,
   ReferenceRoute: ReferenceRouteWithChildren,
