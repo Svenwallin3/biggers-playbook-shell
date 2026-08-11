@@ -110,6 +110,7 @@ function ContentEditorPage() {
   const selectedId = selection.kind === "step" ? selection.id : "";
   const setSelectedId = (id: string) => setSelection({ kind: "step", id });
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [suggestionWhy, setSuggestionWhy] = useState("");
 
   const tracks = treeQuery.data?.tracks ?? [];
   const modules = treeQuery.data?.modules ?? [];
@@ -122,20 +123,28 @@ function ContentEditorPage() {
   const stepModule = modules.find((m) => m.id === step?.module_id);
   const historyQuery = useQuery(versionHistoryQueryOptions("steps", selectedId || undefined));
 
-  // Owners edit anything; managers only their own department. RLS enforces this
-  // too — the UI just avoids offering an edit that would be rejected.
-  const canEdit =
-    employee?.auth_tier === "owner" ||
-    (employee?.auth_tier === "manager" &&
-      !!stepModule?.track &&
-      stepModule.track.department === employee.department_scope);
-
   // Same rule, applied to the row being created into (RLS enforces it too).
   const canEditDepartment = (department: string | null | undefined) =>
     employee?.auth_tier === "owner" ||
     (employee?.auth_tier === "manager" &&
       !!department &&
       department === employee.department_scope);
+
+  // Direct-edit authority for existing content (post-2026-08-11 tightening): Owner or GM only.
+  // Creating new content is still any-manager — see canEditDepartment above.
+  const canEditDirectInDepartment = (department: string | null | undefined) =>
+    employee?.auth_tier === "owner" ||
+    (isGeneralManager && !!department && department === employee?.department_scope);
+
+  const canEditDirect = canEditDirectInDepartment(stepModule?.track?.department);
+  // A regular (non-GM) manager, own department, sees an editable title/content_body form
+  // that submits to the approval queue instead of a direct save.
+  const canSuggest =
+    isManagerOrOwner &&
+    !canEditDirect &&
+    !!stepModule?.track &&
+    stepModule.track.department === employee?.department_scope;
+
   const canCreateTrack = employee?.auth_tier === "owner" || employee?.auth_tier === "manager";
 
   // Drag-and-drop authorisation (UX layer only — the database is the boundary).
@@ -236,6 +245,23 @@ function ContentEditorPage() {
       toast.success("Restored that version — the replaced one is logged too.");
     },
     onError: (error: Error) => toast.error("Couldn't restore", { description: error.message }),
+  });
+
+  const suggest = useMutation({
+    mutationFn: async () => {
+      await submitStepSuggestion({
+        stepId: selectedId,
+        submittedBy: employee!.id,
+        title: draft!.title.trim(),
+        contentBody: draft!.content_body.trim(),
+        howYouKnow: suggestionWhy.trim() || null,
+      });
+    },
+    onSuccess: () => {
+      setSuggestionWhy("");
+      toast.success("Sent to the Owner approval queue.");
+    },
+    onError: (error: Error) => toast.error("Couldn't submit", { description: error.message }),
   });
 
   if (loading) return null;
