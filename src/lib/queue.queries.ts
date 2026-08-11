@@ -32,6 +32,70 @@ export type QueueEntry = {
   total: number;
 };
 
+export type OnboardingProgress = { completed: number; total: number };
+
+/**
+ * Per-employee required-onboarding completion, keyed by employee id.
+ * Assignable modules (Forklift, Bartender, etc.) sit outside the required
+ * 4-day onboarding and are excluded from the totals.
+ */
+export function onboardingCompletionQueryOptions() {
+  return queryOptions({
+    queryKey: ["onboarding-completion"],
+    queryFn: async (): Promise<Record<string, OnboardingProgress>> => {
+      const [employeesRes, tracksRes, modulesRes, stepsRes, progressRes] = await Promise.all([
+        supabase.from("employees").select("id, path").eq("is_deleted", false),
+        supabase.from("tracks").select("*").eq("is_deleted", false),
+        supabase
+          .from("modules")
+          .select("*")
+          .eq("is_deleted", false)
+          .eq("is_assignable", false)
+          .order("sequence_order"),
+        supabase.from("steps").select("*").eq("is_deleted", false).order("sequence_order"),
+        supabase.from("progress_records").select("employee_id, step_id, status"),
+      ]);
+      if (employeesRes.error) throw employeesRes.error;
+      if (tracksRes.error) throw tracksRes.error;
+      if (modulesRes.error) throw modulesRes.error;
+      if (stepsRes.error) throw stepsRes.error;
+      if (progressRes.error) throw progressRes.error;
+
+      const done = new Set(
+        (progressRes.data ?? [])
+          .filter((r) => r.status === "completed" || r.status === "signed_off")
+          .map((r) => `${r.employee_id}:${r.step_id}`),
+      );
+      const trackById = new Map((tracksRes.data ?? []).map((t) => [t.id, t]));
+      const stepsByModule = new Map<string, StepRow[]>();
+      for (const s of stepsRes.data ?? []) {
+        const list = stepsByModule.get(s.module_id) ?? [];
+        list.push(s);
+        stepsByModule.set(s.module_id, list);
+      }
+      const modules = (modulesRes.data ?? [])
+        .map((m) => ({ ...m, track: trackById.get(m.track_id) ?? null }))
+        .filter((m) => m.track);
+
+      const out: Record<string, OnboardingProgress> = {};
+      for (const employee of employeesRes.data ?? []) {
+        const depts = departmentsForPath(employee.path);
+        let total = 0;
+        let completed = 0;
+        for (const m of modules) {
+          if (!depts.includes(m.track!.department)) continue;
+          for (const step of stepsByModule.get(m.id) ?? []) {
+            total += 1;
+            if (done.has(`${employee.id}:${step.id}`)) completed += 1;
+          }
+        }
+        out[employee.id] = { completed, total };
+      }
+      return out;
+    },
+  });
+}
+
 /**
  * Each active employee's next incomplete step, in track / day / module / step order.
  * Managers see their own department; owners see everyone.

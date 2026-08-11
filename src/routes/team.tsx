@@ -18,9 +18,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { employeesQueryOptions, type EmployeeRow } from "@/lib/admin.queries";
+import { onboardingCompletionQueryOptions } from "@/lib/queue.queries";
 import type { Database } from "@/integrations/supabase/types";
 
 type AuthTier = Database["public"]["Enums"]["auth_tier"];
@@ -63,6 +65,7 @@ function TeamPage() {
   const { isOwner, isGeneralManager, employee, loading, session } = useAuth();
   const queryClient = useQueryClient();
   const employeesQuery = useQuery(employeesQueryOptions());
+  const onboardingQuery = useQuery(onboardingCompletionQueryOptions());
 
   const update = useMutation({
     mutationFn: async (input: { id: string; patch: Partial<EmployeeRow> }) => {
@@ -125,6 +128,7 @@ function TeamPage() {
               <TableHead>Email</TableHead>
               <TableHead className="w-[150px]">Access tier</TableHead>
               <TableHead className="w-[140px]">Status</TableHead>
+              <TableHead className="w-[130px]">Onboarding</TableHead>
               {isOwner ? (
                 <>
                   <TableHead className="w-[150px]">General Manager</TableHead>
@@ -187,6 +191,21 @@ function TeamPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </TableCell>
+                <TableCell>
+                  {(() => {
+                    const p = onboardingQuery.data?.[e.id];
+                    if (!e.path || !p || p.total === 0) {
+                      return <span className="text-sm text-muted-foreground">—</span>;
+                    }
+                    return p.completed >= p.total ? (
+                      <Badge variant="secondary">Complete</Badge>
+                    ) : (
+                      <Badge variant="outline">
+                        {p.completed}/{p.total}
+                      </Badge>
+                    );
+                  })()}
                 </TableCell>
                 {isOwner ? (
                   <TableCell>
