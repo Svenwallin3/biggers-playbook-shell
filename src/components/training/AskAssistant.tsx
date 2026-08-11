@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, Compass, MessageCircleQuestion, Sparkle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { MascotImage } from "@/components/brand/MascotImage";
 import { Input } from "@/components/ui/input";
 import { askTraining, type AskAnswer } from "@/lib/ask.functions";
 import { retrieveContext, type AskSource } from "@/lib/ask.retrieval";
@@ -51,6 +52,7 @@ export function AskAssistant() {
   return (
     <div className="rounded-xl border border-accent/35 bg-accent/8 px-4 py-4 sm:px-5">
       <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent">
+        <MascotImage path="mascot/assistant.png" alt="" className="h-8 sm:h-10" />
         <Sparkle className="size-3.5" /> Just ask
       </p>
 

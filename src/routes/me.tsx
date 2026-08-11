@@ -6,6 +6,7 @@ import { CheckCircle2, Circle, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
+import { MascotImage } from "@/components/brand/MascotImage";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { onboardingCompletionQueryOptions } from "@/lib/queue.queries";
@@ -133,7 +134,10 @@ function MePage() {
           {!employee.path || !onboarding || onboarding.total === 0 ? (
             <span className="text-sm text-muted-foreground">—</span>
           ) : onboarding.completed >= onboarding.total ? (
-            <Badge variant="secondary">Complete</Badge>
+            <>
+              <Badge variant="secondary">Complete</Badge>
+              <MascotImage path="mascot/milestone.png" alt="" className="h-16 sm:h-20" />
+            </>
           ) : (
             <Badge variant="outline">
               {onboarding.completed}/{onboarding.total}
