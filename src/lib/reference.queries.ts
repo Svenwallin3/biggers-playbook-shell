@@ -185,24 +185,6 @@ export async function updateReferenceDocumentMeta(input: {
   if (error) throw error;
 }
 
-async function _unusedSubmitReferenceSuggestion(input: {
-  documentId: string;
-  submittedBy: string;
-  what: string;
-  how: string | null;
-  howYouKnow: string | null;
-}) {
-  const { error } = await supabase.from("suggestion_queue").insert({
-    reference_document_id: input.documentId,
-    submitted_by: input.submittedBy,
-    field_what: input.what,
-    field_how: input.how,
-    field_how_you_know: input.howYouKnow,
-    status: "pending",
-  });
-  if (error) throw error;
-}
-
 export async function createPresentationEntry(input: {
   category: string;
   itemName: string;
