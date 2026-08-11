@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Eye, Pencil, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
