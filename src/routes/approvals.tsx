@@ -148,7 +148,7 @@ function ApprovalsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Approval queue</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {isOwner
-            ? "Owner-only. Every content change routes through here, including a manager editing their own department."
+            ? "Owner-only. Regular managers editing their own department route through here — General Managers and Owners edit directly."
             : "Sourcing Board removal requests from your managers come here for your approval."}
         </p>
       </div>
