@@ -292,6 +292,7 @@ function IndexPage() {
                 Browse all training
               </Link>
             </Button>
+            <MascotImage path="mascot/empty.png" alt="" />
           </div>
         </section>
       )}
