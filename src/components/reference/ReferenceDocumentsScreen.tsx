@@ -339,9 +339,13 @@ function Detail({
                       .split("\n")
                       .map((line) => line.trim())
                       .filter(Boolean)
-                      .map((line, idx) => (
-                        <p key={idx}>{line}</p>
-                      ))}
+                      .map((line, idx) =>
+                        line === "[[danger-zone]]" ? (
+                          <DangerZoneGraphic key={idx} />
+                        ) : (
+                          <p key={idx}>{line}</p>
+                        ),
+                      )}
                   </div>
                 ) : null}
 
