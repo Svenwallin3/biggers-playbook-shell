@@ -52,13 +52,13 @@ import {
 import {
   docSections,
   groupBy,
-  departmentLabel,
+  divisionLabel,
   locationLabel,
   referenceDocumentsQueryOptions,
   sectionLineItems,
   sharedLabel,
   softDeleteReferenceDocument,
-  visibleToDepartment,
+  visibleToDivision,
   visibleToLocation,
   type ReferenceDocumentRow,
   type ReferenceDocumentType,
@@ -485,7 +485,7 @@ export function ReferenceDocumentsScreen({
   const deptScoped =
     isManagerOrOwner && showAllDepartments
       ? all
-      : all.filter((d) => visibleToDepartment(d.departments, department));
+      : all.filter((d) => visibleToDivision(d.departments, department));
   const scoped =
     groupByDepartment || (isManagerOrOwner && showAllLocations)
       ? deptScoped
@@ -517,7 +517,7 @@ export function ReferenceDocumentsScreen({
   const groups = groupByDepartment
     ? groupBy(docs, (d) => {
         const dept = (d.departments ?? []).find((x) => x && x !== "universal") ?? d.departments?.[0];
-        return dept ? departmentLabel(dept) : "Other";
+        return dept ? divisionLabel(dept) : "Other";
       })
     : groupBy(docs, (d) => d.sub_category?.trim() || "Uncategorized");
   const Icon = documentType === "checklist" ? ListChecks : FileText;

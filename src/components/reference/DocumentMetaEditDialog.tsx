@@ -31,8 +31,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  departmentLabel,
-  departmentOptions,
+  divisionLabel,
+  divisionOptions,
   locationLabel,
   locationOptions,
   submitReferenceSuggestion,
@@ -107,7 +107,7 @@ export function DocumentMetaEditDialog({
         const summary = [
           `Title: ${title.trim()}`,
           `Group: ${subCategory.trim() || "—"}`,
-          `Departments: ${departments.map(departmentLabel).join(", ") || "—"}`,
+          `Departments: ${departments.map(divisionLabel).join(", ") || "—"}`,
           `Location: ${locationLabel(location)}`,
         ].join("\n");
         await submitReferenceSuggestion({
@@ -199,13 +199,13 @@ export function DocumentMetaEditDialog({
             <div className="space-y-2">
               <Label>Departments</Label>
               <div className="grid grid-cols-2 gap-2">
-                {departmentOptions.map((dept) => (
+                {divisionOptions.map((dept) => (
                   <label key={dept} className="flex items-center gap-2 text-sm">
                     <Checkbox
                       checked={departments.includes(dept)}
                       onCheckedChange={(v) => toggle(dept, v === true)}
                     />
-                    {departmentLabel(dept)}
+                    {divisionLabel(dept)}
                   </label>
                 ))}
               </div>
