@@ -205,11 +205,14 @@ export function ModuleEditPanel({
   trackName,
   canEdit,
   employeeId,
+  deleteRequiresApproval = false,
 }: {
   module: ModuleRow;
   trackName: string | undefined;
   canEdit: boolean;
   employeeId: string | undefined;
+  /** GM path: the guard_module_delete trigger rejects a direct hide, so ask an Owner. */
+  deleteRequiresApproval?: boolean;
 }) {
   const empty = {
     name: module.name,
@@ -234,6 +237,18 @@ export function ModuleEditPanel({
   }, [module.id, module.updated_at]);
   const patch = (p: Partial<typeof empty>) => setForm((f) => ({ ...f, ...p }));
   const { save, softDelete } = useEntityMutations("modules", module.id, employeeId);
+  const requestDelete = useMutation({
+    mutationFn: () =>
+      submitModuleDeleteRequest({
+        moduleId: module.id,
+        moduleName: module.name,
+        submittedBy: employeeId!,
+      }),
+    onSuccess: () =>
+      toast.success("Request sent — an Owner will review it. Nothing has changed yet."),
+    onError: (error: Error) =>
+      toast.error("Couldn't send that request", { description: error.message }),
+  });
 
   return (
     <>
@@ -347,8 +362,11 @@ export function ModuleEditPanel({
               isDeleted={module.is_deleted}
               label="module"
               canEdit={canEdit}
-              pending={softDelete.isPending}
+              pending={softDelete.isPending || requestDelete.isPending}
               onToggle={(hidden) => softDelete.mutate(hidden)}
+              requestOnly={deleteRequiresApproval}
+              targetName={module.name}
+              onRequest={() => requestDelete.mutate()}
             />
           </div>
         </CardContent>
