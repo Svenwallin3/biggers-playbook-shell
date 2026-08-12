@@ -264,7 +264,7 @@ function ModulePage() {
 
       <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur supports-backdrop-filter:bg-background/80 sm:-mx-6 sm:px-6">
         <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
             <ModuleHeader
               as="h2"
               variant="compact"
@@ -273,6 +273,45 @@ function ModulePage() {
               dayAssignment={mod.day_assignment}
               name={mod.name}
             />
+            {canEditDirect ? (
+              <Sheet open={moduleSheetOpen} onOpenChange={setModuleSheetOpen}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <SheetTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-7 shrink-0"
+                        aria-label="Edit this module"
+                      >
+                        <Pencil className="size-3.5" aria-hidden />
+                      </Button>
+                    </SheetTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Edit</TooltipContent>
+                </Tooltip>
+                <SheetContent
+                  side="right"
+                  className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
+                >
+                  <SheetHeader>
+                    <SheetTitle>Edit module</SheetTitle>
+                    <SheetDescription>
+                      Changes save straight to this module and are logged to version history.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-4 space-y-6">
+                    <ModuleEditPanel
+                      module={mod}
+                      trackName={mod.track?.name}
+                      canEdit={canEditDirect}
+                      employeeId={employee?.id}
+                      deleteRequiresApproval={isGeneralManager && !isOwner}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            ) : null}
           </div>
           <p className="shrink-0 text-xs font-medium text-muted-foreground">
             Step {stepNumber} of {steps.length}
