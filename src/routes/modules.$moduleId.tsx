@@ -172,6 +172,10 @@ function ModulePage() {
   }
 
   const { module: mod, steps, quizzes } = moduleQuery.data;
+  // Mirrors the gating in /admin/content — RLS is still the real boundary.
+  const inDivision = mod.track?.department === employee?.department_scope;
+  const canEditDirect = isOwner || (isGeneralManager && inDivision);
+  const canSuggest = isManagerOrOwner && !canEditDirect && inDivision;
   const active = steps.find((s) => s.id === stepParam) ?? steps[0];
   const activeRecord = active ? progressByStep.get(active.id) : undefined;
   const activeComplete =
