@@ -29,8 +29,23 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { submitModuleDeleteRequest, versionHistoryQueryOptions } from "@/lib/admin.queries";
-import type { Department, ModuleRow, TrackRow } from "@/lib/training.queries";
+import { PhotoUpload } from "@/components/PhotoUpload";
+import { StepStatusBadge } from "@/components/training/StepStatusBadge";
+import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
+import {
+  submitModuleDeleteRequest,
+  submitStepSuggestion,
+  versionHistoryQueryOptions,
+} from "@/lib/admin.queries";
+import { stepTypeLabels } from "@/lib/training.queries";
+import type {
+  ContentStatus,
+  Department,
+  ModuleRow,
+  StepRow,
+  StepType,
+  TrackRow,
+} from "@/lib/training.queries";
 
 const departmentOptions: Department[] = ["universal", "market", "kitchen", "delivery"];
 
