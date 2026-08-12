@@ -29,7 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { versionHistoryQueryOptions } from "@/lib/admin.queries";
+import { submitModuleDeleteRequest, versionHistoryQueryOptions } from "@/lib/admin.queries";
 import type { Department, ModuleRow, TrackRow } from "@/lib/training.queries";
 
 const departmentOptions: Department[] = ["universal", "market", "kitchen", "delivery"];
@@ -87,18 +87,47 @@ function DeleteControls({
   canEdit,
   pending,
   onToggle,
+  requestOnly = false,
+  targetName,
+  onRequest,
 }: {
   isDeleted: boolean;
   label: string;
   canEdit: boolean;
   pending: boolean;
   onToggle: (hidden: boolean) => void;
+  requestOnly?: boolean;
+  targetName?: string;
+  onRequest?: () => void;
 }) {
   if (isDeleted) {
     return (
       <Button variant="outline" disabled={!canEdit || pending} onClick={() => onToggle(false)}>
         Restore {label}
       </Button>
+    );
+  }
+  if (requestOnly) {
+    return (
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="outline" disabled={!canEdit || pending}>
+            Request deletion
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Request deletion of “{targetName}”?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will ask an Owner to delete “{targetName}”. It stays visible until they approve.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onRequest?.()}>Send request</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     );
   }
   return (
