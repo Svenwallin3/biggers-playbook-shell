@@ -431,17 +431,46 @@ function ModulePage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
-                  {isAdmin ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button asChild size="icon" variant="ghost" aria-label="Edit this step">
-                          <Link to="/admin/content" search={{ stepId: active.id }}>
-                            <Pencil className="size-4" aria-hidden />
-                          </Link>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Edit</TooltipContent>
-                    </Tooltip>
+                  {canEditDirect || canSuggest ? (
+                    <Sheet open={stepSheetOpen} onOpenChange={setStepSheetOpen}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <SheetTrigger asChild>
+                            <Button size="icon" variant="ghost" aria-label="Edit this step">
+                              <Pencil className="size-4" aria-hidden />
+                            </Button>
+                          </SheetTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit</TooltipContent>
+                      </Tooltip>
+                      <SheetContent
+                        side="right"
+                        className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
+                      >
+                        <SheetHeader>
+                          <SheetTitle>Edit step</SheetTitle>
+                          <SheetDescription>
+                            {canEditDirect
+                              ? "Saves straight to this step, with the previous version logged."
+                              : "Your changes go to the Owner approval queue."}
+                          </SheetDescription>
+                        </SheetHeader>
+                        <div className="mt-4 space-y-6">
+                          <StepEditPanel
+                            key={active.id}
+                            step={active}
+                            stepModule={mod}
+                            canEditDirect={canEditDirect}
+                            canSuggest={canSuggest}
+                            employeeId={employee?.id}
+                            onSaved={() => setStepSheetOpen(false)}
+                          />
+                          {active.step_type === "quiz" ? (
+                            <QuizQuestionsPanel key={`quiz-${active.id}`} stepId={active.id} />
+                          ) : null}
+                        </div>
+                      </SheetContent>
+                    </Sheet>
                   ) : null}
                 </div>
                 {!needsTrainer && activeComplete && !previewMode ? (
