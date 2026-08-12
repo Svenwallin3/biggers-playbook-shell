@@ -579,7 +579,7 @@ export function ReferenceDocumentsScreen({
             <Icon className="mx-auto size-8 text-muted-foreground" />
             <p className="font-display text-sm font-semibold">Nothing here yet</p>
             <p className="mx-auto max-w-md text-sm text-muted-foreground">
-              {heading} for your department haven&apos;t been added yet. They&apos;ll show up here
+              {heading} for your division haven&apos;t been added yet. They&apos;ll show up here
               as soon as an owner loads them.
             </p>
             {isManagerOrOwner ? (
