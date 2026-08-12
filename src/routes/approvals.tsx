@@ -158,6 +158,26 @@ function ApprovalsPage() {
             content_status: "missing",
           });
           if (error) throw error;
+        } else if (payload?.type === "delete_document" && s.reference_document_id) {
+          const { error } = await supabase
+            .from("reference_documents")
+            .update({
+              is_deleted: true,
+              deleted_by: employee!.id,
+              deleted_at: new Date().toISOString(),
+            })
+            .eq("id", s.reference_document_id);
+          if (error) throw error;
+        } else if (payload?.type === "delete_module" && s.module_id) {
+          const { error } = await supabase
+            .from("modules")
+            .update({
+              is_deleted: true,
+              deleted_by: employee!.id,
+              deleted_at: new Date().toISOString(),
+            })
+            .eq("id", s.module_id);
+          if (error) throw error;
         }
       }
       const { error } = await supabase
@@ -228,19 +248,32 @@ function ApprovalsPage() {
         {(isOwner ? pending : []).map((s) => {
           const current = bodyLines({ content_body: s.step?.content_body ?? null });
           const isFlag = s.field_what.startsWith("FLAG:");
+          const payload = s.payload as SuggestionPayload | null;
+          const isDeleteRequest =
+            payload?.type === "delete_document" || payload?.type === "delete_module";
+          const deleteTarget =
+            payload?.type === "delete_module"
+              ? (s.module?.name ?? "module")
+              : (s.reference_document?.title ?? "document");
           return (
             <Card key={s.id}>
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <CardTitle className="text-base">
-                    {s.step?.title ?? s.reference_document?.title ?? s.field_what}
+                    {isDeleteRequest
+                      ? `Delete request · ${deleteTarget}`
+                      : (s.step?.title ?? s.reference_document?.title ?? s.field_what)}
                   </CardTitle>
-                  <Badge variant={isFlag ? "outline" : "secondary"}>
-                    {isFlag ? "Staff flag" : "Pending"}
+                  <Badge variant={isFlag || isDeleteRequest ? "outline" : "secondary"}>
+                    {isFlag ? "Staff flag" : isDeleteRequest ? "Deletion request" : "Pending"}
                   </Badge>
                 </div>
                 <CardDescription>
-                  {s.step
+                  {isDeleteRequest
+                    ? payload?.type === "delete_module"
+                      ? "Training content · Module"
+                      : `Reference Library · ${s.reference_document?.document_type === "sop" ? "SOP" : "Checklist"}`
+                    : s.step
                     ? `${s.step.module?.track?.name} · ${s.step.module?.name}`
                     : s.reference_document
                       ? `Reference Library · ${s.reference_document.document_type === "checklist" ? "Checklist" : "SOP"}`
@@ -251,6 +284,12 @@ function ApprovalsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {isDeleteRequest ? (
+                  <p className="text-sm text-muted-foreground">
+                    Approving hides “{deleteTarget}” from everyone. Nothing is permanently erased —
+                    the record and its history are kept and can be restored later.
+                  </p>
+                ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-md border border-border p-3">
                     <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -290,6 +329,7 @@ function ApprovalsPage() {
                     </dl>
                   </div>
                 </div>
+                )}
 
                 <Separator />
                 <div className="flex gap-2">
@@ -298,7 +338,7 @@ function ApprovalsPage() {
                     disabled={decide.isPending || (!s.step && !s.payload)}
                     onClick={() => decide.mutate({ s, decision: "approved" })}
                   >
-                    Approve &amp; publish
+                    {isDeleteRequest ? "Approve deletion" : "Approve & publish"}
                   </Button>
                   <Button
                     size="sm"
