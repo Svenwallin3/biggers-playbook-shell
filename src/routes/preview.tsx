@@ -194,11 +194,57 @@ function PreviewPage() {
       ? "unassigned"
       : String(activeModule.day_assignment);
 
+  const visibleTracks = allTracks.filter((t) => !t.is_deleted);
+
+  if (!activeTrack) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center">
+        {treeQuery.isPending ? (
+          <p className="text-sm text-muted-foreground">Loading content…</p>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-semibold tracking-tight">Preview training</h1>
+              <p className="text-sm text-muted-foreground">
+                Choose a division to see it exactly as a new hire would.
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3">
+              {visibleTracks.map((t) => (
+                <Link
+                  key={t.id}
+                  to="/preview"
+                  search={{ track: t.id, module: undefined, step: undefined }}
+                  className="rounded-lg border-2 border-border px-6 py-4 text-base font-semibold transition-colors hover:border-primary hover:bg-primary/5"
+                >
+                  {t.name}
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {treeQuery.isPending ? (
-        <p className="text-sm text-muted-foreground">Loading content…</p>
-      ) : null}
+      <div className="flex flex-wrap items-center gap-2">
+        {visibleTracks.map((t) => (
+          <Link
+            key={t.id}
+            to="/preview"
+            search={{ track: t.id, module: undefined, step: undefined }}
+            className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+              t.id === activeTrack.id
+                ? "border-primary bg-primary/10 font-semibold text-foreground"
+                : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+            }`}
+          >
+            {t.name}
+          </Link>
+        ))}
+      </div>
 
       <div
         className={`grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 md:items-start ${
