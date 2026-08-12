@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -253,6 +254,7 @@ export function StepRenderer({
   loggingInitials = false,
   onLogInitials,
   titleAs = "h2",
+  titleAction,
 }: {
   step: StepRow;
   quizzes?: QuizRow[];
@@ -270,6 +272,8 @@ export function StepRenderer({
   onLogInitials?: (() => void) | undefined;
   /** The step title is the dominant heading on module screens. */
   titleAs?: "h1" | "h2";
+  /** Optional slot rendered inline to the right of the step title. */
+  titleAction?: ReactNode;
 }) {
   const unavailable = step.content_status === "missing" || step.content_status === "blocked";
   const lines = bodyLines(step);
@@ -282,9 +286,12 @@ export function StepRenderer({
         <StepStatusBadge status={step.content_status} />
       </div>
 
-      <Title className="font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
-        {step.title}
-      </Title>
+      <div className="flex items-start gap-2">
+        <Title className="min-w-0 flex-1 font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
+          {step.title}
+        </Title>
+        {titleAction ? <div className="shrink-0">{titleAction}</div> : null}
+      </div>
 
       {unavailable ? (
         <ComingSoon step={step} isAdmin={isAdmin} />
