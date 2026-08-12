@@ -39,17 +39,17 @@ import {
   contentStatusOptions,
   stepTypeOptions,
 } from "@/components/admin/ContentCreateDialogs";
-import { ModuleEditPanel, TrackEditPanel } from "@/components/admin/EntityEditPanels";
+import {
+  ModuleEditPanel,
+  StepEditPanel,
+  TrackEditPanel,
+} from "@/components/admin/EntityEditPanels";
 import { SortableContentTree } from "@/components/admin/SortableContentTree";
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/training.queries";
-import {
-  contentTreeQueryOptions,
-  submitStepSuggestion,
-  versionHistoryQueryOptions,
-} from "@/lib/admin.queries";
+import { contentTreeQueryOptions } from "@/lib/admin.queries";
 
 export const Route = createFileRoute("/admin/content")({
   validateSearch: (search: Record<string, unknown>): { stepId?: string | undefined } => ({
