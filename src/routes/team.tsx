@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { employeesQueryOptions, type EmployeeRow } from "@/lib/admin.queries";
 import { onboardingCompletionQueryOptions } from "@/lib/queue.queries";
+import { divisionLabel } from "@/lib/reference.queries";
 import type { Database } from "@/integrations/supabase/types";
 
 type AuthTier = Database["public"]["Enums"]["auth_tier"];
@@ -45,7 +46,7 @@ const locations: { value: string; label: string }[] = [
 ];
 
 const title = "Team — Biggers Training Platform";
-const description = "Owner tool for setting each employee's access tier and department.";
+const description = "Owner tool for setting each employee's access tier and division.";
 
 export const Route = createFileRoute("/team")({
   head: () => ({
@@ -101,14 +102,14 @@ function TeamPage() {
         <h1 className="font-display text-2xl font-semibold tracking-tight">Team</h1>
         {isOwner ? (
           <p className="mt-1 text-sm text-muted-foreground">
-            Set each person&apos;s access tier and department. Managers edit content for the
-            department set here. General Managers can promote and demote staff in their own
-            department and location.
+            Set each person&apos;s access tier and division. Managers edit content for the
+            division set here. General Managers can promote and demote staff in their own
+            division and location.
           </p>
         ) : (
           <p className="mt-1 text-sm text-muted-foreground">
             As a General Manager you can promote staff to manager, or move a manager back to
-            staff, for your own department and location.
+            staff, for your own division and location.
           </p>
         )}
       </div>
@@ -132,13 +133,13 @@ function TeamPage() {
               {isOwner ? (
                 <>
                   <TableHead className="w-[150px]">General Manager</TableHead>
-                  <TableHead className="w-[170px]">Department</TableHead>
+                  <TableHead className="w-[170px]">Division</TableHead>
                   <TableHead className="w-[150px]">Path</TableHead>
                   <TableHead className="w-[190px]">Location</TableHead>
                 </>
               ) : (
                 <>
-                  <TableHead className="w-[170px]">Department</TableHead>
+                  <TableHead className="w-[170px]">Division</TableHead>
                   <TableHead className="w-[190px]">Location</TableHead>
                 </>
               )}
@@ -227,7 +228,7 @@ function TeamPage() {
                 <TableCell>
                   {!isOwner ? (
                     <span className="text-sm text-muted-foreground">
-                      {e.department_scope ?? "—"}
+                      {e.department_scope ? divisionLabel(e.department_scope) : "—"}
                     </span>
                   ) : (
                   <Select
@@ -247,7 +248,7 @@ function TeamPage() {
                       <SelectItem value={NONE}>None</SelectItem>
                       {departments.map((d) => (
                         <SelectItem key={d} value={d}>
-                          {d}
+                          {divisionLabel(d)}
                         </SelectItem>
                       ))}
                     </SelectContent>

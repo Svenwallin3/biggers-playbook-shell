@@ -39,8 +39,8 @@ import {
   type ManagerNoteRow,
 } from "@/lib/huddle.queries";
 import {
-  departmentLabel,
-  departmentOptions,
+  divisionLabel,
+  divisionOptions,
   locationLabel,
   locationOptions,
 } from "@/lib/reference.queries";
@@ -76,7 +76,7 @@ function DepartmentPicker({
     <div className="space-y-2">
       <Label>Departments</Label>
       <div className="grid grid-cols-2 gap-2">
-        {departmentOptions.map((dept) => (
+        {divisionOptions.map((dept) => (
           <label key={dept} className="flex items-center gap-2 text-sm">
             <Checkbox
               checked={value.includes(dept)}
@@ -86,7 +86,7 @@ function DepartmentPicker({
                 )
               }
             />
-            {departmentLabel(dept)}
+            {divisionLabel(dept)}
           </label>
         ))}
       </div>
@@ -108,9 +108,9 @@ function DepartmentFilter({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={ALL}>All departments</SelectItem>
-        {departmentOptions.map((d) => (
+        {divisionOptions.map((d) => (
           <SelectItem key={d} value={d}>
-            {departmentLabel(d)}
+            {divisionLabel(d)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -226,7 +226,7 @@ function HuddleCardsTab() {
               <span className="text-sm font-semibold">{card.category}</span>
               {(card.departments ?? []).map((d) => (
                 <Badge key={d} variant="outline">
-                  {departmentLabel(d)}
+                  {divisionLabel(d)}
                 </Badge>
               ))}
               {card.is_deleted ? <Badge variant="destructive">Removed</Badge> : null}
@@ -411,7 +411,7 @@ function ManagerNotesTab() {
               <Badge variant="secondary">{note.effective_date}</Badge>
               {(note.departments ?? []).map((d) => (
                 <Badge key={d} variant="outline">
-                  {departmentLabel(d)}
+                  {divisionLabel(d)}
                 </Badge>
               ))}
               {note.location_tag ? (

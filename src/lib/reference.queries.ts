@@ -31,21 +31,35 @@ export function sectionLineItems(section: ReferenceSection) {
   return [...(section.line_items ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
-const departmentLabels: Record<string, string> = {
-  universal: "Universal",
-  market: "Market",
+const divisionLabels: Record<string, string> = {
+  universal: "Company-Wide",
+  market: "Markets",
   kitchen: "Kitchen",
   delivery: "Delivery",
 };
 
-export function departmentLabel(value: string) {
-  return departmentLabels[value] ?? value.charAt(0).toUpperCase() + value.slice(1);
+export function divisionLabel(value: string) {
+  return divisionLabels[value] ?? value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-/** "Shared: Kitchen + Market" — only meaningful when a doc is tagged to 2+ departments. */
+/** "Shared: Kitchen + Markets" — only meaningful when a doc is tagged to 2+ divisions. */
 export function sharedLabel(departments: string[] | null) {
   if (!departments || departments.length < 2) return null;
-  return `Shared: ${departments.map(departmentLabel).join(" + ")}`;
+  return `Shared: ${departments.map(divisionLabel).join(" + ")}`;
+}
+
+/**
+ * Top-level grouping bucket for a document: a single division when it's tagged to
+ * exactly one of market/kitchen/delivery, otherwise Company-Wide (universal,
+ * untagged, or shared across 2+ divisions).
+ */
+export function divisionGroupLabel(departments: string[] | null): string {
+  const list = departments ?? [];
+  if (list.length === 0) return divisionLabel("universal");
+  if (list.includes("universal")) return divisionLabel("universal");
+  const specific = list.filter((d) => d === "market" || d === "kitchen" || d === "delivery");
+  if (specific.length === 1) return divisionLabel(specific[0]!);
+  return divisionLabel("universal");
 }
 
 export type SubCategoryFilter = {
@@ -112,7 +126,7 @@ export function groupBy<T>(rows: T[], key: (row: T) => string) {
 }
 
 /** A staff member sees docs tagged to their department (plus universal / untagged). */
-export function visibleToDepartment(departments: string[] | null, department: string | null) {
+export function visibleToDivision(departments: string[] | null, department: string | null) {
   if (!departments || departments.length === 0) return true;
   if (departments.includes("universal")) return true;
   if (!department) return false;
@@ -225,7 +239,7 @@ export async function createPresentationEntry(input: {
   if (error) throw error;
 }
 
-export const departmentOptions = ["universal", "market", "kitchen", "delivery"] as const;
+export const divisionOptions = ["universal", "market", "kitchen", "delivery"] as const;
 
 export const locationOptions = [
   { value: "market_street", label: "Market Street" },
@@ -277,7 +291,7 @@ export async function submitNewDocumentSuggestion(input: {
   const what = [
     `New ${label}: ${input.title}`,
     input.subCategory ? `Group: ${input.subCategory}` : null,
-    `Departments: ${input.departments.map(departmentLabel).join(", ") || "—"}`,
+    `Departments: ${input.departments.map(divisionLabel).join(", ") || "—"}`,
     `Location: ${locationLabel(input.locationTag ?? null)}`,
   ]
     .filter(Boolean)

@@ -52,13 +52,13 @@ import {
 import {
   docSections,
   groupBy,
-  departmentLabel,
+  divisionGroupLabel,
   locationLabel,
   referenceDocumentsQueryOptions,
   sectionLineItems,
   sharedLabel,
   softDeleteReferenceDocument,
-  visibleToDepartment,
+  visibleToDivision,
   visibleToLocation,
   type ReferenceDocumentRow,
   type ReferenceDocumentType,
@@ -473,6 +473,8 @@ export function ReferenceDocumentsScreen({
   const query = useQuery(referenceDocumentsQueryOptions(documentType, subCategoryFilter));
   const [openId, setOpenId] = useState<string | null>(null);
   const [term, setTerm] = useState("");
+  // Per-division sub-category filter (Checklists / SOPs only). "" = All.
+  const [subFilter, setSubFilter] = useState<Record<string, string>>({});
   // Owners have no department_scope, so "my department only" would filter to nothing —
   // default them to all departments until they explicitly toggle.
   const [overrideShowAll, setOverrideShowAll] = useState<boolean | null>(null);
@@ -485,7 +487,7 @@ export function ReferenceDocumentsScreen({
   const deptScoped =
     isManagerOrOwner && showAllDepartments
       ? all
-      : all.filter((d) => visibleToDepartment(d.departments, department));
+      : all.filter((d) => visibleToDivision(d.departments, department));
   const scoped =
     groupByDepartment || (isManagerOrOwner && showAllLocations)
       ? deptScoped
@@ -514,12 +516,10 @@ export function ReferenceDocumentsScreen({
     );
   }
 
-  const groups = groupByDepartment
-    ? groupBy(docs, (d) => {
-        const dept = (d.departments ?? []).find((x) => x && x !== "universal") ?? d.departments?.[0];
-        return dept ? departmentLabel(dept) : "Other";
-      })
-    : groupBy(docs, (d) => d.sub_category?.trim() || "Uncategorized");
+  const divisionOrder = ["Company-Wide", "Kitchen", "Markets", "Delivery"];
+  const groups = groupBy(docs, (d) => divisionGroupLabel(d.departments)).sort(
+    (a, b) => divisionOrder.indexOf(a[0]) - divisionOrder.indexOf(b[0]),
+  );
   const Icon = documentType === "checklist" ? ListChecks : FileText;
 
   return (
@@ -536,7 +536,7 @@ export function ReferenceDocumentsScreen({
               size="sm"
               onClick={() => setOverrideShowAll(!showAllDepartments)}
             >
-              {showAllDepartments ? "My department only" : "Show all departments"}
+              {showAllDepartments ? "My division only" : "Show all divisions"}
             </Button>
             {!groupByDepartment ? (
               <Button
@@ -579,7 +579,7 @@ export function ReferenceDocumentsScreen({
             <Icon className="mx-auto size-8 text-muted-foreground" />
             <p className="font-display text-sm font-semibold">Nothing here yet</p>
             <p className="mx-auto max-w-md text-sm text-muted-foreground">
-              {heading} for your department haven&apos;t been added yet. They&apos;ll show up here
+              {heading} for your division haven&apos;t been added yet. They&apos;ll show up here
               as soon as an owner loads them.
             </p>
             {isManagerOrOwner ? (
@@ -594,13 +594,43 @@ export function ReferenceDocumentsScreen({
         </Card>
       ) : (
         <div className="space-y-6">
-          {groups.map(([subCategory, rows]) => (
-            <section key={subCategory} className="space-y-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {subCategory}
-              </h2>
+          {groups.map(([groupLabel, rows]) => {
+            const subCategories = [
+              ...new Set(rows.map((d) => d.sub_category?.trim()).filter(Boolean) as string[]),
+            ].sort();
+            const active = subFilter[groupLabel] ?? "";
+            const visibleRows =
+              groupByDepartment || !active
+                ? rows
+                : rows.filter((d) => (d.sub_category?.trim() || "") === active);
+            return (
+            <section key={groupLabel} className="space-y-2">
+              <Collapsible defaultOpen>
+                <CollapsibleTrigger className="group flex w-full items-center gap-2 text-left">
+                  <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    {groupLabel}
+                  </h2>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2 pt-2">
+              {!groupByDepartment && subCategories.length > 1 ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {["", ...subCategories].map((sc) => (
+                    <Button
+                      key={sc || "__all__"}
+                      type="button"
+                      variant={active === sc ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setSubFilter((prev) => ({ ...prev, [groupLabel]: sc }))}
+                    >
+                      {sc || "All"}
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
               <div className="space-y-2">
-                {rows.map((doc) => (
+                {visibleRows.map((doc) => (
                   <Card key={doc.id}>
                     <CardContent className="py-4">
                       <div className="flex w-full items-center gap-2">
@@ -634,8 +664,11 @@ export function ReferenceDocumentsScreen({
                   </Card>
                 ))}
               </div>
+                </CollapsibleContent>
+              </Collapsible>
             </section>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

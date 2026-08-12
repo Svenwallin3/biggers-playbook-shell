@@ -30,8 +30,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import {
   createReferenceDocument,
-  departmentLabel,
-  departmentOptions,
+  divisionLabel,
+  divisionOptions,
   locationOptions,
   submitNewDocumentSuggestion,
   type ReferenceDocumentType,
@@ -159,14 +159,14 @@ export function NewDocumentDialog({
             <div className="space-y-2">
               <Label>Departments</Label>
               <div className="grid grid-cols-2 gap-2">
-                {departmentOptions.map((dept) => (
+                {divisionOptions.map((dept) => (
                   <label key={dept} className="flex items-center gap-2 text-sm">
                     <Checkbox
                       checked={departments.includes(dept)}
                       disabled={!isOwner && employee?.department_scope !== dept}
                       onCheckedChange={(v) => toggle(dept, v === true)}
                     />
-                    {departmentLabel(dept)}
+                    {divisionLabel(dept)}
                   </label>
                 ))}
               </div>
