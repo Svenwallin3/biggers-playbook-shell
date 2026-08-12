@@ -126,7 +126,7 @@ export function groupBy<T>(rows: T[], key: (row: T) => string) {
 }
 
 /** A staff member sees docs tagged to their department (plus universal / untagged). */
-export function visibleToDepartment(departments: string[] | null, department: string | null) {
+export function visibleToDivision(departments: string[] | null, department: string | null) {
   if (!departments || departments.length === 0) return true;
   if (departments.includes("universal")) return true;
   if (!department) return false;
@@ -239,7 +239,7 @@ export async function createPresentationEntry(input: {
   if (error) throw error;
 }
 
-export const departmentOptions = ["universal", "market", "kitchen", "delivery"] as const;
+export const divisionOptions = ["universal", "market", "kitchen", "delivery"] as const;
 
 export const locationOptions = [
   { value: "market_street", label: "Market Street" },
@@ -291,7 +291,7 @@ export async function submitNewDocumentSuggestion(input: {
   const what = [
     `New ${label}: ${input.title}`,
     input.subCategory ? `Group: ${input.subCategory}` : null,
-    `Departments: ${input.departments.map(departmentLabel).join(", ") || "—"}`,
+    `Departments: ${input.departments.map(divisionLabel).join(", ") || "—"}`,
     `Location: ${locationLabel(input.locationTag ?? null)}`,
   ]
     .filter(Boolean)
