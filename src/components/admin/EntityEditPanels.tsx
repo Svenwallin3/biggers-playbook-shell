@@ -575,7 +575,7 @@ export function StepEditPanel({
   onSaved,
 }: {
   step: StepRow;
-  stepModule: (ModuleRow & { track: TrackRow | null }) | undefined;
+  stepModule: (ModuleRow & { track?: TrackRow | null }) | undefined;
   canEditDirect: boolean;
   canSuggest: boolean;
   employeeId: string | undefined;
