@@ -85,8 +85,8 @@ function TrainingQueuePage() {
         <h1 className="font-display text-2xl font-semibold tracking-tight">Training Queue</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {isOwner
-            ? "Everyone's next step across all departments."
-            : "Your department's next steps."}{" "}
+            ? "Everyone's next step across all divisions."
+            : "Your division's next steps."}{" "}
           Anyone waiting on a trainer is listed first.
         </p>
       </div>

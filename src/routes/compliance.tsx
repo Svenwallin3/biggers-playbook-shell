@@ -91,7 +91,7 @@ function SignoffBacklogSection() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Department</TableHead>
+                  <TableHead>Division</TableHead>
                   <TableHead>Manager(s)</TableHead>
                   <TableHead>Overdue sign-offs</TableHead>
                   <TableHead>Longest wait</TableHead>

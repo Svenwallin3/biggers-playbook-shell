@@ -197,7 +197,7 @@ export function DocumentMetaEditDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label>Departments</Label>
+              <Label>Divisions</Label>
               <div className="grid grid-cols-2 gap-2">
                 {divisionOptions.map((dept) => (
                   <label key={dept} className="flex items-center gap-2 text-sm">

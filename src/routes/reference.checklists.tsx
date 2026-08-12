@@ -4,7 +4,7 @@ import { ReferenceDocumentsScreen } from "@/components/reference/ReferenceDocume
 
 const title = "Checklists — Biggers Training Platform";
 const description =
-  "Opening, closing, cleaning, and station-readiness checklists for your department at Biggers Market.";
+  "Opening, closing, cleaning, and station-readiness checklists for your division at Biggers Market.";
 
 export const Route = createFileRoute("/reference/checklists")({
   head: () => ({
