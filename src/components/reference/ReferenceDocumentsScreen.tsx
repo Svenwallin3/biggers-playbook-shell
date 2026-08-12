@@ -52,7 +52,7 @@ import {
 import {
   docSections,
   groupBy,
-  divisionLabel,
+  divisionGroupLabel,
   locationLabel,
   referenceDocumentsQueryOptions,
   sectionLineItems,
@@ -473,6 +473,8 @@ export function ReferenceDocumentsScreen({
   const query = useQuery(referenceDocumentsQueryOptions(documentType, subCategoryFilter));
   const [openId, setOpenId] = useState<string | null>(null);
   const [term, setTerm] = useState("");
+  // Per-division sub-category filter (Checklists / SOPs only). "" = All.
+  const [subFilter, setSubFilter] = useState<Record<string, string>>({});
   // Owners have no department_scope, so "my department only" would filter to nothing —
   // default them to all departments until they explicitly toggle.
   const [overrideShowAll, setOverrideShowAll] = useState<boolean | null>(null);
@@ -514,12 +516,10 @@ export function ReferenceDocumentsScreen({
     );
   }
 
-  const groups = groupByDepartment
-    ? groupBy(docs, (d) => {
-        const dept = (d.departments ?? []).find((x) => x && x !== "universal") ?? d.departments?.[0];
-        return dept ? divisionLabel(dept) : "Other";
-      })
-    : groupBy(docs, (d) => d.sub_category?.trim() || "Uncategorized");
+  const divisionOrder = ["Company-Wide", "Kitchen", "Markets", "Delivery"];
+  const groups = groupBy(docs, (d) => divisionGroupLabel(d.departments)).sort(
+    (a, b) => divisionOrder.indexOf(a[0]) - divisionOrder.indexOf(b[0]),
+  );
   const Icon = documentType === "checklist" ? ListChecks : FileText;
 
   return (
@@ -536,7 +536,7 @@ export function ReferenceDocumentsScreen({
               size="sm"
               onClick={() => setOverrideShowAll(!showAllDepartments)}
             >
-              {showAllDepartments ? "My department only" : "Show all departments"}
+              {showAllDepartments ? "My division only" : "Show all divisions"}
             </Button>
             {!groupByDepartment ? (
               <Button
