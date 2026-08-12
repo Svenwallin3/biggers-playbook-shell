@@ -39,17 +39,17 @@ import {
   contentStatusOptions,
   stepTypeOptions,
 } from "@/components/admin/ContentCreateDialogs";
-import { ModuleEditPanel, TrackEditPanel } from "@/components/admin/EntityEditPanels";
+import {
+  ModuleEditPanel,
+  StepEditPanel,
+  TrackEditPanel,
+} from "@/components/admin/EntityEditPanels";
 import { SortableContentTree } from "@/components/admin/SortableContentTree";
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/training.queries";
-import {
-  contentTreeQueryOptions,
-  submitStepSuggestion,
-  versionHistoryQueryOptions,
-} from "@/lib/admin.queries";
+import { contentTreeQueryOptions } from "@/lib/admin.queries";
 
 export const Route = createFileRoute("/admin/content")({
   validateSearch: (search: Record<string, unknown>): { stepId?: string | undefined } => ({
@@ -76,19 +76,6 @@ export const Route = createFileRoute("/admin/content")({
   component: ContentEditorPage,
 });
 
-interface Draft {
-  title: string;
-  step_type: StepType;
-  content_status: ContentStatus;
-  content_body: string;
-  content_notes: string;
-  location_tag: string;
-  video_url: string;
-  media_url: string | null;
-  media_recommendation: "none" | "photo" | "video";
-  media_recommendation_note: string;
-}
-
 /** A curation flag only: the step asks for media it doesn't have yet. */
 function unmetMediaRecommendation(s: {
   media_recommendation?: "none" | "photo" | "video" | null;
@@ -113,9 +100,6 @@ function ContentEditorPage() {
   }>({ kind: "step", id: stepId ?? "" });
   const selectedId = selection.kind === "step" ? selection.id : "";
   const setSelectedId = (id: string) => setSelection({ kind: "step", id });
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [suggestionWhy, setSuggestionWhy] = useState("");
-
   const tracks = treeQuery.data?.tracks ?? [];
   const modules = treeQuery.data?.modules ?? [];
   const steps = treeQuery.data?.steps ?? [];
@@ -125,7 +109,6 @@ function ContentEditorPage() {
   const selectedTrack =
     selection.kind === "track" ? tracks.find((t) => t.id === selection.id) : undefined;
   const stepModule = modules.find((m) => m.id === step?.module_id);
-  const historyQuery = useQuery(versionHistoryQueryOptions("steps", selectedId || undefined));
 
   // Same rule, applied to the row being created into (RLS enforces it too).
   const canEditDepartment = (department: string | null | undefined) =>
@@ -159,114 +142,6 @@ function ContentEditorPage() {
   useEffect(() => {
     if (!selection.id && steps.length) setSelectedId(steps[0]!.id);
   }, [steps, selection.id]);
-
-  useEffect(() => {
-    if (!step) return;
-    setDraft({
-      title: step.title,
-      step_type: step.step_type,
-      content_status: step.content_status,
-      content_body: step.content_body ?? "",
-      content_notes: step.content_notes ?? "",
-      location_tag: step.location_tag ?? "",
-      video_url: step.video_url ?? "",
-      media_url: step.media_url ?? null,
-      media_recommendation: step.media_recommendation ?? "none",
-      media_recommendation_note: step.media_recommendation_note ?? "",
-    });
-  }, [step?.id, step?.updated_at]);
-
-  const patch = (p: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...p } : d));
-  const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: ["content-tree"] });
-    void queryClient.invalidateQueries({ queryKey: ["version-history", "steps", selectedId] });
-    void queryClient.invalidateQueries({ queryKey: ["module"] });
-  };
-
-  const save = useMutation({
-    mutationFn: async () => {
-      // The steps update trigger writes the previous row into version_history.
-      const { error } = await supabase
-        .from("steps")
-        .update({
-          title: draft!.title.trim(),
-          step_type: draft!.step_type,
-          content_status: draft!.content_status,
-          content_body: draft!.content_body.trim() || null,
-          content_notes: draft!.content_notes.trim() || null,
-          location_tag: draft!.location_tag.trim() || null,
-          video_url: draft!.video_url.trim() || null,
-          media_url: draft!.media_url,
-          media_recommendation: draft!.media_recommendation,
-          media_recommendation_note: draft!.media_recommendation_note.trim() || null,
-        })
-        .eq("id", selectedId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      refresh();
-      toast.success("Saved — previous version logged to history.");
-    },
-    onError: (error: Error) => toast.error("Couldn't save", { description: error.message }),
-  });
-
-  const softDelete = useMutation({
-    mutationFn: async (hidden: boolean) => {
-      const { error } = await supabase
-        .from("steps")
-        .update(
-          hidden
-            ? { is_deleted: true, deleted_by: employee!.id, deleted_at: new Date().toISOString() }
-            : { is_deleted: false, deleted_by: null, deleted_at: null },
-        )
-        .eq("id", selectedId);
-      if (error) throw error;
-    },
-    onSuccess: (_d, hidden) => {
-      refresh();
-      toast.success(hidden ? "Step hidden — logged and restorable." : "Step restored.");
-    },
-    onError: (error: Error) => toast.error("Couldn't do that", { description: error.message }),
-  });
-
-  const restore = useMutation({
-    mutationFn: async (snapshot: Record<string, unknown>) => {
-      const { error } = await supabase
-        .from("steps")
-        .update({
-          title: String(snapshot["title"] ?? step!.title),
-          step_type: snapshot["step_type"] as StepType,
-          content_status: snapshot["content_status"] as ContentStatus,
-          content_body: (snapshot["content_body"] as string | null) ?? null,
-          content_notes: (snapshot["content_notes"] as string | null) ?? null,
-          location_tag: (snapshot["location_tag"] as string | null) ?? null,
-        })
-        .eq("id", selectedId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      refresh();
-      toast.success("Restored that version — the replaced one is logged too.");
-    },
-    onError: (error: Error) => toast.error("Couldn't restore", { description: error.message }),
-  });
-
-  const suggest = useMutation({
-    mutationFn: async () => {
-      await submitStepSuggestion({
-        stepId: selectedId,
-        submittedBy: employee!.id,
-        title: draft!.title.trim(),
-        contentBody: draft!.content_body.trim(),
-        howYouKnow: suggestionWhy.trim() || null,
-      });
-    },
-    onSuccess: () => {
-      setSuggestionWhy("");
-      toast.success("Sent to the Owner approval queue.");
-    },
-    onError: (error: Error) => toast.error("Couldn't submit", { description: error.message }),
-  });
 
   if (loading) return null;
   if (!isManagerOrOwner) {
@@ -380,297 +255,21 @@ function ContentEditorPage() {
               />
             </div>
           ) : null}
-          {step && draft ? (
-            <Card>
-              <CardHeader>
-                <div className="flex flex-wrap items-center gap-2">
-                  <CardTitle className="text-base">Edit step</CardTitle>
-                  <StepStatusBadge status={draft.content_status} />
-                  {step.is_deleted ? <Badge variant="outline">Hidden (soft-deleted)</Badge> : null}
-                </div>
-                <CardDescription>
-                  {stepModule?.track?.name} · {stepModule?.name}
-                  {canEditDirect
-                    ? ""
-                    : canSuggest
-                      ? " — You can suggest a change to the title and content below — it goes to the Owner approval queue."
-                      : " — read-only: outside your division"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={draft.title}
-                    maxLength={140}
-                    disabled={!canEditDirect && !canSuggest}
-                    onChange={(e) => patch({ title: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Step type</Label>
-                    <Select
-                      value={draft.step_type}
-                      disabled={!canEditDirect}
-                      onValueChange={(v) => patch({ step_type: v as StepType })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {stepTypeOptions.map((t) => (
-                          <SelectItem key={t} value={t}>
-                            {stepTypeLabels[t]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Content status</Label>
-                    <Select
-                      value={draft.content_status}
-                      disabled={!canEditDirect}
-                      onValueChange={(v) => patch({ content_status: v as ContentStatus })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {contentStatusOptions.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="body">Content body</Label>
-                  <Textarea
-                    id="body"
-                    rows={6}
-                    value={draft.content_body}
-                    maxLength={4000}
-                    disabled={!canEditDirect && !canSuggest}
-                    onChange={(e) => patch({ content_body: e.target.value })}
-                    placeholder="One numbered step per line."
-                  />
-                </div>
-
-                {canSuggest ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="why">How do you know it should change?</Label>
-                    <Textarea
-                      id="why"
-                      rows={3}
-                      value={suggestionWhy}
-                      maxLength={1000}
-                      onChange={(e) => setSuggestionWhy(e.target.value)}
-                      placeholder="What you'd check before you'd sign off on it."
-                    />
-                  </div>
-                ) : null}
-
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Content notes (admin-only)</Label>
-                  <Textarea
-                    id="notes"
-                    rows={3}
-                    value={draft.content_notes}
-                    maxLength={1000}
-                    disabled={!canEditDirect}
-                    onChange={(e) => patch({ content_notes: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="video">Video link (YouTube)</Label>
-                  <Input
-                    id="video"
-                    value={draft.video_url}
-                    maxLength={300}
-                    disabled={!canEditDirect}
-                    onChange={(e) => patch({ video_url: e.target.value })}
-                    placeholder="https://www.youtube.com/watch?v=…"
-                  />
-                </div>
-
-                <PhotoUpload
-                  value={draft.media_url}
-                  onChange={(value) => patch({ media_url: value })}
-                  folder="steps"
-                  label="Photo (optional)"
-                  helpText="Shown above the step's written content. Any step type can carry a photo."
-                  disabled={!canEditDirect}
-                />
-
-                <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Label htmlFor="media-rec" className="text-xs text-muted-foreground">
-                      Media recommendation
-                    </Label>
-                    <Select
-                      value={draft.media_recommendation}
-                      disabled={!canEditDirect}
-                      onValueChange={(v) =>
-                        patch({ media_recommendation: v as Draft["media_recommendation"] })
-                      }
-                    >
-                      <SelectTrigger id="media-rec" className="h-8 w-36 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="photo">Photo</SelectItem>
-                        <SelectItem value="video">Video</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {unmetMediaRecommendation({
-                      media_recommendation: draft.media_recommendation,
-                      media_url: draft.media_url,
-                      video_url: draft.video_url.trim() || null,
-                    }) ? (
-                      <span className="text-xs font-medium text-warning">Not added yet</span>
-                    ) : null}
-                  </div>
-                  <Input
-                    className="mt-2 h-8 border-0 bg-transparent px-0 text-xs text-muted-foreground shadow-none focus-visible:ring-0"
-                    value={draft.media_recommendation_note}
-                    maxLength={200}
-                    disabled={!canEditDirect}
-                    onChange={(e) => patch({ media_recommendation_note: e.target.value })}
-                    placeholder="Why this step wants media (optional)"
-                    aria-label="Media recommendation note"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="loc">Location tag</Label>
-                  <Input
-                    id="loc"
-                    value={draft.location_tag}
-                    maxLength={60}
-                    disabled={!canEditDirect}
-                    onChange={(e) => patch({ location_tag: e.target.value })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex flex-wrap gap-2">
-                  {canSuggest ? (
-                    <Button
-                      disabled={suggest.isPending || !employee}
-                      onClick={() => suggest.mutate()}
-                    >
-                      {suggest.isPending ? "Submitting…" : "Submit for approval"}
-                    </Button>
-                  ) : (
-                    <Button
-                      disabled={!canEditDirect || save.isPending}
-                      onClick={() => save.mutate()}
-                    >
-                      {save.isPending ? "Saving…" : "Save changes"}
-                    </Button>
-                  )}
-                  {step.is_deleted ? (
-                    <Button
-                      variant="outline"
-                      disabled={!canEditDirect || softDelete.isPending}
-                      onClick={() => softDelete.mutate(false)}
-                    >
-                      Restore step
-                    </Button>
-                  ) : (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" disabled={!canEditDirect}>
-                          Soft-delete step
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Hide this step?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            The step is hidden from trainees and logged with who, when, and what. It
-                            is never permanently deleted and can be restored at any time.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => softDelete.mutate(true)}>
-                            Hide step
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+          {step ? (
+            <StepEditPanel
+              key={step.id}
+              step={step}
+              stepModule={stepModule}
+              canEditDirect={canEditDirect}
+              canSuggest={canSuggest}
+              employeeId={employee?.id}
+            />
           ) : null}
 
-          {step && draft && draft.step_type === "quiz" ? (
+          {step && step.step_type === "quiz" ? (
             <QuizQuestionsPanel key={step.id} stepId={step.id} />
           ) : null}
 
-          {selection.kind === "step" ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Version history</CardTitle>
-              <CardDescription>
-                Every edit is captured. Restoring writes a new version — nothing is overwritten
-                silently.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {historyQuery.isPending ? (
-                <p className="text-sm text-muted-foreground">Loading history…</p>
-              ) : !historyQuery.data?.length ? (
-                <p className="text-sm text-muted-foreground">No recorded edits for this step yet.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {historyQuery.data.map((v) => {
-                    const snap = (v.snapshot ?? {}) as Record<string, unknown>;
-                    return (
-                      <li
-                        key={v.id}
-                        className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3 last:border-0"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium">{String(snap["title"] ?? "Untitled")}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(v.created_at).toLocaleString()} ·{" "}
-                            {String(snap["content_status"] ?? "")}
-                          </p>
-                          {snap["content_body"] ? (
-                            <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">
-                              {String(snap["content_body"])}
-                            </p>
-                          ) : null}
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={!canEditDirect || restore.isPending}
-                          onClick={() => restore.mutate(snap)}
-                        >
-                          Restore this version
-                        </Button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-          ) : null}
         </div>
       </div>
     </div>
