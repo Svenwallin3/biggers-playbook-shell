@@ -307,6 +307,7 @@ function ModulePage() {
                       canEdit={canEditDirect}
                       employeeId={employee?.id}
                       deleteRequiresApproval={isGeneralManager && !isOwner}
+                      onSaved={() => setModuleSheetOpen(false)}
                     />
                   </div>
                 </SheetContent>

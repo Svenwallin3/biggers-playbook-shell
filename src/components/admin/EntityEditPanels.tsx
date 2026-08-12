@@ -173,6 +173,7 @@ function useEntityMutations(
   table: "modules" | "tracks",
   id: string,
   employeeId: string | undefined,
+  onSaved?: () => void,
 ) {
   const queryClient = useQueryClient();
   const refresh = () => {
@@ -189,6 +190,7 @@ function useEntityMutations(
     onSuccess: () => {
       refresh();
       toast.success("Saved — previous version logged to history.");
+      onSaved?.();
     },
     onError: (error: Error) => toast.error("Couldn't save", { description: error.message }),
   });
@@ -221,11 +223,14 @@ export function ModuleEditPanel({
   canEdit,
   employeeId,
   deleteRequiresApproval = false,
+  onSaved,
 }: {
   module: ModuleRow;
   trackName: string | undefined;
   canEdit: boolean;
   employeeId: string | undefined;
+  /** Called after a successful save — used to close the inline sheet. */
+  onSaved?: () => void;
   /** GM path: the guard_module_delete trigger rejects a direct hide, so ask an Owner. */
   deleteRequiresApproval?: boolean;
 }) {
@@ -251,7 +256,7 @@ export function ModuleEditPanel({
     });
   }, [module.id, module.updated_at]);
   const patch = (p: Partial<typeof empty>) => setForm((f) => ({ ...f, ...p }));
-  const { save, softDelete } = useEntityMutations("modules", module.id, employeeId);
+  const { save, softDelete } = useEntityMutations("modules", module.id, employeeId, onSaved);
   const requestDelete = useMutation({
     mutationFn: () =>
       submitModuleDeleteRequest({
