@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Eye, Pencil, Users } from "lucide-react";
@@ -5,7 +6,17 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
+import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPanels";
+import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { StepRenderer } from "@/components/training/StepRenderer";
@@ -60,9 +71,11 @@ export const Route = createFileRoute("/modules/$moduleId")({
 function ModulePage() {
   const { moduleId } = Route.useParams();
   const { step: stepParam, trainee, preview } = Route.useSearch();
-  const { employee } = useAuth();
+  const { employee, isGeneralManager, isOwner, isManagerOrOwner } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [stepSheetOpen, setStepSheetOpen] = useState(false);
+  const [moduleSheetOpen, setModuleSheetOpen] = useState(false);
   const isAdmin = employee?.auth_tier === "manager" || employee?.auth_tier === "owner";
   // Preview is ignored entirely for non-admins, so a staff member can't opt out of real progress.
   const previewMode = Boolean(preview) && isAdmin;
