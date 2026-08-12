@@ -393,7 +393,7 @@ function ContentEditorPage() {
                     ? ""
                     : canSuggest
                       ? " — You can suggest a change to the title and content below — it goes to the Owner approval queue."
-                      : " — read-only: outside your department"}
+                      : " — read-only: outside your division"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">

@@ -191,7 +191,7 @@ export function NewTrackDialog({
         />
       </div>
       <div className="space-y-2">
-        <Label>Department</Label>
+        <Label>Division</Label>
         <Select value={form.department} onValueChange={(v) => patch({ department: v as Department })}>
           <SelectTrigger>
             <SelectValue />

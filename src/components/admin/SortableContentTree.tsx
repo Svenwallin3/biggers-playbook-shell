@@ -235,7 +235,7 @@ export function SortableContentTree({
       const parentTrack = parentModule?.track;
       if (!parentModule || !parentTrack || !canReorderModulesIn(parentTrack)) {
         toast.error("Couldn't reorder", {
-          description: "That module is outside your department.",
+          description: "That module is outside your division.",
         });
         return;
       }
@@ -291,7 +291,7 @@ export function SortableContentTree({
     if (!sourceTrack || !destTrack) return;
     if (!canReorderModulesIn(sourceTrack) || !canReorderModulesIn(destTrack)) {
       toast.error("Couldn't reorder", {
-        description: "That track is outside your department.",
+        description: "That track is outside your division.",
       });
       return;
     }

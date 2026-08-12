@@ -216,7 +216,7 @@ export function ModuleEditPanel({
           </div>
           <CardDescription>
             {trackName}
-            {!canEdit ? " — read-only: outside your department" : ""}
+            {!canEdit ? " — read-only: outside your division" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -367,7 +367,7 @@ export function TrackEditPanel({
           </div>
           <CardDescription>
             Top-level track
-            {!canEdit ? " — read-only: outside your department" : ""}
+            {!canEdit ? " — read-only: outside your division" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -393,7 +393,7 @@ export function TrackEditPanel({
               />
             </div>
             <div className="space-y-2">
-              <Label>Department</Label>
+              <Label>Division</Label>
               <Select
                 value={form.department}
                 disabled={!canEdit}
