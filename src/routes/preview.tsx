@@ -287,49 +287,8 @@ function PreviewPage() {
               step={activeStep}
               quizzes={quizzes.filter((q) => q.step_id === activeStep.id)}
               isAdmin
-            />
-            <div className="space-y-3 border-t border-border pt-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-11 w-full"
-                  disabled={!prevStep}
-                  asChild={Boolean(prevStep)}
-                >
-                  {prevStep ? (
-                    <Link
-                      to="/preview"
-                      search={{ track: trackId, module: prevStep.moduleId, step: prevStep.stepId }}
-                    >
-                      <ChevronLeft className="size-4" aria-hidden />
-                      Previous
-                    </Link>
-                  ) : (
-                    <span className="inline-flex items-center gap-2">
-                      <ChevronLeft className="size-4" aria-hidden />
-                      Previous
-                    </span>
-                  )}
-                </Button>
-                <Button className="h-11 w-full" disabled={!nextStep} asChild={Boolean(nextStep)}>
-                  {nextStep ? (
-                    <Link
-                      to="/preview"
-                      search={{ track: trackId, module: nextStep.moduleId, step: nextStep.stepId }}
-                    >
-                      Next
-                      <ChevronRight className="size-4" aria-hidden />
-                    </Link>
-                  ) : (
-                    <span className="inline-flex items-center gap-2">Finish</span>
-                  )}
-                </Button>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">
-                  {stepTypeLabels[activeStep.step_type]}
-                </p>
-                {canEditDirect || canSuggest ? (
+              titleAction={
+                canEditDirect || canSuggest ? (
                   <Sheet open={stepSheetOpen} onOpenChange={setStepSheetOpen}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -372,7 +331,50 @@ function PreviewPage() {
                       </div>
                     </SheetContent>
                   </Sheet>
-                ) : null}
+                ) : null
+              }
+            />
+            <div className="space-y-3 border-t border-border pt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  className="h-11 w-full"
+                  disabled={!prevStep}
+                  asChild={Boolean(prevStep)}
+                >
+                  {prevStep ? (
+                    <Link
+                      to="/preview"
+                      search={{ track: trackId, module: prevStep.moduleId, step: prevStep.stepId }}
+                    >
+                      <ChevronLeft className="size-4" aria-hidden />
+                      Previous
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-2">
+                      <ChevronLeft className="size-4" aria-hidden />
+                      Previous
+                    </span>
+                  )}
+                </Button>
+                <Button className="h-11 w-full" disabled={!nextStep} asChild={Boolean(nextStep)}>
+                  {nextStep ? (
+                    <Link
+                      to="/preview"
+                      search={{ track: trackId, module: nextStep.moduleId, step: nextStep.stepId }}
+                    >
+                      Next
+                      <ChevronRight className="size-4" aria-hidden />
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-2">Finish</span>
+                  )}
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {stepTypeLabels[activeStep.step_type]}
+                </p>
               </div>
             </div>
           </div>
