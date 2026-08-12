@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Camera, ChevronLeft, ChevronRight, Film, Pencil, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
