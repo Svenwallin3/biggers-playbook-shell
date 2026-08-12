@@ -58,6 +58,7 @@ import {
   sectionLineItems,
   sharedLabel,
   softDeleteReferenceDocument,
+  submitReferenceDeleteRequest,
   visibleToDivision,
   visibleToLocation,
   type ReferenceDocumentRow,
