@@ -177,7 +177,30 @@ export type SuggestionPayload =
       subCategory: string | null;
       departments: string[];
       locationTag: string | null;
-    };
+    }
+  | { type: "delete_document" }
+  | { type: "delete_module" };
+
+/**
+ * A General Manager cannot delete a reference document directly (the
+ * guard_reference_document_delete trigger is Owner-only) — they ask instead.
+ */
+export async function submitReferenceDeleteRequest(input: {
+  documentId: string;
+  documentTitle: string;
+  submittedBy: string;
+}) {
+  const { error } = await supabase.from("suggestion_queue").insert({
+    reference_document_id: input.documentId,
+    submitted_by: input.submittedBy,
+    field_what: `Delete "${input.documentTitle}"`,
+    field_how: null,
+    field_how_you_know: null,
+    payload: { type: "delete_document" } as unknown as Json,
+    status: "pending",
+  });
+  if (error) throw error;
+}
 
 export async function submitReferenceSuggestion(input: {
   documentId: string;

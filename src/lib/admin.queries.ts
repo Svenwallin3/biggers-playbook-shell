@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import type { ModuleRow, StepRow, TrackRow } from "@/lib/training.queries";
 
 export type SuggestionRow = Database["public"]["Tables"]["suggestion_queue"]["Row"];
@@ -45,6 +45,7 @@ export function contentTreeQueryOptions() {
 export type SuggestionWithContext = SuggestionRow & {
   step: (StepRow & { module: (ModuleRow & { track: TrackRow | null }) | null }) | null;
   reference_document: { id: string; title: string; document_type: string } | null;
+  module: { id: string; name: string } | null;
   submitter: Pick<EmployeeRow, "id" | "full_name" | "email" | "auth_tier"> | null;
 };
 
@@ -55,7 +56,7 @@ export function suggestionsQueryOptions(status: Database["public"]["Enums"]["sug
       const { data, error } = await supabase
         .from("suggestion_queue")
         .select(
-          "*, step:steps(*, module:modules(*, track:tracks(*))), reference_document:reference_documents(id, title, document_type), submitter:employees!suggestion_queue_submitted_by_fkey(id, full_name, email, auth_tier)",
+          "*, step:steps(*, module:modules(*, track:tracks(*))), reference_document:reference_documents(id, title, document_type), module:modules!suggestion_queue_module_id_fkey(id, name), submitter:employees!suggestion_queue_submitted_by_fkey(id, full_name, email, auth_tier)",
         )
         .eq("status", status)
         .order("created_at", { ascending: false });
@@ -84,6 +85,28 @@ export function versionHistoryQueryOptions(entityType: string, entityId: string 
 }
 
 /** A non-GM manager proposes new title/content_body text for a step. */
+
+/**
+ * A General Manager cannot hide a module directly any more (guard_module_delete)
+ * — they submit a deletion request for an Owner to approve.
+ */
+export async function submitModuleDeleteRequest(input: {
+  moduleId: string;
+  moduleName: string;
+  submittedBy: string;
+}) {
+  const { error } = await supabase.from("suggestion_queue").insert({
+    module_id: input.moduleId,
+    submitted_by: input.submittedBy,
+    field_what: `Delete "${input.moduleName}"`,
+    field_how: null,
+    field_how_you_know: null,
+    payload: { type: "delete_module" } as unknown as Json,
+    status: "pending",
+  });
+  if (error) throw error;
+}
+
 export async function submitStepSuggestion(input: {
   stepId: string;
   submittedBy: string;

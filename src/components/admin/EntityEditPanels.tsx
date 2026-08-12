@@ -29,7 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { versionHistoryQueryOptions } from "@/lib/admin.queries";
+import { submitModuleDeleteRequest, versionHistoryQueryOptions } from "@/lib/admin.queries";
 import type { Department, ModuleRow, TrackRow } from "@/lib/training.queries";
 
 const departmentOptions: Department[] = ["universal", "market", "kitchen", "delivery"];
@@ -87,18 +87,47 @@ function DeleteControls({
   canEdit,
   pending,
   onToggle,
+  requestOnly = false,
+  targetName,
+  onRequest,
 }: {
   isDeleted: boolean;
   label: string;
   canEdit: boolean;
   pending: boolean;
   onToggle: (hidden: boolean) => void;
+  requestOnly?: boolean;
+  targetName?: string;
+  onRequest?: () => void;
 }) {
   if (isDeleted) {
     return (
       <Button variant="outline" disabled={!canEdit || pending} onClick={() => onToggle(false)}>
         Restore {label}
       </Button>
+    );
+  }
+  if (requestOnly) {
+    return (
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="outline" disabled={!canEdit || pending}>
+            Request deletion
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Request deletion of “{targetName}”?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will ask an Owner to delete “{targetName}”. It stays visible until they approve.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onRequest?.()}>Send request</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     );
   }
   return (
@@ -176,11 +205,14 @@ export function ModuleEditPanel({
   trackName,
   canEdit,
   employeeId,
+  deleteRequiresApproval = false,
 }: {
   module: ModuleRow;
   trackName: string | undefined;
   canEdit: boolean;
   employeeId: string | undefined;
+  /** GM path: the guard_module_delete trigger rejects a direct hide, so ask an Owner. */
+  deleteRequiresApproval?: boolean;
 }) {
   const empty = {
     name: module.name,
@@ -205,6 +237,18 @@ export function ModuleEditPanel({
   }, [module.id, module.updated_at]);
   const patch = (p: Partial<typeof empty>) => setForm((f) => ({ ...f, ...p }));
   const { save, softDelete } = useEntityMutations("modules", module.id, employeeId);
+  const requestDelete = useMutation({
+    mutationFn: () =>
+      submitModuleDeleteRequest({
+        moduleId: module.id,
+        moduleName: module.name,
+        submittedBy: employeeId!,
+      }),
+    onSuccess: () =>
+      toast.success("Request sent — an Owner will review it. Nothing has changed yet."),
+    onError: (error: Error) =>
+      toast.error("Couldn't send that request", { description: error.message }),
+  });
 
   return (
     <>
@@ -318,8 +362,11 @@ export function ModuleEditPanel({
               isDeleted={module.is_deleted}
               label="module"
               canEdit={canEdit}
-              pending={softDelete.isPending}
+              pending={softDelete.isPending || requestDelete.isPending}
               onToggle={(hidden) => softDelete.mutate(hidden)}
+              requestOnly={deleteRequiresApproval}
+              targetName={module.name}
+              onRequest={() => requestDelete.mutate()}
             />
           </div>
         </CardContent>

@@ -58,6 +58,7 @@ import {
   sectionLineItems,
   sharedLabel,
   softDeleteReferenceDocument,
+  submitReferenceDeleteRequest,
   visibleToDivision,
   visibleToLocation,
   type ReferenceDocumentRow,
@@ -153,9 +154,10 @@ function Detail({
   ephemeral: boolean;
   onBack: () => void;
 }) {
-  const { employee, isManagerOrOwner, isOwner } = useAuth();
+  const { employee, isManagerOrOwner, isOwner, isGeneralManager } = useAuth();
   const queryClient = useQueryClient();
   const [deleting, setDeleting] = useState(false);
+  const [requesting, setRequesting] = useState(false);
   // Manager Guides: checkboxes are a scratch pad, nothing is persisted or submitted.
   const [localChecks, setLocalChecks] = useState<Record<string, boolean>>({});
   const sections = docSections(doc);
@@ -229,6 +231,22 @@ function Detail({
     }
   }
 
+  async function handleRequestDelete() {
+    setRequesting(true);
+    try {
+      await submitReferenceDeleteRequest({
+        documentId: doc.id,
+        documentTitle: doc.title,
+        submittedBy: employee!.id,
+      });
+      toast.success("Request sent — an Owner will review it. Nothing has changed yet.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't send that request.");
+    } finally {
+      setRequesting(false);
+    }
+  }
+
   return (
     <>
       <DocumentPrintSheet doc={doc} withSignoffLine={tracksInstance} />
@@ -263,6 +281,30 @@ function Detail({
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction disabled={deleting} onClick={handleDelete}>
                   {deleting ? "Deleting…" : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : isGeneralManager ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Trash2 className="size-4" />
+                Request deletion
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Request deletion of “{doc.title}”?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will ask an Owner to delete “{doc.title}”. It stays visible until they
+                  approve.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction disabled={requesting} onClick={handleRequestDelete}>
+                  {requesting ? "Sending…" : "Send request"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
