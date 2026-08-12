@@ -376,6 +376,7 @@ function ContentEditorPage() {
                 trackName={selectedModule.track?.name}
                 canEdit={canEditDirectInDepartment(selectedModule.track?.department)}
                 employeeId={employee?.id}
+                deleteRequiresApproval={isGeneralManager && !isOwner}
               />
             </div>
           ) : null}
