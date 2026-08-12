@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import type { ModuleRow, StepRow, TrackRow } from "@/lib/training.queries";
 
 export type SuggestionRow = Database["public"]["Tables"]["suggestion_queue"]["Row"];
@@ -101,7 +101,7 @@ export async function submitModuleDeleteRequest(input: {
     field_what: `Delete "${input.moduleName}"`,
     field_how: null,
     field_how_you_know: null,
-    payload: { type: "delete_module" } as unknown as Database["public"]["Tables"]["suggestion_queue"]["Insert"]["payload"],
+    payload: { type: "delete_module" } as unknown as Json,
     status: "pending",
   });
   if (error) throw error;
