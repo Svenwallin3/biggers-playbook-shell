@@ -594,13 +594,43 @@ export function ReferenceDocumentsScreen({
         </Card>
       ) : (
         <div className="space-y-6">
-          {groups.map(([subCategory, rows]) => (
-            <section key={subCategory} className="space-y-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {subCategory}
-              </h2>
+          {groups.map(([groupLabel, rows]) => {
+            const subCategories = [
+              ...new Set(rows.map((d) => d.sub_category?.trim()).filter(Boolean) as string[]),
+            ].sort();
+            const active = subFilter[groupLabel] ?? "";
+            const visibleRows =
+              groupByDepartment || !active
+                ? rows
+                : rows.filter((d) => (d.sub_category?.trim() || "") === active);
+            return (
+            <section key={groupLabel} className="space-y-2">
+              <Collapsible defaultOpen>
+                <CollapsibleTrigger className="group flex w-full items-center gap-2 text-left">
+                  <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    {groupLabel}
+                  </h2>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2 pt-2">
+              {!groupByDepartment && subCategories.length > 1 ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {["", ...subCategories].map((sc) => (
+                    <Button
+                      key={sc || "__all__"}
+                      type="button"
+                      variant={active === sc ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setSubFilter((prev) => ({ ...prev, [groupLabel]: sc }))}
+                    >
+                      {sc || "All"}
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
               <div className="space-y-2">
-                {rows.map((doc) => (
+                {visibleRows.map((doc) => (
                   <Card key={doc.id}>
                     <CardContent className="py-4">
                       <div className="flex w-full items-center gap-2">
@@ -634,8 +664,11 @@ export function ReferenceDocumentsScreen({
                   </Card>
                 ))}
               </div>
+                </CollapsibleContent>
+              </Collapsible>
             </section>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
