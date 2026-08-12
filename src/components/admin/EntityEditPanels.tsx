@@ -924,7 +924,8 @@ export function StepEditPanel({
         <CardHeader>
           <CardTitle className="text-base">Version history</CardTitle>
           <CardDescription>
-            Every edit is captured. Restoring writes a new version — nothing is overwritten silently.
+            Every edit is captured. Restoring writes a new version — nothing is overwritten
+            silently.
           </CardDescription>
         </CardHeader>
         <CardContent>
