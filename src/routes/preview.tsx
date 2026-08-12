@@ -1,9 +1,21 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPanels";
+import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { StepRenderer } from "@/components/training/StepRenderer";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
@@ -36,7 +48,10 @@ export const Route = createFileRoute("/preview")({
 
 function PreviewPage() {
   const { track: trackId, module: moduleId, step: stepId } = Route.useSearch();
-  const { isManagerOrOwner, loading, session } = useAuth();
+  const { isManagerOrOwner, isOwner, isGeneralManager, employee, loading, session } = useAuth();
+  const queryClient = useQueryClient();
+  const [stepSheetOpen, setStepSheetOpen] = useState(false);
+  const [moduleSheetOpen, setModuleSheetOpen] = useState(false);
 
   const tracksQuery = useQuery(previewTracksQueryOptions());
   const trackQuery = useQuery(previewTrackQueryOptions(trackId));
@@ -53,6 +68,14 @@ function PreviewPage() {
   const quizzes = trackQuery.data?.quizzes ?? [];
   const activeModule = modules.find((m) => m.id === moduleId) ?? modules[0];
   const activeStep = activeModule?.steps.find((s) => s.id === stepId) ?? activeModule?.steps[0];
+
+  const inDivision = activeTrack?.department === employee?.department_scope;
+  const canEditDirect = isOwner || (isGeneralManager && inDivision);
+  const canSuggest = isManagerOrOwner && !canEditDirect && inDivision;
+  const refreshPreview = () => {
+    void queryClient.invalidateQueries({ queryKey: ["preview-track", trackId] });
+    void queryClient.invalidateQueries({ queryKey: ["preview-tracks"] });
+  };
 
   // One flat walk through the whole track, so Previous/Next crosses module boundaries.
   const flatSteps = modules.flatMap((m) => m.steps.map((s) => ({ moduleId: m.id, stepId: s.id })));
@@ -202,7 +225,7 @@ function PreviewPage() {
 
           <div className="min-w-0 space-y-6">
             <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-1.5">
                 <ModuleHeader
                   as="h2"
                   variant="compact"
@@ -211,6 +234,49 @@ function PreviewPage() {
                   dayAssignment={activeModule.day_assignment}
                   name={activeModule.name}
                 />
+                {canEditDirect ? (
+                  <Sheet open={moduleSheetOpen} onOpenChange={setModuleSheetOpen}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SheetTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-7 shrink-0"
+                            aria-label="Edit this module"
+                          >
+                            <Pencil className="size-3.5" aria-hidden />
+                          </Button>
+                        </SheetTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>Edit</TooltipContent>
+                    </Tooltip>
+                    <SheetContent
+                      side="right"
+                      className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
+                    >
+                      <SheetHeader>
+                        <SheetTitle>Edit module</SheetTitle>
+                        <SheetDescription>
+                          Changes save straight to this module and are logged to version history.
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className="mt-4 space-y-6">
+                        <ModuleEditPanel
+                          module={activeModule}
+                          trackName={activeTrack?.name}
+                          canEdit={canEditDirect}
+                          employeeId={employee?.id}
+                          deleteRequiresApproval={isGeneralManager && !isOwner}
+                          onSaved={() => {
+                            refreshPreview();
+                            setModuleSheetOpen(false);
+                          }}
+                        />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                ) : null}
               </div>
               <p className="shrink-0 text-xs font-medium text-muted-foreground">
                 Step {activeModule.steps.findIndex((s) => s.id === activeStep.id) + 1} of{" "}
@@ -259,9 +325,55 @@ function PreviewPage() {
                   )}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {stepTypeLabels[activeStep.step_type]}
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {stepTypeLabels[activeStep.step_type]}
+                </p>
+                {canEditDirect || canSuggest ? (
+                  <Sheet open={stepSheetOpen} onOpenChange={setStepSheetOpen}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SheetTrigger asChild>
+                          <Button size="icon" variant="ghost" aria-label="Edit this step">
+                            <Pencil className="size-4" aria-hidden />
+                          </Button>
+                        </SheetTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>Edit</TooltipContent>
+                    </Tooltip>
+                    <SheetContent
+                      side="right"
+                      className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
+                    >
+                      <SheetHeader>
+                        <SheetTitle>Edit step</SheetTitle>
+                        <SheetDescription>
+                          {canEditDirect
+                            ? "Saves straight to this step, with the previous version logged."
+                            : "Your changes go to the Owner approval queue."}
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className="mt-4 space-y-6">
+                        <StepEditPanel
+                          key={activeStep.id}
+                          step={activeStep}
+                          stepModule={{ ...activeModule, track: activeTrack }}
+                          canEditDirect={canEditDirect}
+                          canSuggest={canSuggest}
+                          employeeId={employee?.id}
+                          onSaved={() => {
+                            refreshPreview();
+                            setStepSheetOpen(false);
+                          }}
+                        />
+                        {activeStep.step_type === "quiz" ? (
+                          <QuizQuestionsPanel key={`quiz-${activeStep.id}`} stepId={activeStep.id} />
+                        ) : null}
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
