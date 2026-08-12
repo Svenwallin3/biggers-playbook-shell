@@ -273,7 +273,7 @@ export function StepRenderer({
   /** The step title is the dominant heading on module screens. */
   titleAs?: "h1" | "h2";
   /** Optional slot rendered inline to the right of the step title. */
-  titleAction?: React.ReactNode;
+  titleAction?: ReactNode;
 }) {
   const unavailable = step.content_status === "missing" || step.content_status === "blocked";
   const lines = bodyLines(step);
