@@ -105,7 +105,8 @@ function PreviewPage() {
 
   // Trainee-order flat walk: day groups, self-paced before that day's trainer sign-off.
   const walk = getDayGroupedSteps(trackModules);
-  const activeModule = urlModule ?? trackModules[0];
+  const activeModule =
+    trackModules.find((m) => m.id === urlModule?.id) ?? trackModules[0];
   const activeStep: StepRow | undefined =
     urlStep ??
     (activeModule
