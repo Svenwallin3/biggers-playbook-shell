@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Camera, ChevronLeft, ChevronRight, Film, Pencil } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, Film, Pencil, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +26,8 @@ import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPan
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { StepRenderer } from "@/components/training/StepRenderer";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
+import { StepTypeChip } from "@/components/training/StepTypeChip";
+import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { contentTreeQueryOptions } from "@/lib/admin.queries";
@@ -74,6 +76,7 @@ function PreviewPage() {
   const [stepSheetOpen, setStepSheetOpen] = useState(false);
   const [moduleSheetOpen, setModuleSheetOpen] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
+  const [manageMode, setManageMode] = useState(false);
 
   const treeQuery = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
 
@@ -197,8 +200,15 @@ function PreviewPage() {
         <p className="text-sm text-muted-foreground">Loading content…</p>
       ) : null}
 
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
-        <nav className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1">
+      <div
+        className={`grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 md:items-start ${
+          manageMode
+            ? "md:grid-cols-[300px_minmax(0,1fr)]"
+            : "md:grid-cols-[248px_minmax(0,1fr)]"
+        }`}
+      >
+        {manageMode ? (
+        <nav className="min-w-0 space-y-4 overflow-x-auto md:sticky md:top-24 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto md:pr-1">
           <NewTrackDialog disabled={!canCreateTrack} onCreated={() => undefined} />
           <div className="flex items-center justify-between gap-2 rounded-md border px-2 py-1.5">
             <Label htmlFor="show-hidden" className="text-xs font-medium text-muted-foreground">
@@ -257,10 +267,36 @@ function PreviewPage() {
             )}
           />
         </nav>
+        ) : (
+          <nav className="min-w-0 space-y-0.5 self-start rounded-lg border border-border bg-surface/60 p-2 md:sticky md:top-24">
+            {(activeModule?.steps ?? []).map((s) => (
+              <Link
+                key={s.id}
+                to="/preview"
+                search={{ track: trackId, module: moduleId, step: s.id }}
+                className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+                  activeStep && s.id === activeStep.id
+                    ? "bg-card font-semibold text-foreground shadow-xs ring-1 ring-primary/25"
+                    : "text-muted-foreground hover:bg-card/70 hover:text-foreground"
+                }`}
+              >
+                <span className="shrink-0">{s.sequence_order}.</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{s.title}</span>
+                  <span className="mt-1 block">
+                    <StepTypeChip type={s.step_type} />
+                  </span>
+                </span>
+                <StepStatusBadge status={s.content_status} />
+              </Link>
+            ))}
+          </nav>
+        )}
 
         <div className="min-w-0 space-y-6">
-          {days.length > 1 ? (
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {days.length > 1 ? (
+              <>
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Jump to
               </span>
@@ -278,8 +314,22 @@ function PreviewPage() {
                   {d.label}
                 </Link>
               ))}
-            </div>
-          ) : null}
+              </>
+            ) : null}
+            {canEditDirect || canSuggest ? (
+              <Button
+                type="button"
+                size="sm"
+                variant={manageMode ? "secondary" : "outline"}
+                aria-pressed={manageMode}
+                className={`ml-auto ${manageMode ? "ring-1 ring-primary/40" : ""}`}
+                onClick={() => setManageMode((v) => !v)}
+              >
+                <SlidersHorizontal className="size-4" aria-hidden />
+                Manage content
+              </Button>
+            ) : null}
+          </div>
 
           {!activeTrack ? (
             <Card>
