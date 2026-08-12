@@ -285,6 +285,30 @@ function Detail({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+        ) : isGeneralManager ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Trash2 className="size-4" />
+                Request deletion
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Request deletion of “{doc.title}”?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will ask an Owner to delete “{doc.title}”. It stays visible until they
+                  approve.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction disabled={requesting} onClick={handleRequestDelete}>
+                  {requesting ? "Sending…" : "Send request"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         ) : null}
         </div>
       </div>
