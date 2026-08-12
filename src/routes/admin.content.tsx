@@ -76,19 +76,6 @@ export const Route = createFileRoute("/admin/content")({
   component: ContentEditorPage,
 });
 
-interface Draft {
-  title: string;
-  step_type: StepType;
-  content_status: ContentStatus;
-  content_body: string;
-  content_notes: string;
-  location_tag: string;
-  video_url: string;
-  media_url: string | null;
-  media_recommendation: "none" | "photo" | "video";
-  media_recommendation_note: string;
-}
-
 /** A curation flag only: the step asks for media it doesn't have yet. */
 function unmetMediaRecommendation(s: {
   media_recommendation?: "none" | "photo" | "video" | null;
@@ -113,9 +100,6 @@ function ContentEditorPage() {
   }>({ kind: "step", id: stepId ?? "" });
   const selectedId = selection.kind === "step" ? selection.id : "";
   const setSelectedId = (id: string) => setSelection({ kind: "step", id });
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [suggestionWhy, setSuggestionWhy] = useState("");
-
   const tracks = treeQuery.data?.tracks ?? [];
   const modules = treeQuery.data?.modules ?? [];
   const steps = treeQuery.data?.steps ?? [];
@@ -125,7 +109,6 @@ function ContentEditorPage() {
   const selectedTrack =
     selection.kind === "track" ? tracks.find((t) => t.id === selection.id) : undefined;
   const stepModule = modules.find((m) => m.id === step?.module_id);
-  const historyQuery = useQuery(versionHistoryQueryOptions("steps", selectedId || undefined));
 
   // Same rule, applied to the row being created into (RLS enforces it too).
   const canEditDepartment = (department: string | null | undefined) =>
@@ -159,114 +142,6 @@ function ContentEditorPage() {
   useEffect(() => {
     if (!selection.id && steps.length) setSelectedId(steps[0]!.id);
   }, [steps, selection.id]);
-
-  useEffect(() => {
-    if (!step) return;
-    setDraft({
-      title: step.title,
-      step_type: step.step_type,
-      content_status: step.content_status,
-      content_body: step.content_body ?? "",
-      content_notes: step.content_notes ?? "",
-      location_tag: step.location_tag ?? "",
-      video_url: step.video_url ?? "",
-      media_url: step.media_url ?? null,
-      media_recommendation: step.media_recommendation ?? "none",
-      media_recommendation_note: step.media_recommendation_note ?? "",
-    });
-  }, [step?.id, step?.updated_at]);
-
-  const patch = (p: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...p } : d));
-  const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: ["content-tree"] });
-    void queryClient.invalidateQueries({ queryKey: ["version-history", "steps", selectedId] });
-    void queryClient.invalidateQueries({ queryKey: ["module"] });
-  };
-
-  const save = useMutation({
-    mutationFn: async () => {
-      // The steps update trigger writes the previous row into version_history.
-      const { error } = await supabase
-        .from("steps")
-        .update({
-          title: draft!.title.trim(),
-          step_type: draft!.step_type,
-          content_status: draft!.content_status,
-          content_body: draft!.content_body.trim() || null,
-          content_notes: draft!.content_notes.trim() || null,
-          location_tag: draft!.location_tag.trim() || null,
-          video_url: draft!.video_url.trim() || null,
-          media_url: draft!.media_url,
-          media_recommendation: draft!.media_recommendation,
-          media_recommendation_note: draft!.media_recommendation_note.trim() || null,
-        })
-        .eq("id", selectedId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      refresh();
-      toast.success("Saved — previous version logged to history.");
-    },
-    onError: (error: Error) => toast.error("Couldn't save", { description: error.message }),
-  });
-
-  const softDelete = useMutation({
-    mutationFn: async (hidden: boolean) => {
-      const { error } = await supabase
-        .from("steps")
-        .update(
-          hidden
-            ? { is_deleted: true, deleted_by: employee!.id, deleted_at: new Date().toISOString() }
-            : { is_deleted: false, deleted_by: null, deleted_at: null },
-        )
-        .eq("id", selectedId);
-      if (error) throw error;
-    },
-    onSuccess: (_d, hidden) => {
-      refresh();
-      toast.success(hidden ? "Step hidden — logged and restorable." : "Step restored.");
-    },
-    onError: (error: Error) => toast.error("Couldn't do that", { description: error.message }),
-  });
-
-  const restore = useMutation({
-    mutationFn: async (snapshot: Record<string, unknown>) => {
-      const { error } = await supabase
-        .from("steps")
-        .update({
-          title: String(snapshot["title"] ?? step!.title),
-          step_type: snapshot["step_type"] as StepType,
-          content_status: snapshot["content_status"] as ContentStatus,
-          content_body: (snapshot["content_body"] as string | null) ?? null,
-          content_notes: (snapshot["content_notes"] as string | null) ?? null,
-          location_tag: (snapshot["location_tag"] as string | null) ?? null,
-        })
-        .eq("id", selectedId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      refresh();
-      toast.success("Restored that version — the replaced one is logged too.");
-    },
-    onError: (error: Error) => toast.error("Couldn't restore", { description: error.message }),
-  });
-
-  const suggest = useMutation({
-    mutationFn: async () => {
-      await submitStepSuggestion({
-        stepId: selectedId,
-        submittedBy: employee!.id,
-        title: draft!.title.trim(),
-        contentBody: draft!.content_body.trim(),
-        howYouKnow: suggestionWhy.trim() || null,
-      });
-    },
-    onSuccess: () => {
-      setSuggestionWhy("");
-      toast.success("Sent to the Owner approval queue.");
-    },
-    onError: (error: Error) => toast.error("Couldn't submit", { description: error.message }),
-  });
 
   if (loading) return null;
   if (!isManagerOrOwner) {
