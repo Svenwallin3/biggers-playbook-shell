@@ -314,6 +314,7 @@ function PreviewPage() {
           />
         </nav>
         ) : (
+          activeModule ? (
           <nav className="min-w-0 space-y-0.5 self-start rounded-lg border border-border bg-surface/60 p-2 md:sticky md:top-24">
             {(activeModule?.steps ?? []).map((s) => (
               <Link
@@ -337,6 +338,7 @@ function PreviewPage() {
               </Link>
             ))}
           </nav>
+          ) : <div />
         )}
 
         <div className="min-w-0 space-y-6">
@@ -377,15 +379,7 @@ function PreviewPage() {
             ) : null}
           </div>
 
-          {!activeTrack ? (
-            <Card>
-              <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                Pick a track in the tree to start previewing.
-              </CardContent>
-            </Card>
-          ) : null}
-
-          {activeTrack && !treeQuery.isPending && !trackModules.length ? (
+          {!treeQuery.isPending && !trackModules.length ? (
             <p className="text-sm text-muted-foreground">This track has no live modules yet.</p>
           ) : null}
 
