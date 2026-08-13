@@ -957,6 +957,7 @@ export type Database = {
           content_notes: string | null
           content_status: Database["public"]["Enums"]["content_status"]
           created_at: string
+          day_position: string
           deleted_at: string | null
           deleted_by: string | null
           id: string
@@ -978,6 +979,7 @@ export type Database = {
           content_notes?: string | null
           content_status?: Database["public"]["Enums"]["content_status"]
           created_at?: string
+          day_position?: string
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
@@ -999,6 +1001,7 @@ export type Database = {
           content_notes?: string | null
           content_status?: Database["public"]["Enums"]["content_status"]
           created_at?: string
+          day_position?: string
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string

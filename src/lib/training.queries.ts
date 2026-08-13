@@ -10,8 +10,7 @@ export type QuizRow = Database["public"]["Tables"]["quiz_bank"]["Row"];
 export type ProgressRow = Database["public"]["Tables"]["progress_records"]["Row"];
 export type SourcingRow = Database["public"]["Tables"]["sourcing_board_entries"]["Row"];
 export type ReferenceDocRow = Database["public"]["Tables"]["reference_documents"]["Row"];
-export type PresentationRow =
-  Database["public"]["Tables"]["presentation_reference_entries"]["Row"];
+export type PresentationRow = Database["public"]["Tables"]["presentation_reference_entries"]["Row"];
 export type StepType = Database["public"]["Enums"]["step_type"];
 export type ContentStatus = Database["public"]["Enums"]["content_status"];
 export type Department = Database["public"]["Enums"]["department"];
@@ -27,6 +26,15 @@ export const stepTypeLabels: Record<StepType, string> = {
 
 /** Steps a trainee cannot self-complete — a trainer signs these off. */
 export const trainerSignoffTypes: StepType[] = ["doing_signoff", "supervised_live_practice"];
+
+export type DayPosition = "start" | "middle" | "end";
+
+/** Where a step sits inside its onboarding day. Anything unflagged is `middle`. */
+export function dayPositionOf(step: { day_position?: string | null }): DayPosition {
+  return step.day_position === "start" || step.day_position === "end"
+    ? step.day_position
+    : "middle";
+}
 
 export function bodyLines(step: Pick<StepRow, "content_body">) {
   return (step.content_body ?? "")
@@ -49,35 +57,39 @@ export type PlanModule = ModuleRow & { track: TrackRow; steps: StepRow[] };
  * The order Next / the training queue walk steps in.
  *
  * Modules must already be in plan order (day, then track/module sequence).
- * Within each `day_assignment` group, every self-paced step (text/photo/video/quiz)
- * across all of that day's modules comes first, then that day's trainer-required
- * steps (sign-off / supervised live practice) collected at the end of the day's
- * block. Relative order within each half is preserved, and days never interleave.
+ * Within each `day_assignment` group, steps fall into three buckets driven by
+ * `day_position`: `'start'` steps open the day, `'middle'` steps (the default —
+ * everything not explicitly flagged) keep their existing relative order in the
+ * middle, and `'end'` steps close the day. Relative order within each bucket is
+ * preserved, and days never interleave.
  */
 export function getDayGroupedSteps<
   M extends { id: string; day_assignment: number | null; steps: StepRow[] },
 >(modules: M[]): Array<{ module: M; step: StepRow }> {
   const groups: Array<{
     day: number;
-    selfPaced: Array<{ module: M; step: StepRow }>;
-    trainer: Array<{ module: M; step: StepRow }>;
+    start: Array<{ module: M; step: StepRow }>;
+    middle: Array<{ module: M; step: StepRow }>;
+    end: Array<{ module: M; step: StepRow }>;
   }> = [];
 
   for (const module of modules) {
     const day = module.day_assignment ?? 99;
     let group = groups.find((g) => g.day === day);
     if (!group) {
-      group = { day, selfPaced: [], trainer: [] };
+      group = { day, start: [], middle: [], end: [] };
       groups.push(group);
     }
     for (const step of module.steps) {
       const entry = { module, step };
-      if (trainerSignoffTypes.includes(step.step_type)) group.trainer.push(entry);
-      else group.selfPaced.push(entry);
+      const position = dayPositionOf(step);
+      if (position === "start") group.start.push(entry);
+      else if (position === "end") group.end.push(entry);
+      else group.middle.push(entry);
     }
   }
 
-  return groups.flatMap((g) => [...g.selfPaced, ...g.trainer]);
+  return groups.flatMap((g) => [...g.start, ...g.middle, ...g.end]);
 }
 
 /** Today's plan: the Universal track plus the employee's own path, in onboarding-day order. */
@@ -240,7 +252,9 @@ export function searchQueryOptions(term: string) {
           .from("sourcing_board_entries")
           .select("*")
           .eq("is_deleted", false)
-          .or(`product.ilike.${like},supplier.ilike.${like},region.ilike.${like},notes.ilike.${like}`)
+          .or(
+            `product.ilike.${like},supplier.ilike.${like},region.ilike.${like},notes.ilike.${like}`,
+          )
           .limit(15),
         supabase
           .from("reference_documents")
@@ -282,7 +296,9 @@ export async function setStepProgress(input: {
   const payload = {
     employee_id: input.employeeId,
     step_id: input.stepId,
-    status: (input.completed ? "completed" : "in_progress") as Database["public"]["Enums"]["progress_status"],
+    status: (input.completed
+      ? "completed"
+      : "in_progress") as Database["public"]["Enums"]["progress_status"],
     started_at: new Date().toISOString(),
     completed_at: input.completed ? new Date().toISOString() : null,
   };
@@ -356,8 +372,6 @@ export async function signOffStep(input: {
     return;
   }
 
-  const { error } = await supabase
-    .from("progress_records")
-    .insert({ ...payload, started_at: now });
+  const { error } = await supabase.from("progress_records").insert({ ...payload, started_at: now });
   if (error) throw error;
 }

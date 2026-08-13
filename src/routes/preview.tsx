@@ -23,7 +23,7 @@ import {
 import { SortableContentTree } from "@/components/admin/SortableContentTree";
 import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPanels";
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
-import { StepRenderer } from "@/components/training/StepRenderer";
+import { TraineeWalk } from "@/components/training/TraineeWalk";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { StepTypeChip } from "@/components/training/StepTypeChip";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
@@ -86,33 +86,46 @@ function PreviewPage() {
   // Resolve the active trio from the URL, walking up the flat arrays.
   const urlStep = allSteps.find((s) => s.id === stepId);
   const urlModule = allModules.find((m) => m.id === (urlStep?.module_id ?? moduleId));
-  const activeTrack =
-    allTracks.find((t) => t.id === (urlModule?.track_id ?? trackId)) ?? undefined;
+  const activeTrack = allTracks.find((t) => t.id === (urlModule?.track_id ?? trackId)) ?? undefined;
 
-  const trackModules = activeTrack
-    ? allModules
-        .filter((m) => m.track_id === activeTrack.id && (showHidden || !m.is_deleted))
-        .map((m) => ({
-          ...m,
-          steps: allSteps
-            .filter((s) => s.module_id === m.id && (showHidden || !s.is_deleted))
-            .sort((a, b) => a.sequence_order - b.sequence_order),
-        }))
-        .sort(
-          (a, b) =>
-            (a.day_assignment ?? 99) - (b.day_assignment ?? 99) ||
-            a.sequence_order - b.sequence_order,
+  const buildModules = (predicate: (m: (typeof allModules)[number]) => boolean, shared: boolean) =>
+    allModules
+      .filter((m) => predicate(m) && (showHidden || !m.is_deleted))
+      .map((m) => ({
+        ...m,
+        isShared: shared,
+        steps: allSteps
+          .filter((s) => s.module_id === m.id && (showHidden || !s.is_deleted))
+          .sort((a, b) => a.sequence_order - b.sequence_order),
+      }));
+
+  const ownModules = activeTrack ? buildModules((m) => m.track_id === activeTrack.id, false) : [];
+  // A trainee always gets Universal alongside their own division, so preview it that way too.
+  const universalTrackIds = allTracks.filter((t) => t.department === "universal").map((t) => t.id);
+  const isUniversalTrack = activeTrack?.department === "universal";
+  const dayKeys = new Set(ownModules.map((m) => m.day_assignment ?? 99));
+  const sharedModules =
+    activeTrack && !isUniversalTrack
+      ? buildModules(
+          (m) => universalTrackIds.includes(m.track_id) && dayKeys.has(m.day_assignment ?? 99),
+          true,
         )
-    : [];
+      : [];
 
-  // Trainee-order flat walk: day groups, self-paced before that day's trainer sign-off.
+  const trackModules = [...sharedModules, ...ownModules].sort(
+    (a, b) =>
+      (a.day_assignment ?? 99) - (b.day_assignment ?? 99) ||
+      Number(b.isShared) - Number(a.isShared) ||
+      a.sequence_order - b.sequence_order,
+  );
+
+  // Trainee-order flat walk: day groups, in start / middle / end day-position order.
   const walk = getDayGroupedSteps(trackModules);
-  const activeModule =
-    trackModules.find((m) => m.id === urlModule?.id) ?? trackModules[0];
+  const activeModule = trackModules.find((m) => m.id === urlModule?.id) ?? trackModules[0];
   const activeStep: StepRow | undefined =
     urlStep ??
     (activeModule
-      ? walk.find((w) => w.module.id === activeModule.id)?.step ?? activeModule.steps[0]
+      ? (walk.find((w) => w.module.id === activeModule.id)?.step ?? activeModule.steps[0])
       : undefined);
 
   const quizzesQuery = useQuery({
@@ -170,7 +183,9 @@ function PreviewPage() {
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (!session) return <Navigate to="/login" />;
   if (!isManagerOrOwner) {
-    return <p className="text-sm text-muted-foreground">Preview mode is for managers and owners.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">Preview mode is for managers and owners.</p>
+    );
   }
 
   const activeIndex = activeStep ? walk.findIndex((w) => w.step.id === activeStep.id) : -1;
@@ -245,315 +260,275 @@ function PreviewPage() {
         ))}
       </div>
 
-      <div
-        className={`grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 md:items-start ${
-          manageMode
-            ? "md:grid-cols-[300px_minmax(0,1fr)]"
-            : "md:grid-cols-[248px_minmax(0,1fr)]"
-        }`}
-      >
-        {manageMode ? (
-        <nav className="min-w-0 space-y-4 overflow-x-auto md:sticky md:top-24 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto md:pr-1">
-          <NewTrackDialog disabled={!canCreateTrack} onCreated={() => undefined} />
-          <div className="flex items-center justify-between gap-2 rounded-md border px-2 py-1.5">
-            <Label htmlFor="show-hidden" className="text-xs font-medium text-muted-foreground">
-              Show hidden
-            </Label>
-            <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
-          </div>
-          <SortableContentTree
-            tracks={allTracks.filter((t) => showHidden || !t.is_deleted)}
-            modules={allModules.filter((m) => showHidden || !m.is_deleted)}
-            steps={allSteps.filter((s) => showHidden || !s.is_deleted)}
-            selection={selection}
-            onSelect={select}
-            canReorderTracks={canReorderTracks}
-            canReorderModulesIn={canReorderModulesIn}
-            renderTrackLabel={(track) => (
-              <span className={track.is_deleted ? "line-through" : undefined}>{track.name}</span>
-            )}
-            renderModuleLabel={(m) => (
-              <>
-                <span className={m.is_deleted ? "line-through" : undefined}>{m.name}</span>
-                {m.is_deleted ? " (hidden)" : ""}
-              </>
-            )}
-            renderTrackFooter={(track) => (
-              <NewModuleDialog
-                trackId={track.id}
-                nextSequence={allModules.filter((m) => m.track_id === track.id).length + 1}
-                disabled={!canEditDepartment(track.department)}
-                onCreated={() => undefined}
-              />
-            )}
-            renderStepLabel={(s) => (
-              <span className="flex items-center gap-1.5">
-                <span className={s.is_deleted ? "line-through" : undefined}>{s.title}</span>
-                {unmetMediaRecommendation(s) === "photo" ? (
-                  <Camera
-                    className="size-3.5 shrink-0 text-warning"
-                    aria-label="Photo recommended, not added yet"
-                  />
-                ) : unmetMediaRecommendation(s) === "video" ? (
-                  <Film
-                    className="size-3.5 shrink-0 text-warning"
-                    aria-label="Video recommended, not added yet"
-                  />
-                ) : null}
-              </span>
-            )}
-            renderModuleChildren={(m, track) => (
-              <NewStepDialog
-                moduleId={m.id}
-                nextSequence={allSteps.filter((s) => s.module_id === m.id).length + 1}
-                disabled={!canEditDepartment(track.department)}
-                onCreated={(id) => select({ kind: "step", id })}
-              />
-            )}
-          />
-        </nav>
-        ) : (
-          activeModule ? (
-          <nav className="min-w-0 space-y-0.5 self-start rounded-lg border border-border bg-surface/60 p-2 md:sticky md:top-24">
-            {(activeModule?.steps ?? []).map((s) => (
+      <div className="flex flex-wrap items-center gap-2">
+        {days.length > 1 ? (
+          <>
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Jump to
+            </span>
+            {days.map((d) => (
               <Link
-                key={s.id}
+                key={d.key}
                 to="/preview"
-                search={{ track: trackId, module: moduleId, step: s.id }}
-                className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
-                  activeStep && s.id === activeStep.id
-                    ? "bg-card font-semibold text-foreground shadow-xs ring-1 ring-primary/25"
-                    : "text-muted-foreground hover:bg-card/70 hover:text-foreground"
+                search={{ track: activeTrack.id, module: d.moduleId, step: undefined }}
+                className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                  d.key === activeDayKey
+                    ? "border-primary bg-primary/10 font-semibold text-foreground"
+                    : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 }`}
               >
-                <span className="shrink-0">{s.sequence_order}.</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate">{s.title}</span>
-                  <span className="mt-1 block">
-                    <StepTypeChip type={s.step_type} />
-                  </span>
-                </span>
-                <StepStatusBadge status={s.content_status} />
+                {d.label}
               </Link>
             ))}
-          </nav>
-          ) : <div />
-        )}
-
-        <div className="min-w-0 space-y-6">
-          <div className="flex flex-wrap items-center gap-2">
-            {days.length > 1 ? (
-              <>
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Jump to
-              </span>
-              {days.map((d) => (
-                <Link
-                  key={d.key}
-                  to="/preview"
-                  search={{ track: activeTrack?.id, module: d.moduleId, step: undefined }}
-                  className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                    d.key === activeDayKey
-                      ? "border-primary bg-primary/10 font-semibold text-foreground"
-                      : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                  }`}
-                >
-                  {d.label}
-                </Link>
-              ))}
-              </>
-            ) : null}
-            {canEditDirect || canSuggest ? (
-              <Button
-                type="button"
-                size="sm"
-                variant={manageMode ? "secondary" : "outline"}
-                aria-pressed={manageMode}
-                className={`ml-auto ${manageMode ? "ring-1 ring-primary/40" : ""}`}
-                onClick={() => setManageMode((v) => !v)}
-              >
-                <SlidersHorizontal className="size-4" aria-hidden />
-                Manage content
-              </Button>
-            ) : null}
-          </div>
-
-          {!treeQuery.isPending && !trackModules.length ? (
-            <p className="text-sm text-muted-foreground">This track has no live modules yet.</p>
-          ) : null}
-
-          {activeModule && activeStep ? (
-            <>
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-1.5">
-                  <ModuleHeader
-                    as="h2"
-                    variant="compact"
-                    trackName={activeTrack?.name}
-                    subPath={activeModule.sub_path}
-                    dayAssignment={activeModule.day_assignment}
-                    name={activeModule.name}
-                  />
-                  {canEditDirect ? (
-                    <Sheet open={moduleSheetOpen} onOpenChange={setModuleSheetOpen}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <SheetTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="size-7 shrink-0"
-                              aria-label="Edit this module"
-                            >
-                              <Pencil className="size-3.5" aria-hidden />
-                            </Button>
-                          </SheetTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent>Edit</TooltipContent>
-                      </Tooltip>
-                      <SheetContent
-                        side="right"
-                        className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
-                      >
-                        <SheetHeader>
-                          <SheetTitle>Edit module</SheetTitle>
-                          <SheetDescription>
-                            Changes save straight to this module and are logged to version history.
-                          </SheetDescription>
-                        </SheetHeader>
-                        <div className="mt-4 space-y-6">
-                          <ModuleEditPanel
-                            module={activeModule}
-                            trackName={activeTrack?.name}
-                            canEdit={canEditDirect}
-                            employeeId={employee?.id}
-                            deleteRequiresApproval={isGeneralManager && !isOwner}
-                            onSaved={() => {
-                              refreshPreview();
-                              setModuleSheetOpen(false);
-                            }}
-                          />
-                        </div>
-                      </SheetContent>
-                    </Sheet>
-                  ) : null}
-                </div>
-                <p className="shrink-0 text-xs font-medium text-muted-foreground">
-                  Step {activeModule.steps.findIndex((s) => s.id === activeStep.id) + 1} of{" "}
-                  {activeModule.steps.length}
-                </p>
-              </div>
-
-              <StepRenderer
-                step={activeStep}
-                quizzes={quizzesQuery.data ?? []}
-                isAdmin
-                titleAction={
-                  canEditDirect || canSuggest ? (
-                    <Sheet open={stepSheetOpen} onOpenChange={setStepSheetOpen}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <SheetTrigger asChild>
-                            <Button size="icon" variant="ghost" aria-label="Edit this step">
-                              <Pencil className="size-4" aria-hidden />
-                            </Button>
-                          </SheetTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent>Edit</TooltipContent>
-                      </Tooltip>
-                      <SheetContent
-                        side="right"
-                        className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
-                      >
-                        <SheetHeader>
-                          <SheetTitle>Edit step</SheetTitle>
-                          <SheetDescription>
-                            {canEditDirect
-                              ? "Saves straight to this step, with the previous version logged."
-                              : "Your changes go to the Owner approval queue."}
-                          </SheetDescription>
-                        </SheetHeader>
-                        <div className="mt-4 space-y-6">
-                          <StepEditPanel
-                            key={activeStep.id}
-                            step={activeStep}
-                            stepModule={{ ...activeModule, track: activeTrack }}
-                            canEditDirect={canEditDirect}
-                            canSuggest={canSuggest}
-                            employeeId={employee?.id}
-                            onSaved={() => {
-                              refreshPreview();
-                              setStepSheetOpen(false);
-                            }}
-                          />
-                          {activeStep.step_type === "quiz" ? (
-                            <QuizQuestionsPanel
-                              key={`quiz-${activeStep.id}`}
-                              stepId={activeStep.id}
-                            />
-                          ) : null}
-                        </div>
-                      </SheetContent>
-                    </Sheet>
-                  ) : null
-                }
-              />
-
-              <div className="space-y-3 border-t border-border pt-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant="outline"
-                    className="h-11 w-full"
-                    disabled={!prevStep}
-                    asChild={Boolean(prevStep)}
-                  >
-                    {prevStep ? (
-                      <Link
-                        to="/preview"
-                        search={{
-                          track: activeTrack?.id,
-                          module: prevStep.module.id,
-                          step: prevStep.step.id,
-                        }}
-                      >
-                        <ChevronLeft className="size-4" aria-hidden />
-                        Previous
-                      </Link>
-                    ) : (
-                      <span className="inline-flex items-center gap-2">
-                        <ChevronLeft className="size-4" aria-hidden />
-                        Previous
-                      </span>
-                    )}
-                  </Button>
-                  <Button className="h-11 w-full" disabled={!nextStep} asChild={Boolean(nextStep)}>
-                    {nextStep ? (
-                      <Link
-                        to="/preview"
-                        search={{
-                          track: activeTrack?.id,
-                          module: nextStep.module.id,
-                          step: nextStep.step.id,
-                        }}
-                      >
-                        Next
-                        <ChevronRight className="size-4" aria-hidden />
-                      </Link>
-                    ) : (
-                      <span className="inline-flex items-center gap-2">Finish</span>
-                    )}
-                  </Button>
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs text-muted-foreground">
-                    {stepTypeLabels[activeStep.step_type]}
-                  </p>
-                </div>
-              </div>
-            </>
-          ) : null}
-        </div>
+          </>
+        ) : null}
+        {canEditDirect || canSuggest ? (
+          <Button
+            type="button"
+            size="sm"
+            variant={manageMode ? "secondary" : "outline"}
+            aria-pressed={manageMode}
+            className={`ml-auto ${manageMode ? "ring-1 ring-primary/40" : ""}`}
+            onClick={() => setManageMode((v) => !v)}
+          >
+            <SlidersHorizontal className="size-4" aria-hidden />
+            Manage content
+          </Button>
+        ) : null}
       </div>
+
+      {!treeQuery.isPending && !trackModules.length ? (
+        <p className="text-sm text-muted-foreground">This track has no live modules yet.</p>
+      ) : null}
+
+      {activeModule && activeStep ? (
+        <TraineeWalk
+          walk={walk}
+          activeModule={activeModule}
+          activeStep={activeStep}
+          isStepDone={() => false}
+          allowFreeNav
+          onNavigate={(targetModuleId: string, targetStepId: string) =>
+            void navigate({
+              search: { track: activeTrack.id, module: targetModuleId, step: targetStepId },
+            })
+          }
+          onPrevious={() =>
+            prevStep
+              ? void navigate({
+                  search: {
+                    track: activeTrack.id,
+                    module: prevStep.module.id,
+                    step: prevStep.step.id,
+                  },
+                })
+              : undefined
+          }
+          onNext={() =>
+            nextStep
+              ? void navigate({
+                  search: {
+                    track: activeTrack.id,
+                    module: nextStep.module.id,
+                    step: nextStep.step.id,
+                  },
+                })
+              : undefined
+          }
+          quizzes={quizzesQuery.data ?? []}
+          isAdmin
+          moduleBadge={(m: (typeof trackModules)[number]) =>
+            m.isShared ? (
+              <span className="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary-foreground">
+                Shared
+              </span>
+            ) : null
+          }
+          sidebar={
+            manageMode ? (
+              <nav className="min-w-0 space-y-4 overflow-x-auto md:sticky md:top-24 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto md:pr-1">
+                <NewTrackDialog disabled={!canCreateTrack} onCreated={() => undefined} />
+                <div className="flex items-center justify-between gap-2 rounded-md border px-2 py-1.5">
+                  <Label
+                    htmlFor="show-hidden"
+                    className="text-xs font-medium text-muted-foreground"
+                  >
+                    Show hidden
+                  </Label>
+                  <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
+                </div>
+                <SortableContentTree
+                  tracks={allTracks.filter((t) => showHidden || !t.is_deleted)}
+                  modules={allModules.filter((m) => showHidden || !m.is_deleted)}
+                  steps={allSteps.filter((s) => showHidden || !s.is_deleted)}
+                  selection={selection}
+                  onSelect={select}
+                  canReorderTracks={canReorderTracks}
+                  canReorderModulesIn={canReorderModulesIn}
+                  renderTrackLabel={(track) => (
+                    <span className={track.is_deleted ? "line-through" : undefined}>
+                      {track.name}
+                    </span>
+                  )}
+                  renderModuleLabel={(m) => (
+                    <>
+                      <span className={m.is_deleted ? "line-through" : undefined}>{m.name}</span>
+                      {m.is_deleted ? " (hidden)" : ""}
+                    </>
+                  )}
+                  renderTrackFooter={(track) => (
+                    <NewModuleDialog
+                      trackId={track.id}
+                      nextSequence={allModules.filter((m) => m.track_id === track.id).length + 1}
+                      disabled={!canEditDepartment(track.department)}
+                      onCreated={() => undefined}
+                    />
+                  )}
+                  renderStepLabel={(s) => (
+                    <span className="flex items-center gap-1.5">
+                      <span className={s.is_deleted ? "line-through" : undefined}>{s.title}</span>
+                      {unmetMediaRecommendation(s) === "photo" ? (
+                        <Camera
+                          className="size-3.5 shrink-0 text-warning"
+                          aria-label="Photo recommended, not added yet"
+                        />
+                      ) : unmetMediaRecommendation(s) === "video" ? (
+                        <Film
+                          className="size-3.5 shrink-0 text-warning"
+                          aria-label="Video recommended, not added yet"
+                        />
+                      ) : null}
+                    </span>
+                  )}
+                  renderModuleChildren={(m, track) => (
+                    <NewStepDialog
+                      moduleId={m.id}
+                      nextSequence={allSteps.filter((s) => s.module_id === m.id).length + 1}
+                      disabled={!canEditDepartment(track.department)}
+                      onCreated={(id) => select({ kind: "step", id })}
+                    />
+                  )}
+                />
+              </nav>
+            ) : undefined
+          }
+          contentHeader={
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <ModuleHeader
+                  as="h2"
+                  variant="compact"
+                  trackName={activeTrack.name}
+                  subPath={activeModule.sub_path}
+                  dayAssignment={activeModule.day_assignment}
+                  name={activeModule.name}
+                />
+                {activeModule.isShared ? (
+                  <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary-foreground">
+                    Shared with every division
+                  </span>
+                ) : null}
+                {canEditDirect ? (
+                  <Sheet open={moduleSheetOpen} onOpenChange={setModuleSheetOpen}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SheetTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-7 shrink-0"
+                            aria-label="Edit this module"
+                          >
+                            <Pencil className="size-3.5" aria-hidden />
+                          </Button>
+                        </SheetTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>Edit</TooltipContent>
+                    </Tooltip>
+                    <SheetContent
+                      side="right"
+                      className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
+                    >
+                      <SheetHeader>
+                        <SheetTitle>Edit module</SheetTitle>
+                        <SheetDescription>
+                          Changes save straight to this module and are logged to version history.
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className="mt-4 space-y-6">
+                        <ModuleEditPanel
+                          module={activeModule}
+                          trackName={activeTrack.name}
+                          canEdit={canEditDirect}
+                          employeeId={employee?.id}
+                          deleteRequiresApproval={isGeneralManager && !isOwner}
+                          onSaved={() => {
+                            refreshPreview();
+                            setModuleSheetOpen(false);
+                          }}
+                        />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                ) : null}
+              </div>
+              <p className="shrink-0 text-xs font-medium text-muted-foreground">
+                Step {activeModule.steps.findIndex((s) => s.id === activeStep.id) + 1} of{" "}
+                {activeModule.steps.length}
+              </p>
+            </div>
+          }
+          stepTitleAction={
+            canEditDirect || canSuggest ? (
+              <Sheet open={stepSheetOpen} onOpenChange={setStepSheetOpen}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <SheetTrigger asChild>
+                      <Button size="icon" variant="ghost" aria-label="Edit this step">
+                        <Pencil className="size-4" aria-hidden />
+                      </Button>
+                    </SheetTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Edit</TooltipContent>
+                </Tooltip>
+                <SheetContent
+                  side="right"
+                  className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
+                >
+                  <SheetHeader>
+                    <SheetTitle>Edit step</SheetTitle>
+                    <SheetDescription>
+                      {canEditDirect
+                        ? "Saves straight to this step, with the previous version logged."
+                        : "Your changes go to the Owner approval queue."}
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-4 space-y-6">
+                    <StepEditPanel
+                      key={activeStep.id}
+                      step={activeStep}
+                      stepModule={{ ...activeModule, track: activeTrack }}
+                      canEditDirect={canEditDirect}
+                      canSuggest={canSuggest}
+                      employeeId={employee?.id}
+                      onSaved={() => {
+                        refreshPreview();
+                        setStepSheetOpen(false);
+                      }}
+                    />
+                    {activeStep.step_type === "quiz" ? (
+                      <QuizQuestionsPanel key={`quiz-${activeStep.id}`} stepId={activeStep.id} />
+                    ) : null}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            ) : null
+          }
+          footer={
+            <p className="text-xs text-muted-foreground">{stepTypeLabels[activeStep.step_type]}</p>
+          }
+        />
+      ) : null}
     </div>
   );
 }
