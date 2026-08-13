@@ -43,12 +43,46 @@ export function bodyLines(step: Pick<StepRow, "content_body">) {
     .filter(Boolean);
 }
 
-function departmentsForPath(path: string | null): Department[] {
-  const p = (path ?? "").toLowerCase();
-  if (p.startsWith("kitchen")) return ["universal", "kitchen"];
-  if (p.startsWith("deliver")) return ["universal", "delivery"];
-  if (p.startsWith("market")) return ["universal", "market"];
-  return ["universal"];
+/**
+ * The departments an employee's plan should include: their own division plus
+ * Universal. Driven by `department_scope` (a real enum column), not string
+ * matching on `path` — works for any division without code changes.
+ */
+export function departmentsForEmployee(
+  department: Department | null | undefined,
+): Department[] {
+  if (!department || department === "universal") return ["universal"];
+  return ["universal", department];
+}
+
+/**
+ * Onboarding day decides first; Universal wins same-day ties (Clock-in /
+ * Welcome / Hospitality-Standards-intro before that day's department-specific
+ * modules, both before that day's `end`-bucket in-person sign-off — driven by
+ * `day_position`). Shared by the trainee plan, the manager training queue, and
+ * the sign-off backlog so all three stay in sync for every division.
+ */
+export function compareModulesByDay(
+  a: {
+    day_assignment: number | null;
+    sequence_order: number;
+    track: { department: Department; sequence_order: number } | null | undefined;
+  },
+  b: {
+    day_assignment: number | null;
+    sequence_order: number;
+    track: { department: Department; sequence_order: number } | null | undefined;
+  },
+): number {
+  const day = (a.day_assignment ?? 99) - (b.day_assignment ?? 99);
+  if (day !== 0) return day;
+  const aUniversal = a.track?.department === "universal";
+  const bUniversal = b.track?.department === "universal";
+  if (aUniversal && !bUniversal) return -1;
+  if (bUniversal && !aUniversal) return 1;
+  const dept = (a.track?.sequence_order ?? 0) - (b.track?.sequence_order ?? 0);
+  if (dept !== 0) return dept;
+  return a.sequence_order - b.sequence_order;
 }
 
 export type PlanModule = ModuleRow & { track: TrackRow; steps: StepRow[] };
@@ -93,20 +127,20 @@ export function getDayGroupedSteps<
   return groups.flatMap((g) => [...g.start, ...g.middle, ...g.end]);
 }
 
-/** Today's plan: the Universal track plus the employee's own path, in onboarding-day order. */
-export function planQueryOptions(path: string | null, allDepartments = false) {
-  const departments: Department[] = allDepartments
-    ? ["universal", "market", "kitchen", "delivery"]
-    : departmentsForPath(path);
+/** Today's plan: the Universal track plus the employee's own division, in onboarding-day order. */
+export function planQueryOptions(department: Department | null, allDepartments = false) {
   return queryOptions({
-    queryKey: ["training-plan", departments],
+    queryKey: ["training-plan", allDepartments ? "all" : (department ?? "none")],
     queryFn: async (): Promise<PlanModule[]> => {
-      const { data: tracks, error: trackError } = await supabase
+      let trackQuery = supabase
         .from("tracks")
         .select("*")
-        .in("department", departments)
         .eq("is_deleted", false)
         .order("sequence_order");
+      if (!allDepartments) {
+        trackQuery = trackQuery.in("department", departmentsForEmployee(department));
+      }
+      const { data: tracks, error: trackError } = await trackQuery;
       if (trackError) throw trackError;
 
       const trackIds = (tracks ?? []).map((t) => t.id);
@@ -138,16 +172,7 @@ export function planQueryOptions(path: string | null, allDepartments = false) {
           track: trackById.get(m.track_id)!,
           steps: (steps ?? []).filter((s) => s.module_id === m.id),
         }))
-        .sort((a, b) => {
-          // Onboarding day decides first; Universal / Hospitality wins same-day ties.
-          const day = (a.day_assignment ?? 99) - (b.day_assignment ?? 99);
-          if (day !== 0) return day;
-          if (a.track.department === "universal" && b.track.department !== "universal") return -1;
-          if (b.track.department === "universal" && a.track.department !== "universal") return 1;
-          const dept = a.track.sequence_order - b.track.sequence_order;
-          if (dept !== 0) return dept;
-          return a.sequence_order - b.sequence_order;
-        });
+        .sort(compareModulesByDay);
     },
   });
 }

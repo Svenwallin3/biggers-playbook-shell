@@ -3,6 +3,8 @@ import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { EmployeeRow } from "@/lib/admin.queries";
 import {
+  compareModulesByDay,
+  departmentsForEmployee,
   getDayGroupedSteps,
   trainerSignoffTypes,
   type Department,
@@ -10,14 +12,6 @@ import {
   type StepRow,
   type TrackRow,
 } from "@/lib/training.queries";
-
-export function departmentsForPath(path: string | null): Department[] {
-  const p = (path ?? "").toLowerCase();
-  if (p.startsWith("kitchen")) return ["universal", "kitchen"];
-  if (p.startsWith("deliver")) return ["universal", "delivery"];
-  if (p.startsWith("market")) return ["universal", "market"];
-  return ["universal"];
-}
 
 export type QueueEntry = {
   employee: EmployeeRow;
@@ -44,7 +38,7 @@ export function onboardingCompletionQueryOptions() {
     queryKey: ["onboarding-completion"],
     queryFn: async (): Promise<Record<string, OnboardingProgress>> => {
       const [employeesRes, tracksRes, modulesRes, stepsRes, progressRes] = await Promise.all([
-        supabase.from("employees").select("id, path").eq("is_deleted", false),
+        supabase.from("employees").select("id, department_scope").eq("is_deleted", false),
         supabase.from("tracks").select("*").eq("is_deleted", false),
         supabase
           .from("modules")
@@ -79,7 +73,7 @@ export function onboardingCompletionQueryOptions() {
 
       const out: Record<string, OnboardingProgress> = {};
       for (const employee of employeesRes.data ?? []) {
-        const depts = departmentsForPath(employee.path);
+        const depts = departmentsForEmployee(employee.department_scope);
         let total = 0;
         let completed = 0;
         for (const m of modules) {
@@ -131,7 +125,7 @@ export function trainingQueueQueryOptions(scope: {
       let employees = employeesRes.data ?? [];
       if (!scope.isOwner) {
         employees = employees.filter((e) => {
-          const depts = departmentsForPath(e.path);
+          const depts = departmentsForEmployee(e.department_scope);
           if (!scope.department || !depts.includes(scope.department)) return false;
           // Market runs two sites — a Market manager with a location only sees their own.
           if (scope.department === "market" && scope.locationId) {
@@ -172,19 +166,10 @@ export function trainingQueueQueryOptions(scope: {
       const orderedModules = (modulesRes.data ?? [])
         .map((m) => ({ ...m, track: trackById.get(m.track_id) ?? null }))
         .filter((m) => m.track)
-        .sort((a, b) => {
-          // Universal / Hospitality first, then onboarding day, then sequence.
-          if (a.track!.department === "universal" && b.track!.department !== "universal") return -1;
-          if (b.track!.department === "universal" && a.track!.department !== "universal") return 1;
-          const day = (a.day_assignment ?? 99) - (b.day_assignment ?? 99);
-          if (day !== 0) return day;
-          const dept = a.track!.sequence_order - b.track!.sequence_order;
-          if (dept !== 0) return dept;
-          return a.sequence_order - b.sequence_order;
-        });
+        .sort(compareModulesByDay);
 
       return employees.map((employee) => {
-        const depts = departmentsForPath(employee.path);
+        const depts = departmentsForEmployee(employee.department_scope);
         const mods = orderedModules.filter((m) => depts.includes(m.track!.department));
 
         let total = 0;
