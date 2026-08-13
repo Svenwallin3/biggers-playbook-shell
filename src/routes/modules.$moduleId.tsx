@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Eye, Pencil, Users } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Eye, Lock, Pencil, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -108,9 +108,11 @@ function ModulePage() {
   });
   // One flat, ordered walk through every step in the plan: each day's self-paced
   // steps first, then that day's trainer-required steps.
-  const orderedSteps = getDayGroupedSteps(planQuery.data ?? []).map((entry) => ({
+  const walk = getDayGroupedSteps(planQuery.data ?? []);
+  const orderedSteps = walk.map((entry) => ({
     moduleId: entry.module.id,
     stepId: entry.step.id,
+    day: entry.module.day_assignment ?? 99,
   }));
 
   const progressByStep = new Map(
@@ -203,12 +205,36 @@ function ModulePage() {
 
   // Self-paced material that the trainer also covers hands-on later the same day.
   const activeDay = mod.day_assignment ?? 99;
-  const dayHasTrainerStep = getDayGroupedSteps(planQuery.data ?? []).some(
+  const dayHasTrainerStep = walk.some(
     (entry) =>
       (entry.module.day_assignment ?? 99) === activeDay &&
       trainerSignoffTypes.includes(entry.step.step_type),
   );
   const showTrainerFollowUp = Boolean(active) && !needsTrainer && dayHasTrainerStep;
+
+  const isStepDone = (stepId: string) => {
+    const r = progressByStep.get(stepId);
+    return r?.status === "completed" || r?.status === "signed_off";
+  };
+
+  // Today's modules — same day as the step being viewed, in plan order.
+  const dayModules = (planQuery.data ?? []).filter(
+    (m) => (m.day_assignment ?? 99) === activeDay,
+  );
+  const firstOpenDayIndex = dayModules.findIndex((m) =>
+    m.steps.some((s) => !isStepDone(s.id)),
+  );
+  const daySteps = walk.filter((entry) => (entry.module.day_assignment ?? 99) === activeDay);
+  const dayDone = daySteps.filter((entry) => isStepDone(entry.step.id)).length;
+  const dayPct = Math.round((dayDone / Math.max(daySteps.length, 1)) * 100);
+
+  // Soft end-of-day stop: the walk continues, but on a different day.
+  const isEndOfDay = Boolean(active) && !isLastStep && nextStep ? nextStep.day !== activeDay : false;
+
+  const dayModuleLink = (m: (typeof dayModules)[number]) => {
+    const target = m.steps.find((s) => !isStepDone(s.id)) ?? m.steps[0];
+    return { moduleId: m.id, stepId: target?.id };
+  };
 
   const goNext = async () => {
     if (!active) return;
@@ -352,7 +378,56 @@ function ModulePage() {
       ) : null}
 
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-[248px_minmax(0,1fr)]">
-        <nav className="min-w-0 space-y-0.5 self-start rounded-lg border border-border bg-surface/60 p-2 md:sticky md:top-24">
+        <div className="min-w-0 space-y-4 self-start md:sticky md:top-24">
+          {dayModules.length ? (
+            <div className="min-w-0">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Today&apos;s modules
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-1 md:flex-col md:gap-0.5 md:overflow-visible md:pb-0 md:rounded-lg md:border md:border-border md:bg-surface/60 md:p-2">
+                {dayModules.map((m, i) => {
+                  const doneModule = m.steps.length > 0 && m.steps.every((s) => isStepDone(s.id));
+                  const isActiveModule = m.id === mod.id;
+                  const isFuture = firstOpenDayIndex !== -1 && i > firstOpenDayIndex;
+                  const target = dayModuleLink(m);
+                  return (
+                    <Link
+                      key={m.id}
+                      to="/modules/$moduleId"
+                      params={{ moduleId: target.moduleId }}
+                      search={{
+                        step: target.stepId,
+                        ...(trainee ? { trainee } : {}),
+                        ...(previewMode ? { preview: true } : {}),
+                      }}
+                      className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1.5 text-xs transition-colors md:w-full md:shrink md:whitespace-normal md:border-0 md:text-sm ${
+                        isActiveModule
+                          ? "border-primary/40 bg-card font-semibold text-foreground ring-1 ring-primary/25"
+                          : "border-border text-muted-foreground hover:bg-card/70 hover:text-foreground"
+                      } ${isFuture && !isActiveModule ? "opacity-60" : ""}`}
+                    >
+                      {doneModule ? (
+                        <Check className="size-3.5 shrink-0 text-success" aria-hidden />
+                      ) : isFuture ? (
+                        <Lock className="size-3 shrink-0 text-muted-foreground" aria-hidden />
+                      ) : null}
+                      <span className="min-w-0 md:truncate">{m.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                {dayDone} of {daySteps.length} steps done today
+              </p>
+              <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-border" aria-hidden>
+                <span
+                  className="block h-full rounded-full bg-accent-bright transition-[width]"
+                  style={{ width: `${dayPct}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+          <nav className="min-w-0 space-y-0.5 rounded-lg border border-border bg-surface/60 p-2">
           {steps.map((s) => (
             <Link
               key={s.id}
@@ -375,7 +450,8 @@ function ModulePage() {
               <StepStatusBadge status={s.content_status} />
             </Link>
           ))}
-        </nav>
+          </nav>
+        </div>
 
         <div className="min-w-0 space-y-6">
           {active ? (
@@ -449,6 +525,19 @@ function ModulePage() {
           ) : null}
           {active ? (
             <div className="space-y-3 border-t border-border pt-4">
+              {isEndOfDay ? (
+                <div className="rounded-xl border-2 border-accent/50 bg-accent/10 px-5 py-5 text-center">
+                  <p className="font-display text-lg font-semibold text-foreground">
+                    You&apos;ve finished today&apos;s material
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Find your manager or trainer to continue.
+                  </p>
+                  <Button asChild className="mt-4 h-11">
+                    <Link to="/">Back to home</Link>
+                  </Button>
+                </div>
+              ) : null}
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   variant="outline"
@@ -459,6 +548,7 @@ function ModulePage() {
                   <ChevronLeft className="size-4" aria-hidden />
                   Previous
                 </Button>
+                {isEndOfDay ? null : (
                 <Button
                   className="h-11 w-full"
                   disabled={blockedOnTrainer || toggle.isPending || planQuery.isPending}
@@ -471,6 +561,7 @@ function ModulePage() {
                       : "Next"}
                   {blockedOnTrainer ? null : <ChevronRight className="size-4" aria-hidden />}
                 </Button>
+                )}
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
