@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FormattingTextarea } from "@/components/ui/formatting-textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -138,7 +139,7 @@ export function SectionBodyEditor({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="section-body">Body text</Label>
-              <Textarea
+              <FormattingTextarea
                 id="section-body"
                 rows={10}
                 value={body}

@@ -41,6 +41,7 @@ import { DocumentMetaEditDialog } from "@/components/reference/DocumentMetaEditD
 import { SectionBodyEditor } from "@/components/reference/SectionBodyEditor";
 import { DangerZoneGraphic } from "@/components/training/DangerZoneGraphic";
 import { useAuth } from "@/hooks/useAuth";
+import { renderFormattedText, stripFormattingMarkup } from "@/lib/richText";
 import {
   checklistCompletionsQueryOptions,
   completionKey,
@@ -119,7 +120,7 @@ function DocumentPrintSheet({ doc, withSignoffLine }: { doc: ReferenceDocumentRo
                 {items.map((item, idx) => (
                   <li key={idx} style={{ margin: "0 0 6pt" }}>
                     <span className="print-box" />
-                    {idx + 1}. {item.text}
+                    {idx + 1}. {stripFormattingMarkup(item.text)}
                   </li>
                 ))}
               </ol>
@@ -131,7 +132,7 @@ function DocumentPrintSheet({ doc, withSignoffLine }: { doc: ReferenceDocumentRo
                   .filter((line) => line && line !== "[[danger-zone]]")
                   .map((line, idx) => (
                     <p key={idx} style={{ margin: "0 0 6pt" }}>
-                      {line}
+                      {stripFormattingMarkup(line)}
                     </p>
                   ))}
               </div>
@@ -445,7 +446,7 @@ function Detail({
                         line === "[[danger-zone]]" ? (
                           <DangerZoneGraphic key={idx} />
                         ) : (
-                          <p key={idx}>{line}</p>
+                          <p key={idx}>{renderFormattedText(line)}</p>
                         ),
                       )}
                   </div>
