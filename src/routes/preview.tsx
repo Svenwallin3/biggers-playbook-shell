@@ -415,74 +415,74 @@ function PreviewPage() {
           }
           contentHeader={
             <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-1.5">
-                <ModuleHeader
-                  as="h2"
-                  variant="compact"
-                  trackName={activeTrack.name}
-                  subPath={activeModule.sub_path}
-                  dayAssignment={activeModule.day_assignment}
-                  name={activeModule.name}
-                />
-                {activeModule.isShared ? (
-                  <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary-foreground">
-                    Shared with every division
-                  </span>
-                ) : null}
-                {canEditDirect ? (
-                  <Sheet open={moduleSheetOpen} onOpenChange={setModuleSheetOpen}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SheetTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="size-7 shrink-0"
-                            aria-label="Edit this module"
-                          >
-                            <Pencil className="size-3.5" aria-hidden />
-                          </Button>
-                        </SheetTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>Edit</TooltipContent>
-                    </Tooltip>
-                    <SheetContent
-                      side="right"
-                      className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
-                    >
-                      <SheetHeader>
-                        <SheetTitle>Edit module</SheetTitle>
-                        <SheetDescription>
-                          Changes save straight to this module and are logged to version history.
-                        </SheetDescription>
-                      </SheetHeader>
-                      <div className="mt-4 space-y-6">
-                        <ModuleEditPanel
-                          module={activeModule}
-                          trackName={activeTrack.name}
-                          canEdit={canEditDirect}
-                          employeeId={employee?.id}
-                          deleteRequiresApproval={isGeneralManager && !isOwner}
-                          onSaved={() => {
-                            refreshPreview();
-                            setModuleSheetOpen(false);
-                          }}
-                        />
-                      </div>
-                    </SheetContent>
-                  </Sheet>
-                ) : null}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <ModuleHeader
+                    as="h2"
+                    variant="compact"
+                    trackName={activeTrack.name}
+                    subPath={activeModule.sub_path}
+                    dayAssignment={activeModule.day_assignment}
+                    name={activeModule.name}
+                  />
+                  {activeModule.isShared ? (
+                    <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary-foreground">
+                      Shared with every division
+                    </span>
+                  ) : null}
+                  {canEditDirect ? (
+                    <Sheet open={moduleSheetOpen} onOpenChange={setModuleSheetOpen}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <SheetTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="size-7 shrink-0"
+                              aria-label="Edit this module"
+                            >
+                              <Pencil className="size-3.5" aria-hidden />
+                            </Button>
+                          </SheetTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit</TooltipContent>
+                      </Tooltip>
+                      <SheetContent
+                        side="right"
+                        className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
+                      >
+                        <SheetHeader>
+                          <SheetTitle>Edit module</SheetTitle>
+                          <SheetDescription>
+                            Changes save straight to this module and are logged to version history.
+                          </SheetDescription>
+                        </SheetHeader>
+                        <div className="mt-4 space-y-6">
+                          <ModuleEditPanel
+                            module={activeModule}
+                            trackName={activeTrack.name}
+                            canEdit={canEditDirect}
+                            employeeId={employee?.id}
+                            deleteRequiresApproval={isGeneralManager && !isOwner}
+                            onSaved={() => {
+                              refreshPreview();
+                              setModuleSheetOpen(false);
+                            }}
+                          />
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  ) : null}
+                </div>
+                <p className="shrink-0 text-xs font-medium text-muted-foreground">
+                  Step {activeModule.steps.findIndex((s) => s.id === activeStep.id) + 1} of{" "}
+                  {activeModule.steps.length}
+                </p>
               </div>
-              <p className="shrink-0 text-xs font-medium text-muted-foreground">
-                Step {activeModule.steps.findIndex((s) => s.id === activeStep.id) + 1} of{" "}
-                {activeModule.steps.length}
-              </p>
-            </div>
-            <ModuleThemeCard
-              description={activeModule.description}
-              trackName={activeTrack.name}
-            />
+              <ModuleThemeCard
+                description={activeModule.description}
+                trackName={activeTrack.name}
+              />
             </div>
           }
           stepTitleAction={

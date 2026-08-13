@@ -345,7 +345,9 @@ function ModulePage() {
       </div>
 
       <TraineeWalk
-        contentHeader={<ModuleThemeCard description={mod.description} trackName={mod.track?.name} />}
+        contentHeader={
+          <ModuleThemeCard description={mod.description} trackName={mod.track?.name} />
+        }
         walk={walkEntries}
         activeModule={walkModule}
         activeStep={active}
