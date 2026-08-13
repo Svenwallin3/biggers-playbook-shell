@@ -19,9 +19,7 @@ import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPan
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
-import { StepRenderer } from "@/components/training/StepRenderer";
-import { StepStatusBadge } from "@/components/training/StepStatusBadge";
-import { StepTypeChip } from "@/components/training/StepTypeChip";
+import { TraineeWalk } from "@/components/training/TraineeWalk";
 import { trackTheme } from "@/lib/track-theme";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -38,7 +36,11 @@ import {
 export const Route = createFileRoute("/modules/$moduleId")({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { step?: string | undefined; trainee?: string | undefined; preview?: boolean | undefined } => ({
+  ): {
+    step?: string | undefined;
+    trainee?: string | undefined;
+    preview?: boolean | undefined;
+  } => ({
     step: typeof search["step"] === "string" ? search["step"] : undefined,
     // Set when a manager opens the module from the training queue for a specific trainee.
     trainee: typeof search["trainee"] === "string" ? search["trainee"] : undefined,
@@ -100,8 +102,7 @@ function ModulePage() {
       return data?.path ?? null;
     },
   });
-  const subjectPath =
-    isAdmin && trainee ? (traineeQuery.data ?? null) : (employee?.path ?? null);
+  const subjectPath = isAdmin && trainee ? (traineeQuery.data ?? null) : (employee?.path ?? null);
   const planQuery = useQuery({
     ...planQueryOptions(subjectPath),
     enabled: Boolean(subjectId) && !(isAdmin && trainee && traineeQuery.isPending),
@@ -159,8 +160,7 @@ function ModulePage() {
       toast.success("Initials logged");
       void queryClient.invalidateQueries({ queryKey: ["progress", subjectId] });
     },
-    onError: (error: Error) =>
-      toast.error("Couldn't log initials", { description: error.message }),
+    onError: (error: Error) => toast.error("Couldn't log initials", { description: error.message }),
   });
 
   if (moduleQuery.isPending) {
@@ -172,25 +172,25 @@ function ModulePage() {
   if (!moduleQuery.data) {
     return <p className="text-sm text-muted-foreground">Module not found.</p>;
   }
+  if (!moduleQuery.data.steps.length) {
+    return <p className="text-sm text-muted-foreground">This module has no steps yet.</p>;
+  }
 
   const { module: mod, steps, quizzes } = moduleQuery.data;
   // Mirrors the gating in /admin/content — RLS is still the real boundary.
   const inDivision = mod.track?.department === employee?.department_scope;
   const canEditDirect = isOwner || (isGeneralManager && inDivision);
   const canSuggest = isManagerOrOwner && !canEditDirect && inDivision;
-  const active = steps.find((s) => s.id === stepParam) ?? steps[0];
-  const activeRecord = active ? progressByStep.get(active.id) : undefined;
+  const active = steps.find((s) => s.id === stepParam) ?? steps[0]!;
+  const activeRecord = progressByStep.get(active.id);
   const activeComplete =
     activeRecord?.status === "completed" || activeRecord?.status === "signed_off";
   const activeSignedOff = activeRecord?.status === "signed_off";
-  const needsTrainer = active ? trainerSignoffTypes.includes(active.step_type) : false;
+  const needsTrainer = trainerSignoffTypes.includes(active.step_type);
   const blockedOnTrainer = !previewMode && needsTrainer && !activeSignedOff;
-  const activeIndex = active
-    ? orderedSteps.findIndex((s) => s.stepId === active.id)
-    : -1;
+  const activeIndex = orderedSteps.findIndex((s) => s.stepId === active.id);
   const nextStep = activeIndex >= 0 ? orderedSteps[activeIndex + 1] : undefined;
   const prevStep = activeIndex > 0 ? orderedSteps[activeIndex - 1] : undefined;
-  const isLastStep = activeIndex >= 0 && !nextStep;
 
   const theme = trackTheme(mod.track?.name);
   const stepNumber = steps.findIndex((s) => s.id === active?.id) + 1;
@@ -203,41 +203,19 @@ function ModulePage() {
       100,
   );
 
-  // Self-paced material that the trainer also covers hands-on later the same day.
-  const activeDay = mod.day_assignment ?? 99;
-  const dayHasTrainerStep = walk.some(
-    (entry) =>
-      (entry.module.day_assignment ?? 99) === activeDay &&
-      trainerSignoffTypes.includes(entry.step.step_type),
-  );
-  const showTrainerFollowUp = Boolean(active) && !needsTrainer && dayHasTrainerStep;
-
   const isStepDone = (stepId: string) => {
     const r = progressByStep.get(stepId);
     return r?.status === "completed" || r?.status === "signed_off";
   };
 
-  // Today's modules — same day as the step being viewed, in plan order.
-  const dayModules = (planQuery.data ?? []).filter(
-    (m) => (m.day_assignment ?? 99) === activeDay,
-  );
-  const firstOpenDayIndex = dayModules.findIndex((m) =>
-    m.steps.some((s) => !isStepDone(s.id)),
-  );
-  const daySteps = walk.filter((entry) => (entry.module.day_assignment ?? 99) === activeDay);
-  const dayDone = daySteps.filter((entry) => isStepDone(entry.step.id)).length;
-  const dayPct = Math.round((dayDone / Math.max(daySteps.length, 1)) * 100);
-
-  // Soft end-of-day stop: the walk continues, but on a different day.
-  const isEndOfDay = Boolean(active) && !isLastStep && nextStep ? nextStep.day !== activeDay : false;
-
-  const dayModuleLink = (m: (typeof dayModules)[number]) => {
-    const target = m.steps.find((s) => !isStepDone(s.id)) ?? m.steps[0];
-    return { moduleId: m.id, stepId: target?.id };
-  };
+  // The plan's copy of this module (so the shared walk keeps day context); if the
+  // module isn't in the viewer's plan, fall back to walking it on its own.
+  const walkModule = (planQuery.data ?? []).find((m) => m.id === mod.id) ?? { ...mod, steps };
+  const walkEntries = walk.some((w) => w.module.id === mod.id)
+    ? walk
+    : getDayGroupedSteps([walkModule]);
 
   const goNext = async () => {
-    if (!active) return;
     if (!previewMode && !needsTrainer && !activeComplete && subjectId) {
       await toggle.mutateAsync({ stepId: active.id, completed: true });
     }
@@ -377,211 +355,101 @@ function ModulePage() {
         </div>
       ) : null}
 
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-[248px_minmax(0,1fr)]">
-        <div className="min-w-0 space-y-4 self-start md:sticky md:top-24">
-          {dayModules.length ? (
-            <div className="min-w-0">
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                Today&apos;s modules
-              </p>
-              <div className="flex gap-2 overflow-x-auto pb-1 md:flex-col md:gap-0.5 md:overflow-visible md:pb-0 md:rounded-lg md:border md:border-border md:bg-surface/60 md:p-2">
-                {dayModules.map((m, i) => {
-                  const doneModule = m.steps.length > 0 && m.steps.every((s) => isStepDone(s.id));
-                  const isActiveModule = m.id === mod.id;
-                  const isFuture = firstOpenDayIndex !== -1 && i > firstOpenDayIndex;
-                  const target = dayModuleLink(m);
-                  return (
-                    <Link
-                      key={m.id}
-                      to="/modules/$moduleId"
-                      params={{ moduleId: target.moduleId }}
-                      search={{
-                        step: target.stepId,
-                        ...(trainee ? { trainee } : {}),
-                        ...(previewMode ? { preview: true } : {}),
-                      }}
-                      className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1.5 text-xs transition-colors md:w-full md:shrink md:whitespace-normal md:border-0 md:text-sm ${
-                        isActiveModule
-                          ? "border-primary/40 bg-card font-semibold text-foreground ring-1 ring-primary/25"
-                          : "border-border text-muted-foreground hover:bg-card/70 hover:text-foreground"
-                      } ${isFuture && !isActiveModule ? "opacity-60" : ""}`}
-                    >
-                      {doneModule ? (
-                        <Check className="size-3.5 shrink-0 text-success" aria-hidden />
-                      ) : isFuture ? (
-                        <Lock className="size-3 shrink-0 text-muted-foreground" aria-hidden />
-                      ) : null}
-                      <span className="min-w-0 md:truncate">{m.name}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                {dayDone} of {daySteps.length} steps done today
-              </p>
-              <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-border" aria-hidden>
-                <span
-                  className="block h-full rounded-full bg-accent-bright transition-[width]"
-                  style={{ width: `${dayPct}%` }}
-                />
-              </div>
-            </div>
-          ) : null}
-          <nav className="min-w-0 space-y-0.5 rounded-lg border border-border bg-surface/60 p-2">
-          {steps.map((s) => (
-            <Link
-              key={s.id}
-              to="/modules/$moduleId"
-              params={{ moduleId }}
-              search={{ step: s.id, ...(previewMode ? { preview: true } : {}) }}
-              className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
-                active && s.id === active.id
-                  ? "bg-card font-semibold text-foreground shadow-xs ring-1 ring-primary/25"
-                  : "text-muted-foreground hover:bg-card/70 hover:text-foreground"
-              }`}
-            >
-              <span className="shrink-0">{s.sequence_order}.</span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate">{s.title}</span>
-                <span className="mt-1 block">
-                  <StepTypeChip type={s.step_type} />
-                </span>
-              </span>
-              <StepStatusBadge status={s.content_status} />
-            </Link>
-          ))}
-          </nav>
-        </div>
-
-        <div className="min-w-0 space-y-6">
-          {active ? (
-            <StepRenderer
-              step={active}
-              titleAs="h1"
-              titleAction={
-                canEditDirect || canSuggest ? (
-                  <Sheet open={stepSheetOpen} onOpenChange={setStepSheetOpen}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SheetTrigger asChild>
-                          <Button size="icon" variant="ghost" aria-label="Edit this step">
-                            <Pencil className="size-4" aria-hidden />
-                          </Button>
-                        </SheetTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>Edit</TooltipContent>
-                    </Tooltip>
-                    <SheetContent
-                      side="right"
-                      className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
-                    >
-                      <SheetHeader>
-                        <SheetTitle>Edit step</SheetTitle>
-                        <SheetDescription>
-                          {canEditDirect
-                            ? "Saves straight to this step, with the previous version logged."
-                            : "Your changes go to the Owner approval queue."}
-                        </SheetDescription>
-                      </SheetHeader>
-                      <div className="mt-4 space-y-6">
-                        <StepEditPanel
-                          key={active.id}
-                          step={active}
-                          stepModule={mod}
-                          canEditDirect={canEditDirect}
-                          canSuggest={canSuggest}
-                          employeeId={employee?.id}
-                          onSaved={() => setStepSheetOpen(false)}
-                        />
-                        {active.step_type === "quiz" ? (
-                          <QuizQuestionsPanel key={`quiz-${active.id}`} stepId={active.id} />
-                        ) : null}
-                      </div>
-                    </SheetContent>
-                  </Sheet>
-                ) : null
-              }
-              quizzes={quizzes.filter((q) => q.step_id === active.id)}
-              isAdmin={isAdmin}
-              signedOff={previewMode ? false : activeSignedOff}
-              canSignOff={Boolean(!previewMode && isAdmin && subjectId)}
-              signingOff={signOff.isPending}
-              onSignOff={() => signOff.mutate(active.id)}
-              initialedBy={previewMode ? null : (activeRecord?.signed_off_by ?? null)}
-              initialedAt={previewMode ? null : (activeRecord?.signed_off_at ?? null)}
-              loggingInitials={logInitials.isPending}
-              onLogInitials={
-                !previewMode && isAdmin && subjectId
-                  ? () => logInitials.mutate(active.id)
-                  : undefined
-              }
-            />
-          ) : null}
-          {showTrainerFollowUp ? (
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Users className="size-3.5 shrink-0" aria-hidden="true" />
-              Your trainer will also walk through this with you in person later today.
-            </p>
-          ) : null}
-          {active ? (
-            <div className="space-y-3 border-t border-border pt-4">
-              {isEndOfDay ? (
-                <div className="rounded-xl border-2 border-accent/50 bg-accent/10 px-5 py-5 text-center">
-                  <p className="font-display text-lg font-semibold text-foreground">
-                    You&apos;ve finished today&apos;s material
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Find your manager or trainer to continue.
-                  </p>
-                  <Button asChild className="mt-4 h-11">
-                    <Link to="/">Back to home</Link>
-                  </Button>
+      <TraineeWalk
+        walk={walkEntries}
+        activeModule={walkModule}
+        activeStep={active}
+        isStepDone={isStepDone}
+        allowFreeNav={isAdmin}
+        onNavigate={(targetModuleId: string, targetStepId: string) =>
+          void navigate({
+            to: "/modules/$moduleId",
+            params: { moduleId: targetModuleId },
+            search: {
+              step: targetStepId,
+              ...(trainee ? { trainee } : {}),
+              ...(previewMode ? { preview: true } : {}),
+            },
+          })
+        }
+        onPrevious={goPrevious}
+        onNext={() => void goNext()}
+        nextPending={toggle.isPending || planQuery.isPending}
+        blockedOnTrainer={blockedOnTrainer}
+        onEndOfDayHome={() => void navigate({ to: "/" })}
+        stepTitleAction={
+          canEditDirect || canSuggest ? (
+            <Sheet open={stepSheetOpen} onOpenChange={setStepSheetOpen}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SheetTrigger asChild>
+                    <Button size="icon" variant="ghost" aria-label="Edit this step">
+                      <Pencil className="size-4" aria-hidden />
+                    </Button>
+                  </SheetTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Edit</TooltipContent>
+              </Tooltip>
+              <SheetContent
+                side="right"
+                className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl"
+              >
+                <SheetHeader>
+                  <SheetTitle>Edit step</SheetTitle>
+                  <SheetDescription>
+                    {canEditDirect
+                      ? "Saves straight to this step, with the previous version logged."
+                      : "Your changes go to the Owner approval queue."}
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-4 space-y-6">
+                  <StepEditPanel
+                    key={active.id}
+                    step={active}
+                    stepModule={mod}
+                    canEditDirect={canEditDirect}
+                    canSuggest={canSuggest}
+                    employeeId={employee?.id}
+                    onSaved={() => setStepSheetOpen(false)}
+                  />
+                  {active.step_type === "quiz" ? (
+                    <QuizQuestionsPanel key={`quiz-${active.id}`} stepId={active.id} />
+                  ) : null}
                 </div>
-              ) : null}
-              <div className={`grid gap-3 ${isEndOfDay ? "grid-cols-1" : "grid-cols-2"}`}>
-                <Button
-                  variant="outline"
-                  className="h-11 w-full"
-                  disabled={!prevStep || planQuery.isPending}
-                  onClick={goPrevious}
-                >
-                  <ChevronLeft className="size-4" aria-hidden />
-                  Previous
-                </Button>
-                {isEndOfDay ? null : (
-                <Button
-                  className="h-11 w-full"
-                  disabled={blockedOnTrainer || toggle.isPending || planQuery.isPending}
-                  onClick={() => void goNext()}
-                >
-                  {blockedOnTrainer
-                    ? "Waiting on your trainer"
-                    : isLastStep
-                      ? "Finish"
-                      : "Next"}
-                  {blockedOnTrainer ? null : <ChevronRight className="size-4" aria-hidden />}
-                </Button>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
-                </div>
-                {!needsTrainer && activeComplete && !previewMode ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={!employee || toggle.isPending}
-                    onClick={() => toggle.mutate({ stepId: active.id, completed: false })}
-                  >
-                    Completed — undo
-                  </Button>
-                ) : null}
-              </div>
+              </SheetContent>
+            </Sheet>
+          ) : null
+        }
+        quizzes={quizzes.filter((q) => q.step_id === active.id)}
+        isAdmin={isAdmin}
+        signedOff={previewMode ? false : activeSignedOff}
+        canSignOff={Boolean(!previewMode && isAdmin && subjectId)}
+        signingOff={signOff.isPending}
+        onSignOff={() => signOff.mutate(active.id)}
+        initialedBy={previewMode ? null : (activeRecord?.signed_off_by ?? null)}
+        initialedAt={previewMode ? null : (activeRecord?.signed_off_at ?? null)}
+        loggingInitials={logInitials.isPending}
+        onLogInitials={
+          !previewMode && isAdmin && subjectId ? () => logInitials.mutate(active.id) : undefined
+        }
+        footer={
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
             </div>
-          ) : null}
-        </div>
-      </div>
+            {!needsTrainer && activeComplete && !previewMode ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!employee || toggle.isPending}
+                onClick={() => toggle.mutate({ stepId: active.id, completed: false })}
+              >
+                Completed — undo
+              </Button>
+            ) : null}
+          </div>
+        }
+      />
     </div>
   );
 }
