@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { FormattingTextarea } from "@/components/ui/formatting-textarea";
 import {
   Select,
   SelectContent,
@@ -296,7 +297,7 @@ export function ModuleEditPanel({
           </div>
           <div className="space-y-2">
             <Label htmlFor="mod-desc">Description</Label>
-            <Textarea
+            <FormattingTextarea
               id="mod-desc"
               rows={3}
               value={form.description}
@@ -763,7 +764,7 @@ export function StepEditPanel({
 
           <div className="space-y-2">
             <Label htmlFor="body">Content body</Label>
-            <Textarea
+            <FormattingTextarea
               id="body"
               rows={6}
               value={draft.content_body}

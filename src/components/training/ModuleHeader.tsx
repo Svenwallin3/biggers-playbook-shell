@@ -1,4 +1,5 @@
 import { trackTheme } from "@/lib/track-theme";
+import { renderFormattedText } from "@/lib/richText";
 
 type ModuleHeaderProps = {
   trackName: string | null | undefined;
@@ -61,7 +62,7 @@ export function ModuleHeader({
       <Heading className={titleClass}>{name}</Heading>
       {description ? (
         <p className="mt-4 rounded-lg border border-accent/35 bg-accent/8 px-5 py-4 font-display text-lg font-semibold leading-snug tracking-tight text-foreground">
-          {description}
+          {renderFormattedText(description)}
         </p>
       ) : null}
     </>

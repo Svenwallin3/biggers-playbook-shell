@@ -23,6 +23,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StoredPhoto } from "@/components/PhotoUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { StepStatusBadge } from "./StepStatusBadge";
+import { renderFormattedText } from "@/lib/richText";
 import { DangerZoneGraphic } from "./DangerZoneGraphic";
 import { StepTypeChip } from "./StepTypeChip";
 import { VideoEmbed, youTubeId } from "@/components/VideoEmbed";
@@ -190,7 +191,7 @@ function BodyBlock({ lines }: { lines: string[] }) {
               {section.bullets.map((bullet, j) => (
                 <li key={j} className="flex gap-2.5 text-sm leading-relaxed">
                   <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
-                  <span>{bullet}</span>
+                  <span>{renderFormattedText(bullet)}</span>
                 </li>
               ))}
             </ul>
@@ -219,7 +220,9 @@ function BodyBlock({ lines }: { lines: string[] }) {
                 {Icon ? <Icon className="size-4 shrink-0 text-primary" aria-hidden="true" /> : null}
                 {pair.label}
               </p>
-              <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{pair.value}</p>
+              <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
+                {renderFormattedText(pair.value)}
+              </p>
             </li>
           );
         })}
@@ -234,7 +237,7 @@ function BodyBlock({ lines }: { lines: string[] }) {
           <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/12 text-[11px] font-semibold text-primary">
             {i + 1}
           </span>
-          <span>{line}</span>
+          <span>{renderFormattedText(line)}</span>
         </li>
       ))}
     </ol>
