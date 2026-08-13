@@ -538,7 +538,7 @@ function ModulePage() {
                   </Button>
                 </div>
               ) : null}
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid gap-3 ${isEndOfDay ? "grid-cols-1" : "grid-cols-2"}`}>
                 <Button
                   variant="outline"
                   className="h-11 w-full"
