@@ -41,6 +41,7 @@ import { DocumentMetaEditDialog } from "@/components/reference/DocumentMetaEditD
 import { SectionBodyEditor } from "@/components/reference/SectionBodyEditor";
 import { DangerZoneGraphic } from "@/components/training/DangerZoneGraphic";
 import { useAuth } from "@/hooks/useAuth";
+import { renderFormattedText, stripFormattingMarkup } from "@/lib/richText";
 import {
   checklistCompletionsQueryOptions,
   completionKey,
