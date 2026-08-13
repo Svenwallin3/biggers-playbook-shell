@@ -89,6 +89,7 @@ export function getDayGroupedSteps<
     }
   }
 
+  groups.sort((a, b) => a.day - b.day);
   return groups.flatMap((g) => [...g.start, ...g.middle, ...g.end]);
 }
 
@@ -138,12 +139,12 @@ export function planQueryOptions(path: string | null, allDepartments = false) {
           steps: (steps ?? []).filter((s) => s.module_id === m.id),
         }))
         .sort((a, b) => {
-          // Universal / Hospitality always comes first, then by onboarding day.
-          const dept = a.track.sequence_order - b.track.sequence_order;
-          if (a.track.department === "universal" && b.track.department !== "universal") return -1;
-          if (b.track.department === "universal" && a.track.department !== "universal") return 1;
+          // Onboarding day decides first; Universal / Hospitality wins same-day ties.
           const day = (a.day_assignment ?? 99) - (b.day_assignment ?? 99);
           if (day !== 0) return day;
+          if (a.track.department === "universal" && b.track.department !== "universal") return -1;
+          if (b.track.department === "universal" && a.track.department !== "universal") return 1;
+          const dept = a.track.sequence_order - b.track.sequence_order;
           if (dept !== 0) return dept;
           return a.sequence_order - b.sequence_order;
         });
