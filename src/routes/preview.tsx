@@ -24,6 +24,7 @@ import { SortableContentTree } from "@/components/admin/SortableContentTree";
 import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPanels";
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { TraineeWalk } from "@/components/training/TraineeWalk";
+import { ModuleThemeCard } from "@/components/training/ModuleThemeCard";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { StepTypeChip } from "@/components/training/StepTypeChip";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
@@ -413,6 +414,7 @@ function PreviewPage() {
             ) : undefined
           }
           contentHeader={
+            <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-1.5">
                 <ModuleHeader
@@ -476,6 +478,11 @@ function PreviewPage() {
                 Step {activeModule.steps.findIndex((s) => s.id === activeStep.id) + 1} of{" "}
                 {activeModule.steps.length}
               </p>
+            </div>
+            <ModuleThemeCard
+              description={activeModule.description}
+              trackName={activeTrack.name}
+            />
             </div>
           }
           stepTitleAction={

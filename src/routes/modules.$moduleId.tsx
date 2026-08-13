@@ -20,6 +20,7 @@ import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { TraineeWalk } from "@/components/training/TraineeWalk";
+import { ModuleThemeCard } from "@/components/training/ModuleThemeCard";
 import { trackTheme } from "@/lib/track-theme";
 import { useAuth } from "@/hooks/useAuth";
 import {
