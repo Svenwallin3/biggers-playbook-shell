@@ -21,7 +21,6 @@ import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { TraineeWalk } from "@/components/training/TraineeWalk";
 import { ModuleThemeCard } from "@/components/training/ModuleThemeCard";
-import { trackTheme } from "@/lib/track-theme";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getDayGroupedSteps,
@@ -193,7 +192,6 @@ function ModulePage() {
   const nextStep = activeIndex >= 0 ? orderedSteps[activeIndex + 1] : undefined;
   const prevStep = activeIndex > 0 ? orderedSteps[activeIndex - 1] : undefined;
 
-  const theme = trackTheme(mod.track?.name);
   const stepNumber = steps.findIndex((s) => s.id === active?.id) + 1;
   const modulePct = Math.round(
     (steps.filter((s) => {
