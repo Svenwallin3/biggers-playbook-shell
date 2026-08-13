@@ -3,6 +3,8 @@ import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { EmployeeRow } from "@/lib/admin.queries";
 import {
+  compareModulesByDay,
+  departmentsForEmployee,
   trainerSignoffTypes,
   type Department,
   type ModuleRow,
@@ -11,19 +13,6 @@ import {
 } from "@/lib/training.queries";
 
 const OVERDUE_HOURS = 48;
-
-function primaryDepartment(path: string | null): Department {
-  const p = (path ?? "").toLowerCase();
-  if (p.startsWith("kitchen")) return "kitchen";
-  if (p.startsWith("deliver")) return "delivery";
-  if (p.startsWith("market")) return "market";
-  return "universal";
-}
-
-function departmentsForPath(path: string | null): Department[] {
-  const primary = primaryDepartment(path);
-  return primary === "universal" ? ["universal"] : ["universal", primary];
-}
 
 export type BacklogItem = {
   employee: EmployeeRow;
@@ -101,21 +90,13 @@ export function signoffBacklogQueryOptions() {
       const orderedModules = (modulesRes.data ?? [])
         .map((m) => ({ ...m, track: trackById.get(m.track_id) ?? null }))
         .filter((m) => m.track)
-        .sort((a, b) => {
-          if (a.track!.department === "universal" && b.track!.department !== "universal") return -1;
-          if (b.track!.department === "universal" && a.track!.department !== "universal") return 1;
-          const day = (a.day_assignment ?? 99) - (b.day_assignment ?? 99);
-          if (day !== 0) return day;
-          const dept = a.track!.sequence_order - b.track!.sequence_order;
-          if (dept !== 0) return dept;
-          return a.sequence_order - b.sequence_order;
-        });
+        .sort(compareModulesByDay);
 
       const now = Date.now();
       const items: BacklogItem[] = [];
 
       for (const employee of trainees) {
-        const depts = departmentsForPath(employee.path);
+        const depts = departmentsForEmployee(employee.department_scope);
         const mods = orderedModules.filter((m) => depts.includes(m.track!.department));
 
         let lastCompletedAt: string | null = null;
@@ -157,10 +138,14 @@ export function signoffBacklogQueryOptions() {
         }
       }
 
-      const depts = new Set<Department>(items.map((i) => primaryDepartment(i.employee.path)));
+      const depts = new Set<Department>(
+        items.map((i) => i.employee.department_scope ?? "universal"),
+      );
       const groups: BacklogGroup[] = [...depts]
         .map((department) => {
-          const group = items.filter((i) => primaryDepartment(i.employee.path) === department);
+          const group = items.filter(
+            (i) => (i.employee.department_scope ?? "universal") === department,
+          );
           const longest = group.reduce<BacklogItem | null>(
             (acc, i) => (!acc || i.hoursWaiting > acc.hoursWaiting ? i : acc),
             null,

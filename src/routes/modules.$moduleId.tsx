@@ -95,16 +95,17 @@ function ModulePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
-        .select("path")
+        .select("department_scope")
         .eq("id", subjectId!)
         .maybeSingle();
       if (error) throw error;
-      return data?.path ?? null;
+      return data?.department_scope ?? null;
     },
   });
-  const subjectPath = isAdmin && trainee ? (traineeQuery.data ?? null) : (employee?.path ?? null);
+  const subjectDepartment =
+    isAdmin && trainee ? (traineeQuery.data ?? null) : (employee?.department_scope ?? null);
   const planQuery = useQuery({
-    ...planQueryOptions(subjectPath),
+    ...planQueryOptions(subjectDepartment),
     enabled: Boolean(subjectId) && !(isAdmin && trainee && traineeQuery.isPending),
   });
   // One flat, ordered walk through every step in the plan: each day's self-paced
