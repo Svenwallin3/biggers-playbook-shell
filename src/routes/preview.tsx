@@ -87,7 +87,7 @@ function PreviewPage() {
   // Resolve the active trio from the URL, walking up the flat arrays.
   const urlStep = allSteps.find((s) => s.id === stepId);
   const urlModule = allModules.find((m) => m.id === (urlStep?.module_id ?? moduleId));
-  const activeTrack = allTracks.find((t) => t.id === (urlModule?.track_id ?? trackId)) ?? undefined;
+  const activeTrack = allTracks.find((t) => t.id === (trackId ?? urlModule?.track_id)) ?? undefined;
 
   const buildModules = (predicate: (m: (typeof allModules)[number]) => boolean, shared: boolean) =>
     allModules
