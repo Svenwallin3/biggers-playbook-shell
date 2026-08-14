@@ -571,9 +571,12 @@ function BlockCard({
 export function StepBlocksEditor({
   stepId,
   employeeId,
+  legacy,
 }: {
   stepId: string;
   employeeId: string | undefined;
+  /** The step's untouched legacy fields, used only by "Convert to blocks". */
+  legacy?: LegacyStepContent | undefined;
 }) {
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
@@ -705,6 +708,27 @@ export function StepBlocksEditor({
       toast.success("Block restored at the end — use the arrows to move it.");
     });
 
+  const convertLegacy = () =>
+    run(async () => {
+      const rows = legacyStepToBlocks(legacy ?? {});
+      if (!rows.length) {
+        toast.info("Nothing to convert on this step.");
+        return;
+      }
+      const { error } = await supabase.from("step_blocks").insert(
+        rows.map((row, i) => ({
+          step_id: stepId,
+          block_type: row.block_type,
+          payload: row.payload as Json,
+          sequence_order: i,
+        })),
+      );
+      if (error) throw error;
+      toast.success("Converted to blocks — you can now edit and reorder them below.");
+    });
+
+  const canConvert = visible.length === 0 && hasLegacyContent(legacy);
+
   return (
     <Card>
       <CardHeader>
@@ -730,9 +754,36 @@ export function StepBlocksEditor({
         {blocksQuery.isPending ? (
           <p className="text-sm text-muted-foreground">Loading blocks…</p>
         ) : shown.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No blocks yet — this step still uses the plain content body above.
-          </p>
+          <div className="space-y-3">
+            {canConvert ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" disabled={mutate.isPending}>
+                    <Wand2 className="size-4" />
+                    Convert to blocks
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Convert this step to blocks?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This step&apos;s existing text, photo, and video become editable blocks that
+                      look exactly the same to a trainee. The original text is kept in the database
+                      untouched, but once blocks exist it&apos;s no longer what trainees see and the
+                      plain-text box is hidden.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={convertLegacy}>Convert</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : null}
+            <p className="text-sm text-muted-foreground">
+              No blocks yet — this step still uses the plain content body above.
+            </p>
+          </div>
         ) : (
           shown.map((block) => {
             const index = visible.findIndex((b) => b.id === block.id);
