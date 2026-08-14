@@ -597,11 +597,10 @@ export function StepEditPanel({
   }, [step.id, step.updated_at]);
   const patch = (p: Partial<StepDraft>) => setDraft((d) => ({ ...d, ...p }));
 
-  // Managers can't author blocks; they still need to know when a step is block-based,
-  // because the legacy content_body suggestion form no longer describes what a trainee sees.
+  // Once a step is block-based the legacy content_body form no longer describes what a
+  // trainee sees — hide it for everyone, managers and GM/Owner alike.
   const blockCountQuery = useQuery({
     queryKey: ["step-blocks", step.id, "count"],
-    enabled: !canEditDirect && canSuggest,
     queryFn: async () => {
       const { count, error } = await supabase
         .from("step_blocks")
@@ -612,7 +611,7 @@ export function StepEditPanel({
       return count ?? 0;
     },
   });
-  const isBlockBasedForManager = (blockCountQuery.data ?? 0) > 0;
+  const hasBlocks = (blockCountQuery.data ?? 0) > 0;
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["content-tree"] });
@@ -780,14 +779,21 @@ export function StepEditPanel({
             </div>
           </div>
 
-          {isBlockBasedForManager ? (
+          {hasBlocks ? (
             <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
               <p className="text-sm font-medium">This step uses content blocks</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Block-based content isn't editable from here yet. To recommend a change, use the
-                Flag button on the step itself — it goes to your manager and never applies
-                automatically.
-              </p>
+              {canEditDirect ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Edit them below — the plain-text body and legacy media fields no longer affect
+                  what a trainee sees.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Block-based content isn&apos;t editable from here yet. To recommend a change, use
+                  the Flag button on the step itself — it goes to your manager and never applies
+                  automatically.
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
@@ -804,7 +810,7 @@ export function StepEditPanel({
             </div>
           )}
 
-          {canSuggest && !isBlockBasedForManager ? (
+          {canSuggest && !hasBlocks ? (
             <div className="space-y-2">
               <Label htmlFor="why">How do you know it should change?</Label>
               <Textarea
@@ -830,26 +836,30 @@ export function StepEditPanel({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="video">Video link (YouTube)</Label>
-            <Input
-              id="video"
-              value={draft.video_url}
-              maxLength={300}
-              disabled={!canEditDirect}
-              onChange={(e) => patch({ video_url: e.target.value })}
-              placeholder="https://www.youtube.com/watch?v=…"
-            />
-          </div>
+          {hasBlocks ? null : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="video">Video link (YouTube)</Label>
+                <Input
+                  id="video"
+                  value={draft.video_url}
+                  maxLength={300}
+                  disabled={!canEditDirect}
+                  onChange={(e) => patch({ video_url: e.target.value })}
+                  placeholder="https://www.youtube.com/watch?v=…"
+                />
+              </div>
 
-          <PhotoUpload
-            value={draft.media_url}
-            onChange={(value) => patch({ media_url: value })}
-            folder="steps"
-            label="Photo (optional)"
-            helpText="Shown above the step's written content. Any step type can carry a photo."
-            disabled={!canEditDirect}
-          />
+              <PhotoUpload
+                value={draft.media_url}
+                onChange={(value) => patch({ media_url: value })}
+                folder="steps"
+                label="Photo (optional)"
+                helpText="Shown above the step's written content. Any step type can carry a photo."
+                disabled={!canEditDirect}
+              />
+            </>
+          )}
 
           <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -906,7 +916,7 @@ export function StepEditPanel({
 
           <div className="flex flex-wrap gap-2">
             {canSuggest ? (
-              isBlockBasedForManager ? null : (
+              hasBlocks ? null : (
               <Button disabled={suggest.isPending || !employeeId} onClick={() => suggest.mutate()}>
                 {suggest.isPending ? "Submitting…" : "Submit for approval"}
               </Button>
@@ -952,7 +962,17 @@ export function StepEditPanel({
         </CardContent>
       </Card>
 
-      {canEditDirect ? <StepBlocksEditor stepId={step.id} employeeId={employeeId} /> : null}
+      {canEditDirect ? (
+        <StepBlocksEditor
+          stepId={step.id}
+          employeeId={employeeId}
+          legacy={{
+            content_body: step.content_body,
+            media_url: step.media_url,
+            video_url: step.video_url,
+          }}
+        />
+      ) : null}
 
       <Card>
         <CardHeader>
