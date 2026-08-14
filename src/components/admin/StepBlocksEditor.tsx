@@ -413,7 +413,7 @@ function BlockCard({
           <Button
             variant="ghost"
             size="icon"
-            disabled={busy || index === 0}
+            disabled={busy || block.is_deleted || index <= 0}
             onClick={() => onMove(-1)}
           >
             <ArrowUp className="size-4" />
@@ -422,7 +422,7 @@ function BlockCard({
           <Button
             variant="ghost"
             size="icon"
-            disabled={busy || index === total - 1}
+            disabled={busy || block.is_deleted || index === total - 1}
             onClick={() => onMove(1)}
           >
             <ArrowDown className="size-4" />
@@ -559,6 +559,14 @@ export function StepBlocksEditor({
   const duplicateBlock = (block: BlockRow) =>
     run(async () => {
       const index = visible.findIndex((b) => b.id === block.id);
+      // Shift everything after the source down one slot, then insert the copy behind it.
+      for (const after of visible.slice(index + 1)) {
+        const { error } = await supabase
+          .from("step_blocks")
+          .update({ sequence_order: after.sequence_order + 1 })
+          .eq("id", after.id);
+        if (error) throw error;
+      }
       const { error } = await supabase.from("step_blocks").insert({
         step_id: stepId,
         block_type: block.block_type,
@@ -566,10 +574,6 @@ export function StepBlocksEditor({
         sequence_order: index + 1,
       });
       if (error) throw error;
-      const next = [...visible];
-      next.splice(index + 1, 0, { ...block, id: "new" });
-      // Renumber the rows after the insertion point so ordering stays consecutive.
-      await renumber(next.filter((b) => b.id !== "new").map((b) => b));
       toast.success("Block duplicated.");
     });
 
