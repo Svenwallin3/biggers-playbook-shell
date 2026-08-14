@@ -477,6 +477,7 @@ function BlockCard({
   onDuplicate,
   onHide,
   onRestore,
+  onDelete,
 }: {
   block: BlockRow;
   index: number;
@@ -487,6 +488,7 @@ function BlockCard({
   onDuplicate: () => void;
   onHide: () => void;
   onRestore: () => void;
+  onDelete: () => void;
 }) {
   const [draft, setDraft] = useState<Payload>(() => asPayload(block.payload));
   const [dirty, setDirty] = useState(false);
@@ -530,10 +532,34 @@ function BlockCard({
             <span className="sr-only">Duplicate block</span>
           </Button>
           {block.is_deleted ? (
-            <Button variant="ghost" size="icon" disabled={busy} onClick={onRestore}>
-              <RotateCcw className="size-4" />
-              <span className="sr-only">Restore block</span>
-            </Button>
+            <>
+              <Button variant="ghost" size="icon" disabled={busy} onClick={onRestore}>
+                <RotateCcw className="size-4" />
+                <span className="sr-only">Restore block</span>
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" disabled={busy}>
+                    <Trash2 className="size-4 text-destructive" />
+                    <span className="sr-only">Delete block permanently</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this block permanently?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This removes it for good — it won&apos;t show up in Show hidden anymore. A
+                      snapshot is kept in version history in case it&apos;s ever needed back, but
+                      there&apos;s no undo button for that here.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onDelete}>Delete permanently</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           ) : (
             <Button variant="ghost" size="icon" disabled={busy} onClick={onHide}>
               <EyeOff className="size-4 text-destructive" />
@@ -708,6 +734,13 @@ export function StepBlocksEditor({
       toast.success("Block restored at the end — use the arrows to move it.");
     });
 
+  const deleteBlock = (block: BlockRow) =>
+    run(async () => {
+      const { error } = await supabase.rpc("delete_step_block", { p_block_id: block.id });
+      if (error) throw error;
+      toast.success("Block permanently deleted.");
+    });
+
   const convertLegacy = () =>
     run(async () => {
       const rows = legacyStepToBlocks(legacy ?? {});
@@ -799,6 +832,7 @@ export function StepBlocksEditor({
                 onDuplicate={() => duplicateBlock(block)}
                 onHide={() => hideBlock(block)}
                 onRestore={() => restoreBlock(block)}
+                onDelete={() => deleteBlock(block)}
               />
             );
           })
