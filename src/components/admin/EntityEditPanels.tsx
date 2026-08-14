@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { StepBlocksEditor } from "@/components/admin/StepBlocksEditor";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
 import {
@@ -596,6 +597,23 @@ export function StepEditPanel({
   }, [step.id, step.updated_at]);
   const patch = (p: Partial<StepDraft>) => setDraft((d) => ({ ...d, ...p }));
 
+  // Managers can't author blocks; they still need to know when a step is block-based,
+  // because the legacy content_body suggestion form no longer describes what a trainee sees.
+  const blockCountQuery = useQuery({
+    queryKey: ["step-blocks", step.id, "count"],
+    enabled: !canEditDirect && canSuggest,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("step_blocks")
+        .select("id", { count: "exact", head: true })
+        .eq("step_id", step.id)
+        .eq("is_deleted", false);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+  const isBlockBasedForManager = (blockCountQuery.data ?? 0) > 0;
+
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["content-tree"] });
     void queryClient.invalidateQueries({ queryKey: ["version-history", "steps", step.id] });
@@ -762,20 +780,31 @@ export function StepEditPanel({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="body">Content body</Label>
-            <FormattingTextarea
-              id="body"
-              rows={6}
-              value={draft.content_body}
-              maxLength={4000}
-              disabled={!canEditDirect && !canSuggest}
-              onChange={(e) => patch({ content_body: e.target.value })}
-              placeholder="One numbered step per line."
-            />
-          </div>
+          {isBlockBasedForManager ? (
+            <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
+              <p className="text-sm font-medium">This step uses content blocks</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Block-based content isn't editable from here yet. To recommend a change, use the
+                Flag button on the step itself — it goes to your manager and never applies
+                automatically.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="body">Content body</Label>
+              <FormattingTextarea
+                id="body"
+                rows={6}
+                value={draft.content_body}
+                maxLength={4000}
+                disabled={!canEditDirect && !canSuggest}
+                onChange={(e) => patch({ content_body: e.target.value })}
+                placeholder="One numbered step per line."
+              />
+            </div>
+          )}
 
-          {canSuggest ? (
+          {canSuggest && !isBlockBasedForManager ? (
             <div className="space-y-2">
               <Label htmlFor="why">How do you know it should change?</Label>
               <Textarea
@@ -877,9 +906,11 @@ export function StepEditPanel({
 
           <div className="flex flex-wrap gap-2">
             {canSuggest ? (
+              isBlockBasedForManager ? null : (
               <Button disabled={suggest.isPending || !employeeId} onClick={() => suggest.mutate()}>
                 {suggest.isPending ? "Submitting…" : "Submit for approval"}
               </Button>
+              )
             ) : (
               <Button disabled={!canEditDirect || save.isPending} onClick={() => save.mutate()}>
                 {save.isPending ? "Saving…" : "Save changes"}
@@ -920,6 +951,8 @@ export function StepEditPanel({
           </div>
         </CardContent>
       </Card>
+
+      {canEditDirect ? <StepBlocksEditor stepId={step.id} employeeId={employeeId} /> : null}
 
       <Card>
         <CardHeader>
