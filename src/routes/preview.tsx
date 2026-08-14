@@ -31,7 +31,12 @@ import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { contentTreeQueryOptions } from "@/lib/admin.queries";
-import { getDayGroupedSteps, stepTypeLabels } from "@/lib/training.queries";
+import {
+  branchOptionsQueryOptions,
+  getDayGroupedSteps,
+  moduleVisibleForSubPath,
+  stepTypeLabels,
+} from "@/lib/training.queries";
 import type { QuizRow, StepRow } from "@/lib/training.queries";
 
 const title = "Preview training — Biggers Training Platform";
@@ -43,6 +48,7 @@ export const Route = createFileRoute("/preview")({
     track: typeof search["track"] === "string" ? search["track"] : undefined,
     module: typeof search["module"] === "string" ? search["module"] : undefined,
     step: typeof search["step"] === "string" ? search["step"] : undefined,
+    branch: typeof search["branch"] === "string" ? search["branch"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -69,7 +75,7 @@ function unmetMediaRecommendation(s: {
 }
 
 function PreviewPage() {
-  const { track: trackId, module: moduleId, step: stepId } = Route.useSearch();
+  const { track: trackId, module: moduleId, step: stepId, branch } = Route.useSearch();
   const navigate = useNavigate({ from: "/preview" });
   const { isManagerOrOwner, isOwner, isGeneralManager, employee, loading, session } = useAuth();
   const queryClient = useQueryClient();
@@ -100,7 +106,13 @@ function PreviewPage() {
           .sort((a, b) => a.sequence_order - b.sequence_order),
       }));
 
-  const ownModules = activeTrack ? buildModules((m) => m.track_id === activeTrack.id, false) : [];
+  const ownModulesAll = activeTrack
+    ? buildModules((m) => m.track_id === activeTrack.id, false)
+    : [];
+  // Branch filter: narrow the division's own modules to one branch; shared/Universal never filter.
+  const ownModules = branch
+    ? ownModulesAll.filter((m) => moduleVisibleForSubPath(m, branch))
+    : ownModulesAll;
   // A trainee always gets Universal alongside their own division, so preview it that way too.
   const universalTrackIds = allTracks.filter((t) => t.department === "universal").map((t) => t.id);
   const isUniversalTrack = activeTrack?.department === "universal";
@@ -144,6 +156,12 @@ function PreviewPage() {
     },
   });
 
+  const branchOptionsQuery = useQuery({
+    ...branchOptionsQueryOptions(activeTrack?.department ?? null),
+    enabled: isManagerOrOwner && !!activeTrack?.department,
+  });
+  const branchOptions = branchOptionsQuery.data ?? [];
+
   const inDivision = activeTrack?.department === employee?.department_scope;
   const canEditDirect = isOwner || (isGeneralManager && inDivision);
   const canSuggest = isManagerOrOwner && !canEditDirect && inDivision;
@@ -168,17 +186,17 @@ function PreviewPage() {
 
   const select = (next: { kind: "step" | "module" | "track"; id: string }) => {
     if (next.kind === "track") {
-      void navigate({ search: { track: next.id, module: undefined, step: undefined } });
+      void navigate({ search: { track: next.id, module: undefined, step: undefined, branch: undefined } });
       return;
     }
     if (next.kind === "module") {
       const m = allModules.find((x) => x.id === next.id);
-      void navigate({ search: { track: m?.track_id, module: next.id, step: undefined } });
+      void navigate({ search: { track: m?.track_id, module: next.id, step: undefined, branch } });
       return;
     }
     const s = allSteps.find((x) => x.id === next.id);
     const m = allModules.find((x) => x.id === s?.module_id);
-    void navigate({ search: { track: m?.track_id, module: m?.id, step: next.id } });
+    void navigate({ search: { track: m?.track_id, module: m?.id, step: next.id, branch } });
   };
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -229,7 +247,7 @@ function PreviewPage() {
                 <Link
                   key={t.id}
                   to="/preview"
-                  search={{ track: t.id, module: undefined, step: undefined }}
+                  search={{ track: t.id, module: undefined, step: undefined, branch: undefined }}
                   className="rounded-lg border-2 border-border px-6 py-4 text-base font-semibold transition-colors hover:border-primary hover:bg-primary/5"
                 >
                   {t.name}
@@ -249,7 +267,7 @@ function PreviewPage() {
           <Link
             key={t.id}
             to="/preview"
-            search={{ track: t.id, module: undefined, step: undefined }}
+            search={{ track: t.id, module: undefined, step: undefined, branch: undefined }}
             className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
               t.id === activeTrack.id
                 ? "border-primary bg-primary/10 font-semibold text-foreground"
@@ -261,6 +279,39 @@ function PreviewPage() {
         ))}
       </div>
 
+      {branchOptions.length > 1 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Branch
+          </span>
+          <Link
+            to="/preview"
+            search={{ track: activeTrack.id, module: undefined, step: undefined, branch: undefined }}
+            className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+              !branch
+                ? "border-primary bg-primary/10 font-semibold text-foreground"
+                : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+            }`}
+          >
+            All
+          </Link>
+          {branchOptions.map((b) => (
+            <Link
+              key={b}
+              to="/preview"
+              search={{ track: activeTrack.id, module: undefined, step: undefined, branch: b }}
+              className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                branch === b
+                  ? "border-primary bg-primary/10 font-semibold text-foreground"
+                  : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+              }`}
+            >
+              {b}
+            </Link>
+          ))}
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-2">
         {days.length > 1 ? (
           <>
@@ -271,7 +322,7 @@ function PreviewPage() {
               <Link
                 key={d.key}
                 to="/preview"
-                search={{ track: activeTrack.id, module: d.moduleId, step: undefined }}
+                search={{ track: activeTrack.id, module: d.moduleId, step: undefined, branch }}
                 className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
                   d.key === activeDayKey
                     ? "border-primary bg-primary/10 font-semibold text-foreground"
@@ -311,7 +362,12 @@ function PreviewPage() {
           allowFreeNav
           onNavigate={(targetModuleId: string, targetStepId: string) =>
             void navigate({
-              search: { track: activeTrack.id, module: targetModuleId, step: targetStepId },
+              search: {
+                track: activeTrack.id,
+                module: targetModuleId,
+                step: targetStepId,
+                branch,
+              },
             })
           }
           onPrevious={() =>
@@ -321,6 +377,7 @@ function PreviewPage() {
                     track: activeTrack.id,
                     module: prevStep.module.id,
                     step: prevStep.step.id,
+                    branch,
                   },
                 })
               : undefined
@@ -332,6 +389,7 @@ function PreviewPage() {
                     track: activeTrack.id,
                     module: nextStep.module.id,
                     step: nextStep.step.id,
+                    branch,
                   },
                 })
               : undefined
@@ -461,6 +519,7 @@ function PreviewPage() {
                           <ModuleEditPanel
                             module={activeModule}
                             trackName={activeTrack.name}
+                            department={activeTrack.department}
                             canEdit={canEditDirect}
                             employeeId={employee?.id}
                             deleteRequiresApproval={isGeneralManager && !isOwner}
