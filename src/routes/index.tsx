@@ -140,7 +140,7 @@ function IndexPage() {
   const [reportOpen, setReportOpen] = useState(false);
 
   const planQuery = useQuery({
-    ...planQueryOptions(employee?.department_scope ?? null),
+    ...planQueryOptions(employee?.department_scope ?? null, employee?.sub_path ?? null),
     enabled: !!employee,
   });
   const progressQuery = useQuery(progressQueryOptions(employee?.id));
