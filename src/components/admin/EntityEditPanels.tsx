@@ -39,7 +39,7 @@ import {
   submitStepSuggestion,
   versionHistoryQueryOptions,
 } from "@/lib/admin.queries";
-import { stepTypeLabels } from "@/lib/training.queries";
+import { branchOptionsQueryOptions, stepTypeLabels } from "@/lib/training.queries";
 import type {
   ContentStatus,
   Department,
