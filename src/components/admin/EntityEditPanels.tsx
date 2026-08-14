@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { StepBlocksEditor } from "@/components/admin/StepBlocksEditor";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
 import {
@@ -595,6 +596,23 @@ export function StepEditPanel({
     setDraft(draftFromStep(step));
   }, [step.id, step.updated_at]);
   const patch = (p: Partial<StepDraft>) => setDraft((d) => ({ ...d, ...p }));
+
+  // Managers can't author blocks; they still need to know when a step is block-based,
+  // because the legacy content_body suggestion form no longer describes what a trainee sees.
+  const blockCountQuery = useQuery({
+    queryKey: ["step-blocks", step.id, "count"],
+    enabled: !canEditDirect && canSuggest,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("step_blocks")
+        .select("id", { count: "exact", head: true })
+        .eq("step_id", step.id)
+        .eq("is_deleted", false);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+  const isBlockBasedForManager = (blockCountQuery.data ?? 0) > 0;
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["content-tree"] });
