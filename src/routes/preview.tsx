@@ -168,12 +168,6 @@ function PreviewPage() {
     },
   });
 
-  const branchOptionsQuery = useQuery({
-    ...branchOptionsQueryOptions(activeTrack?.department ?? null),
-    enabled: isManagerOrOwner && !!activeTrack?.department,
-  });
-  const branchOptions = branchOptionsQuery.data ?? [];
-
   const inDivision = activeTrack?.department === employee?.department_scope;
   const canEditDirect = isOwner || (isGeneralManager && inDivision);
   const canSuggest = isManagerOrOwner && !canEditDirect && inDivision;
