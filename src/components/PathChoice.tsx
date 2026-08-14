@@ -1,8 +1,10 @@
 import { useState, type ComponentType } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Building2, MapPin, ShoppingBasket, UtensilsCrossed } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { branchOptionsQueryOptions, type Department } from "@/lib/training.queries";
 
 type Option<T extends string> = {
   label: string;
@@ -97,6 +99,39 @@ export function LocationChoice() {
       onChoose={async (location_id) => {
         if (!employee) return;
         await supabase.from("employees").update({ location_id }).eq("id", employee.id);
+        await refreshEmployee();
+      }}
+    />
+  );
+}
+
+/**
+ * Full-page branch pick (e.g. Kitchen Production vs Service), shown once the
+ * shared pre-branch content is done. Options are loaded live from
+ * `branchOptionsQueryOptions`, never hardcoded — works for any division.
+ */
+export function SubPathChoice({ department }: { department: Department | null }) {
+  const { employee, refreshEmployee } = useAuth();
+  const branchQuery = useQuery(branchOptionsQueryOptions(department));
+
+  if (branchQuery.isPending) {
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  }
+
+  const options: Option<string>[] = (branchQuery.data ?? []).map((value) => ({
+    label: value,
+    value,
+    icon: Building2,
+  }));
+
+  return (
+    <ChoiceScreen
+      heading="Which track are you training on?"
+      blurb="This sets the rest of your training. A manager can change it later."
+      options={options}
+      onChoose={async (sub_path) => {
+        if (!employee) return;
+        await supabase.from("employees").update({ sub_path }).eq("id", employee.id);
         await refreshEmployee();
       }}
     />
