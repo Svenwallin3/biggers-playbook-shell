@@ -292,6 +292,7 @@ export type Database = {
           merged_into: string | null
           path: string | null
           status: Database["public"]["Enums"]["employee_status"]
+          sub_path: string | null
           updated_at: string
           user_id: string | null
         }
@@ -310,6 +311,7 @@ export type Database = {
           merged_into?: string | null
           path?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
+          sub_path?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -328,6 +330,7 @@ export type Database = {
           merged_into?: string | null
           path?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
+          sub_path?: string | null
           updated_at?: string
           user_id?: string | null
         }
