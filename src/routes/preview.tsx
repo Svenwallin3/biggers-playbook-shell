@@ -290,24 +290,13 @@ function PreviewPage() {
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Branch
           </span>
-          <Link
-            to="/preview"
-            search={{ track: activeTrack.id, module: undefined, step: undefined, branch: undefined }}
-            className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-              !branch
-                ? "border-primary bg-primary/10 font-semibold text-foreground"
-                : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-            }`}
-          >
-            All
-          </Link>
           {branchOptions.map((b) => (
             <Link
               key={b}
               to="/preview"
               search={{ track: activeTrack.id, module: undefined, step: undefined, branch: b }}
               className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                branch === b
+                effectiveBranch === b
                   ? "border-primary bg-primary/10 font-semibold text-foreground"
                   : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
               }`}
