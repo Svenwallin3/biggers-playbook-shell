@@ -224,11 +224,10 @@ function IndexPage() {
     return <LocationChoice />;
   }
   // Branch gate: only for divisions that actually split (2+ branch values), and
-  // only once Days 1-2 of shared content are done. Day 4's shared modules are
-  // deliberately excluded — waiting on them would push this to the last day.
+  // once Day 1 is done — the branch pick is the first thing shown on Day 2.
   if (isStaff && employee.path && !employee.sub_path && (branchQuery.data ?? []).length >= 2) {
     const earlySteps = modules
-      .filter((m) => m.day_assignment === 1 || m.day_assignment === 2)
+      .filter((m) => m.day_assignment === 1)
       .flatMap((m) => m.steps);
     const earlyDone = earlySteps.every((s) => {
       const status = progressByStep.get(s.id)?.status;

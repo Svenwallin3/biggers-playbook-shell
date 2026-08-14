@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Camera, ChevronLeft, ChevronRight, Film, Pencil, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -109,9 +109,30 @@ function PreviewPage() {
   const ownModulesAll = activeTrack
     ? buildModules((m) => m.track_id === activeTrack.id, false)
     : [];
+  const branchOptionsQuery = useQuery({
+    ...branchOptionsQueryOptions(activeTrack?.department ?? null),
+    enabled: isManagerOrOwner && !!activeTrack?.department,
+  });
+  const branchOptions = branchOptionsQuery.data ?? [];
+  // A branching track always previews as one specific branch — never unfiltered.
+  const effectiveBranch =
+    branchOptions.length > 1
+      ? branch && branchOptions.includes(branch)
+        ? branch
+        : branchOptions[0]
+      : undefined;
+  // Keep the URL honest about which branch is being previewed.
+  useEffect(() => {
+    if (effectiveBranch && branch !== effectiveBranch) {
+      void navigate({
+        search: { track: trackId, module: moduleId, step: stepId, branch: effectiveBranch },
+        replace: true,
+      });
+    }
+  }, [effectiveBranch, branch, navigate]);
   // Branch filter: narrow the division's own modules to one branch; shared/Universal never filter.
-  const ownModules = branch
-    ? ownModulesAll.filter((m) => moduleVisibleForSubPath(m, branch))
+  const ownModules = effectiveBranch
+    ? ownModulesAll.filter((m) => moduleVisibleForSubPath(m, effectiveBranch))
     : ownModulesAll;
   // A trainee always gets Universal alongside their own division, so preview it that way too.
   const universalTrackIds = allTracks.filter((t) => t.department === "universal").map((t) => t.id);
@@ -156,12 +177,6 @@ function PreviewPage() {
     },
   });
 
-  const branchOptionsQuery = useQuery({
-    ...branchOptionsQueryOptions(activeTrack?.department ?? null),
-    enabled: isManagerOrOwner && !!activeTrack?.department,
-  });
-  const branchOptions = branchOptionsQuery.data ?? [];
-
   const inDivision = activeTrack?.department === employee?.department_scope;
   const canEditDirect = isOwner || (isGeneralManager && inDivision);
   const canSuggest = isManagerOrOwner && !canEditDirect && inDivision;
@@ -191,12 +206,12 @@ function PreviewPage() {
     }
     if (next.kind === "module") {
       const m = allModules.find((x) => x.id === next.id);
-      void navigate({ search: { track: m?.track_id, module: next.id, step: undefined, branch } });
+      void navigate({ search: { track: m?.track_id, module: next.id, step: undefined, branch: effectiveBranch } });
       return;
     }
     const s = allSteps.find((x) => x.id === next.id);
     const m = allModules.find((x) => x.id === s?.module_id);
-    void navigate({ search: { track: m?.track_id, module: m?.id, step: next.id, branch } });
+    void navigate({ search: { track: m?.track_id, module: m?.id, step: next.id, branch: effectiveBranch } });
   };
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -284,24 +299,13 @@ function PreviewPage() {
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Branch
           </span>
-          <Link
-            to="/preview"
-            search={{ track: activeTrack.id, module: undefined, step: undefined, branch: undefined }}
-            className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-              !branch
-                ? "border-primary bg-primary/10 font-semibold text-foreground"
-                : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-            }`}
-          >
-            All
-          </Link>
           {branchOptions.map((b) => (
             <Link
               key={b}
               to="/preview"
               search={{ track: activeTrack.id, module: undefined, step: undefined, branch: b }}
               className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                branch === b
+                effectiveBranch === b
                   ? "border-primary bg-primary/10 font-semibold text-foreground"
                   : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
               }`}
@@ -322,7 +326,7 @@ function PreviewPage() {
               <Link
                 key={d.key}
                 to="/preview"
-                search={{ track: activeTrack.id, module: d.moduleId, step: undefined, branch }}
+                search={{ track: activeTrack.id, module: d.moduleId, step: undefined, branch: effectiveBranch }}
                 className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
                   d.key === activeDayKey
                     ? "border-primary bg-primary/10 font-semibold text-foreground"
@@ -366,7 +370,7 @@ function PreviewPage() {
                 track: activeTrack.id,
                 module: targetModuleId,
                 step: targetStepId,
-                branch,
+                branch: effectiveBranch,
               },
             })
           }
@@ -377,7 +381,7 @@ function PreviewPage() {
                     track: activeTrack.id,
                     module: prevStep.module.id,
                     step: prevStep.step.id,
-                    branch,
+                    branch: effectiveBranch,
                   },
                 })
               : undefined
@@ -389,7 +393,7 @@ function PreviewPage() {
                     track: activeTrack.id,
                     module: nextStep.module.id,
                     step: nextStep.step.id,
-                    branch,
+                    branch: effectiveBranch,
                   },
                 })
               : undefined
