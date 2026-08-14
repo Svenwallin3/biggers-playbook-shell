@@ -220,6 +220,23 @@ export function StepRenderer({
   const lines = bodyLines(step);
   const Title = titleAs;
 
+  const blocksQuery = useQuery({
+    queryKey: ["step-blocks", step.id],
+    enabled: !unavailable,
+    queryFn: async (): Promise<StepBlockRow[]> => {
+      const { data, error } = await supabase
+        .from("step_blocks")
+        .select("id, block_type, payload, sequence_order")
+        .eq("step_id", step.id)
+        .eq("is_deleted", false)
+        .order("sequence_order", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as StepBlockRow[];
+    },
+  });
+  const blocks = blocksQuery.data ?? [];
+  const hasBlocks = blocks.length > 0;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -244,8 +261,7 @@ export function StepRenderer({
             </p>
           ) : null}
 
-          {/* Media is presence-driven: any step type may carry a photo and/or video. */}
-          {step.media_url ? (
+          {hasBlocks ? null : step.media_url ? (
             <Card className="overflow-hidden">
               <CardContent className="space-y-3 px-0 py-0 sm:px-6 sm:py-6">
                 <StoredPhoto
@@ -257,7 +273,7 @@ export function StepRenderer({
             </Card>
           ) : null}
 
-          {youTubeId(step.video_url) ? (
+          {!hasBlocks && youTubeId(step.video_url) ? (
             <VideoEmbed url={step.video_url} title={step.title} />
           ) : null}
 
@@ -289,7 +305,7 @@ export function StepRenderer({
             </div>
           ) : null}
 
-          <Body lines={lines} />
+          {hasBlocks ? <BlockRenderer blocks={blocks} /> : <Body lines={lines} />}
 
           {step.supports_manager_initials ? (
             <div className="pt-1">
