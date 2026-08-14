@@ -121,6 +121,15 @@ function PreviewPage() {
         ? branch
         : branchOptions[0]
       : undefined;
+  // Keep the URL honest about which branch is being previewed.
+  useEffect(() => {
+    if (effectiveBranch && branch !== effectiveBranch) {
+      void navigate({
+        search: (prev: Record<string, unknown>) => ({ ...prev, branch: effectiveBranch }),
+        replace: true,
+      });
+    }
+  }, [effectiveBranch, branch, navigate]);
   // Branch filter: narrow the division's own modules to one branch; shared/Universal never filter.
   const ownModules = effectiveBranch
     ? ownModulesAll.filter((m) => moduleVisibleForSubPath(m, effectiveBranch))
