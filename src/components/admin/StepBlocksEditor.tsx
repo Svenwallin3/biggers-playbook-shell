@@ -596,10 +596,16 @@ export function StepBlocksEditor({
     run(async () => {
       const { error } = await supabase
         .from("step_blocks")
-        .update({ is_deleted: false, deleted_by: null, deleted_at: null })
+        .update({
+          is_deleted: false,
+          deleted_by: null,
+          deleted_at: null,
+          // Its pre-hide slot was reclaimed when the rest renumbered — append at the end.
+          sequence_order: visible.length,
+        })
         .eq("id", block.id);
       if (error) throw error;
-      toast.success("Block restored.");
+      toast.success("Block restored at the end — use the arrows to move it.");
     });
 
   return (
