@@ -361,7 +361,7 @@ function PreviewPage() {
                 track: activeTrack.id,
                 module: targetModuleId,
                 step: targetStepId,
-                branch,
+                branch: effectiveBranch,
               },
             })
           }
@@ -372,7 +372,7 @@ function PreviewPage() {
                     track: activeTrack.id,
                     module: prevStep.module.id,
                     step: prevStep.step.id,
-                    branch,
+                    branch: effectiveBranch,
                   },
                 })
               : undefined
@@ -384,7 +384,7 @@ function PreviewPage() {
                     track: activeTrack.id,
                     module: nextStep.module.id,
                     step: nextStep.step.id,
-                    branch,
+                    branch: effectiveBranch,
                   },
                 })
               : undefined
