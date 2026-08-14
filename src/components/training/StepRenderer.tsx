@@ -1,21 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import {
-  AlertTriangle,
   CheckCircle2,
-  Clock,
   ListChecks,
-  MapPin,
   PenLine,
-  Scale,
-  ShieldAlert,
-  Slice,
-  Snowflake,
-  SprayCan,
-  Thermometer,
   UserCheck,
-  Wrench,
-  type LucideIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,6 +14,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { StepStatusBadge } from "./StepStatusBadge";
 import { renderFormattedText } from "@/lib/richText";
 import { DangerZoneGraphic } from "./DangerZoneGraphic";
+import {
+  BlockRenderer,
+  BulletedList,
+  HeadingBlock,
+  LabelValueList,
+  NumberedList,
+  type StepBlockRow,
+} from "./BlockRenderer";
 import { StepTypeChip } from "./StepTypeChip";
 import { VideoEmbed, youTubeId } from "@/components/VideoEmbed";
 import {
@@ -114,28 +111,6 @@ function ComingSoon({ step, isAdmin }: { step: StepRow; isAdmin: boolean }) {
   );
 }
 
-/** Decorative label-keyword → icon map for card-grid content. */
-const labelIcons: { keywords: string[]; icon: LucideIcon }[] = [
-  { keywords: ["temp", "temperature"], icon: Thermometer },
-  { keywords: ["time", "duration", "minutes", "hours"], icon: Clock },
-  { keywords: ["knife", "cut", "slice"], icon: Slice },
-  { keywords: ["storage", "cooler", "fridge", "freezer"], icon: Snowflake },
-  { keywords: ["allergen", "allergy"], icon: AlertTriangle },
-  { keywords: ["clean", "cleaning", "sanitiz"], icon: SprayCan },
-  { keywords: ["ppe", "safety", "hazard", "danger"], icon: ShieldAlert },
-  { keywords: ["equipment", "machine"], icon: Wrench },
-  { keywords: ["location", "where"], icon: MapPin },
-  { keywords: ["quantity", "amount", "portion"], icon: Scale },
-];
-
-function labelIcon(label: string): LucideIcon | null {
-  const text = label.toLowerCase();
-  for (const entry of labelIcons) {
-    if (entry.keywords.some((k) => text.includes(k))) return entry.icon;
-  }
-  return null;
-}
-
 const DANGER_ZONE_MARKER = "[[danger-zone]]";
 
 function Body({ lines }: { lines: string[] }) {
@@ -184,17 +159,8 @@ function BodyBlock({ lines }: { lines: string[] }) {
       <div className="space-y-5">
         {sections.map((section, i) => (
           <div key={i} className="space-y-1.5">
-            {section.heading ? (
-              <h3 className="font-display text-base font-semibold">{section.heading}</h3>
-            ) : null}
-            <ul className="space-y-1.5">
-              {section.bullets.map((bullet, j) => (
-                <li key={j} className="flex gap-2.5 text-sm leading-relaxed">
-                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
-                  <span>{renderFormattedText(bullet)}</span>
-                </li>
-              ))}
-            </ul>
+            {section.heading ? <HeadingBlock text={section.heading} level="h2" /> : null}
+            <BulletedList items={section.bullets} />
           </div>
         ))}
       </div>
@@ -210,38 +176,10 @@ function BodyBlock({ lines }: { lines: string[] }) {
   });
 
   if (lines.length >= 2 && pairs.every(Boolean)) {
-    return (
-      <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface/60">
-        {(pairs as { label: string; value: string }[]).map((pair, i) => {
-          const Icon = labelIcon(pair.label);
-          return (
-            <li key={i} className="min-w-0 px-3.5 py-3">
-              <p className="flex items-center gap-1.5 font-display text-sm font-semibold leading-snug">
-                {Icon ? <Icon className="size-4 shrink-0 text-primary" aria-hidden="true" /> : null}
-                {pair.label}
-              </p>
-              <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
-                {renderFormattedText(pair.value)}
-              </p>
-            </li>
-          );
-        })}
-      </ul>
-    );
+    return <LabelValueList pairs={pairs as { label: string; value: string }[]} />;
   }
 
-  return (
-    <ol className="space-y-3">
-      {lines.map((line, i) => (
-        <li key={i} className="flex gap-3 text-sm leading-relaxed">
-          <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/12 text-[11px] font-semibold text-primary">
-            {i + 1}
-          </span>
-          <span>{renderFormattedText(line)}</span>
-        </li>
-      ))}
-    </ol>
-  );
+  return <NumberedList items={lines} />;
 }
 
 export function StepRenderer({
@@ -282,6 +220,23 @@ export function StepRenderer({
   const lines = bodyLines(step);
   const Title = titleAs;
 
+  const blocksQuery = useQuery({
+    queryKey: ["step-blocks", step.id],
+    enabled: !unavailable,
+    queryFn: async (): Promise<StepBlockRow[]> => {
+      const { data, error } = await supabase
+        .from("step_blocks")
+        .select("id, block_type, payload, sequence_order")
+        .eq("step_id", step.id)
+        .eq("is_deleted", false)
+        .order("sequence_order", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as StepBlockRow[];
+    },
+  });
+  const blocks = blocksQuery.data ?? [];
+  const hasBlocks = blocks.length > 0;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -306,8 +261,7 @@ export function StepRenderer({
             </p>
           ) : null}
 
-          {/* Media is presence-driven: any step type may carry a photo and/or video. */}
-          {step.media_url ? (
+          {hasBlocks ? null : step.media_url ? (
             <Card className="overflow-hidden">
               <CardContent className="space-y-3 px-0 py-0 sm:px-6 sm:py-6">
                 <StoredPhoto
@@ -319,7 +273,7 @@ export function StepRenderer({
             </Card>
           ) : null}
 
-          {youTubeId(step.video_url) ? (
+          {!hasBlocks && youTubeId(step.video_url) ? (
             <VideoEmbed url={step.video_url} title={step.title} />
           ) : null}
 
@@ -351,7 +305,7 @@ export function StepRenderer({
             </div>
           ) : null}
 
-          <Body lines={lines} />
+          {hasBlocks ? <BlockRenderer blocks={blocks} /> : <Body lines={lines} />}
 
           {step.supports_manager_initials ? (
             <div className="pt-1">
