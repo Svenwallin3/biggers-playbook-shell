@@ -780,20 +780,31 @@ export function StepEditPanel({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="body">Content body</Label>
-            <FormattingTextarea
-              id="body"
-              rows={6}
-              value={draft.content_body}
-              maxLength={4000}
-              disabled={!canEditDirect && !canSuggest}
-              onChange={(e) => patch({ content_body: e.target.value })}
-              placeholder="One numbered step per line."
-            />
-          </div>
+          {isBlockBasedForManager ? (
+            <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
+              <p className="text-sm font-medium">This step uses content blocks</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Block-based content isn't editable from here yet. To recommend a change, use the
+                Flag button on the step itself — it goes to your manager and never applies
+                automatically.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="body">Content body</Label>
+              <FormattingTextarea
+                id="body"
+                rows={6}
+                value={draft.content_body}
+                maxLength={4000}
+                disabled={!canEditDirect && !canSuggest}
+                onChange={(e) => patch({ content_body: e.target.value })}
+                placeholder="One numbered step per line."
+              />
+            </div>
+          )}
 
-          {canSuggest ? (
+          {canSuggest && !isBlockBasedForManager ? (
             <div className="space-y-2">
               <Label htmlFor="why">How do you know it should change?</Label>
               <Textarea
@@ -895,9 +906,11 @@ export function StepEditPanel({
 
           <div className="flex flex-wrap gap-2">
             {canSuggest ? (
+              isBlockBasedForManager ? null : (
               <Button disabled={suggest.isPending || !employeeId} onClick={() => suggest.mutate()}>
                 {suggest.isPending ? "Submitting…" : "Submit for approval"}
               </Button>
+              )
             ) : (
               <Button disabled={!canEditDirect || save.isPending} onClick={() => save.mutate()}>
                 {save.isPending ? "Saving…" : "Save changes"}
