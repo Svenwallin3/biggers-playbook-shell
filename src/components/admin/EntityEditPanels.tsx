@@ -952,6 +952,8 @@ export function StepEditPanel({
         </CardContent>
       </Card>
 
+      {canEditDirect ? <StepBlocksEditor stepId={step.id} employeeId={employeeId} /> : null}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Version history</CardTitle>
