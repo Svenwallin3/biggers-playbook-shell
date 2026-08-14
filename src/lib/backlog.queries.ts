@@ -5,6 +5,7 @@ import type { EmployeeRow } from "@/lib/admin.queries";
 import {
   compareModulesByDay,
   departmentsForEmployee,
+  moduleVisibleForSubPath,
   trainerSignoffTypes,
   type Department,
   type ModuleRow,
@@ -97,7 +98,10 @@ export function signoffBacklogQueryOptions() {
 
       for (const employee of trainees) {
         const depts = departmentsForEmployee(employee.department_scope);
-        const mods = orderedModules.filter((m) => depts.includes(m.track!.department));
+        const mods = orderedModules.filter(
+          (m) =>
+            depts.includes(m.track!.department) && moduleVisibleForSubPath(m, employee.sub_path),
+        );
 
         let lastCompletedAt: string | null = null;
         let found = false;
