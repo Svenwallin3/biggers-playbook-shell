@@ -951,6 +951,60 @@ export type Database = {
           },
         ]
       }
+      step_blocks: {
+        Row: {
+          block_type: string
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_deleted: boolean
+          payload: Json
+          sequence_order: number
+          step_id: string
+          updated_at: string
+        }
+        Insert: {
+          block_type: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          payload?: Json
+          sequence_order?: number
+          step_id: string
+          updated_at?: string
+        }
+        Update: {
+          block_type?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean
+          payload?: Json
+          sequence_order?: number
+          step_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_blocks_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "step_blocks_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       steps: {
         Row: {
           content_body: string | null
