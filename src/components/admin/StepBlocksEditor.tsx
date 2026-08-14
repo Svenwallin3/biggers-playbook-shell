@@ -1,10 +1,21 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Copy, EyeOff, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, EyeOff, Plus, RotateCcw, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { FormattingTextarea } from "@/components/ui/formatting-textarea";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { youTubeId } from "@/components/VideoEmbed";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -88,6 +100,91 @@ function str(value: unknown): string {
 
 function strList(value: unknown): string[] {
   return Array.isArray(value) ? value.map(str) : [];
+}
+
+const DANGER_ZONE_MARKER = "[[danger-zone]]";
+
+export type LegacyStepContent = {
+  content_body?: string | null;
+  media_url?: string | null;
+  video_url?: string | null;
+};
+
+type NewBlock = { block_type: BlockType; payload: Payload };
+
+/**
+ * Mirrors the legacy `Body`/`BodyBlock` parsing in StepRenderer.tsx exactly, so a
+ * converted step renders identically to the plain-text version it replaces.
+ */
+function blocksFromSegment(lines: string[]): NewBlock[] {
+  if (!lines.length) return [];
+
+  if (lines.some((line) => line.startsWith("## "))) {
+    const sections: { heading: string | null; bullets: string[] }[] = [];
+    for (const line of lines) {
+      if (line.startsWith("## ")) {
+        sections.push({ heading: line.slice(3).trim(), bullets: [] });
+      } else {
+        if (!sections.length) sections.push({ heading: null, bullets: [] });
+        sections[sections.length - 1]!.bullets.push(line);
+      }
+    }
+    const out: NewBlock[] = [];
+    for (const section of sections) {
+      if (section.heading) {
+        out.push({ block_type: "heading", payload: { text: section.heading, level: "h2" } });
+      }
+      if (section.bullets.length) {
+        out.push({ block_type: "list", payload: { items: section.bullets, style: "bulleted" } });
+      }
+    }
+    return out;
+  }
+
+  const pairs = lines.map((line) => {
+    const i = line.indexOf(" | ");
+    if (i === -1) return null;
+    const label = line.slice(0, i).trim();
+    const value = line.slice(i + 3).trim();
+    return label && value ? { label, value } : null;
+  });
+
+  if (lines.length >= 2 && pairs.every(Boolean)) {
+    return [{ block_type: "label_value", payload: { pairs } }];
+  }
+
+  return [{ block_type: "list", payload: { items: lines, style: "numbered" } }];
+}
+
+export function legacyStepToBlocks(legacy: LegacyStepContent): NewBlock[] {
+  const out: NewBlock[] = [];
+  if (legacy.media_url) out.push({ block_type: "photo", payload: { path: legacy.media_url } });
+  if (legacy.video_url && youTubeId(legacy.video_url)) {
+    out.push({ block_type: "video", payload: { url: legacy.video_url } });
+  }
+
+  const lines = (legacy.content_body ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  let segment: string[] = [];
+  for (const line of lines) {
+    if (line === DANGER_ZONE_MARKER) {
+      out.push(...blocksFromSegment(segment));
+      segment = [];
+      out.push({ block_type: "danger_zone", payload: {} });
+    } else {
+      segment.push(line);
+    }
+  }
+  out.push(...blocksFromSegment(segment));
+  return out;
+}
+
+export function hasLegacyContent(legacy: LegacyStepContent | undefined): boolean {
+  if (!legacy) return false;
+  return Boolean((legacy.content_body ?? "").trim() || legacy.media_url || legacy.video_url);
 }
 
 /** Shared add / remove / move row controls. */
@@ -474,9 +571,12 @@ function BlockCard({
 export function StepBlocksEditor({
   stepId,
   employeeId,
+  legacy,
 }: {
   stepId: string;
   employeeId: string | undefined;
+  /** The step's untouched legacy fields, used only by "Convert to blocks". */
+  legacy?: LegacyStepContent | undefined;
 }) {
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
@@ -608,6 +708,27 @@ export function StepBlocksEditor({
       toast.success("Block restored at the end — use the arrows to move it.");
     });
 
+  const convertLegacy = () =>
+    run(async () => {
+      const rows = legacyStepToBlocks(legacy ?? {});
+      if (!rows.length) {
+        toast.info("Nothing to convert on this step.");
+        return;
+      }
+      const { error } = await supabase.from("step_blocks").insert(
+        rows.map((row, i) => ({
+          step_id: stepId,
+          block_type: row.block_type,
+          payload: row.payload as Json,
+          sequence_order: i,
+        })),
+      );
+      if (error) throw error;
+      toast.success("Converted to blocks — you can now edit and reorder them below.");
+    });
+
+  const canConvert = visible.length === 0 && hasLegacyContent(legacy);
+
   return (
     <Card>
       <CardHeader>
@@ -633,9 +754,36 @@ export function StepBlocksEditor({
         {blocksQuery.isPending ? (
           <p className="text-sm text-muted-foreground">Loading blocks…</p>
         ) : shown.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No blocks yet — this step still uses the plain content body above.
-          </p>
+          <div className="space-y-3">
+            {canConvert ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" disabled={mutate.isPending}>
+                    <Wand2 className="size-4" />
+                    Convert to blocks
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Convert this step to blocks?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This step&apos;s existing text, photo, and video become editable blocks that
+                      look exactly the same to a trainee. The original text is kept in the database
+                      untouched, but once blocks exist it&apos;s no longer what trainees see and the
+                      plain-text box is hidden.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={convertLegacy}>Convert</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : null}
+            <p className="text-sm text-muted-foreground">
+              No blocks yet — this step still uses the plain content body above.
+            </p>
+          </div>
         ) : (
           shown.map((block) => {
             const index = visible.findIndex((b) => b.id === block.id);
