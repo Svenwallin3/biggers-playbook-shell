@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Camera, ChevronLeft, ChevronRight, Film, Pencil, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -125,7 +125,7 @@ function PreviewPage() {
   useEffect(() => {
     if (effectiveBranch && branch !== effectiveBranch) {
       void navigate({
-        search: (prev: Record<string, unknown>) => ({ ...prev, branch: effectiveBranch }),
+        search: { track: trackId, module: moduleId, step: stepId, branch: effectiveBranch },
         replace: true,
       });
     }
