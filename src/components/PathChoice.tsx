@@ -1,8 +1,10 @@
 import { useState, type ComponentType } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Building2, MapPin, ShoppingBasket, UtensilsCrossed } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { branchOptionsQueryOptions, type Department } from "@/lib/training.queries";
 
 type Option<T extends string> = {
   label: string;
