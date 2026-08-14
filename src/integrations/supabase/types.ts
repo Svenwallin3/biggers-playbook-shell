@@ -1272,6 +1272,7 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["auth_tier"]
       }
+      delete_step_block: { Args: { p_block_id: string }; Returns: undefined }
       has_tier: {
         Args: { _tier: Database["public"]["Enums"]["auth_tier"] }
         Returns: boolean
