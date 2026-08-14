@@ -197,12 +197,12 @@ function PreviewPage() {
     }
     if (next.kind === "module") {
       const m = allModules.find((x) => x.id === next.id);
-      void navigate({ search: { track: m?.track_id, module: next.id, step: undefined, branch } });
+      void navigate({ search: { track: m?.track_id, module: next.id, step: undefined, branch: effectiveBranch } });
       return;
     }
     const s = allSteps.find((x) => x.id === next.id);
     const m = allModules.find((x) => x.id === s?.module_id);
-    void navigate({ search: { track: m?.track_id, module: m?.id, step: next.id, branch } });
+    void navigate({ search: { track: m?.track_id, module: m?.id, step: next.id, branch: effectiveBranch } });
   };
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -317,7 +317,7 @@ function PreviewPage() {
               <Link
                 key={d.key}
                 to="/preview"
-                search={{ track: activeTrack.id, module: d.moduleId, step: undefined, branch }}
+                search={{ track: activeTrack.id, module: d.moduleId, step: undefined, branch: effectiveBranch }}
                 className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
                   d.key === activeDayKey
                     ? "border-primary bg-primary/10 font-semibold text-foreground"
