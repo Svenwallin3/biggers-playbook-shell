@@ -109,9 +109,21 @@ function PreviewPage() {
   const ownModulesAll = activeTrack
     ? buildModules((m) => m.track_id === activeTrack.id, false)
     : [];
+  const branchOptionsQuery = useQuery({
+    ...branchOptionsQueryOptions(activeTrack?.department ?? null),
+    enabled: isManagerOrOwner && !!activeTrack?.department,
+  });
+  const branchOptions = branchOptionsQuery.data ?? [];
+  // A branching track always previews as one specific branch — never unfiltered.
+  const effectiveBranch =
+    branchOptions.length > 1
+      ? branch && branchOptions.includes(branch)
+        ? branch
+        : branchOptions[0]
+      : undefined;
   // Branch filter: narrow the division's own modules to one branch; shared/Universal never filter.
-  const ownModules = branch
-    ? ownModulesAll.filter((m) => moduleVisibleForSubPath(m, branch))
+  const ownModules = effectiveBranch
+    ? ownModulesAll.filter((m) => moduleVisibleForSubPath(m, effectiveBranch))
     : ownModulesAll;
   // A trainee always gets Universal alongside their own division, so preview it that way too.
   const universalTrackIds = allTracks.filter((t) => t.department === "universal").map((t) => t.id);
