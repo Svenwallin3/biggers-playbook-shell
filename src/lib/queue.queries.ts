@@ -6,6 +6,7 @@ import {
   compareModulesByDay,
   departmentsForEmployee,
   getDayGroupedSteps,
+  moduleVisibleForSubPath,
   trainerSignoffTypes,
   type Department,
   type ModuleRow,
@@ -38,7 +39,7 @@ export function onboardingCompletionQueryOptions() {
     queryKey: ["onboarding-completion"],
     queryFn: async (): Promise<Record<string, OnboardingProgress>> => {
       const [employeesRes, tracksRes, modulesRes, stepsRes, progressRes] = await Promise.all([
-        supabase.from("employees").select("id, department_scope").eq("is_deleted", false),
+        supabase.from("employees").select("id, department_scope, sub_path").eq("is_deleted", false),
         supabase.from("tracks").select("*").eq("is_deleted", false),
         supabase
           .from("modules")
@@ -78,6 +79,7 @@ export function onboardingCompletionQueryOptions() {
         let completed = 0;
         for (const m of modules) {
           if (!depts.includes(m.track!.department)) continue;
+          if (!moduleVisibleForSubPath(m, employee.sub_path)) continue;
           for (const step of stepsByModule.get(m.id) ?? []) {
             total += 1;
             if (done.has(`${employee.id}:${step.id}`)) completed += 1;
@@ -170,7 +172,10 @@ export function trainingQueueQueryOptions(scope: {
 
       return employees.map((employee) => {
         const depts = departmentsForEmployee(employee.department_scope);
-        const mods = orderedModules.filter((m) => depts.includes(m.track!.department));
+        const mods = orderedModules.filter(
+          (m) =>
+            depts.includes(m.track!.department) && moduleVisibleForSubPath(m, employee.sub_path),
+        );
 
         let total = 0;
         let completed = 0;

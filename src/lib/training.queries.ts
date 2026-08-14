@@ -56,6 +56,50 @@ export function departmentsForEmployee(
 }
 
 /**
+ * Whether a module is visible to an employee given their chosen branch.
+ * `module.sub_path === null` means shared across every branch in its
+ * division. A module with `sub_path` set is visible only to an employee
+ * whose own `sub_path` matches exactly. Division-agnostic on purpose — no
+ * hardcoded branch names — so any future division can add its own branch
+ * split just by tagging modules, same pattern as `departmentsForEmployee`.
+ */
+export function moduleVisibleForSubPath(
+  module: { sub_path: string | null },
+  employeeSubPath: string | null | undefined,
+): boolean {
+  return !module.sub_path || module.sub_path === employeeSubPath;
+}
+
+/** Distinct branch values live on a division's modules, e.g. ["Production","Service"] for Kitchen. Empty array = this division has no branch split. */
+export function branchOptionsQueryOptions(department: Department | null) {
+  return queryOptions({
+    queryKey: ["branch-options", department ?? "none"],
+    enabled: !!department,
+    queryFn: async (): Promise<string[]> => {
+      const { data: tracks, error: trackError } = await supabase
+        .from("tracks")
+        .select("id")
+        .eq("department", department!)
+        .eq("is_deleted", false);
+      if (trackError) throw trackError;
+
+      const trackIds = (tracks ?? []).map((t) => t.id);
+      if (!trackIds.length) return [];
+
+      const { data: modules, error } = await supabase
+        .from("modules")
+        .select("sub_path")
+        .in("track_id", trackIds)
+        .eq("is_deleted", false)
+        .not("sub_path", "is", null);
+      if (error) throw error;
+
+      return [...new Set((modules ?? []).map((m) => m.sub_path).filter(Boolean) as string[])].sort();
+    },
+  });
+}
+
+/**
  * Onboarding day decides first; Universal wins same-day ties (Clock-in /
  * Welcome / Hospitality-Standards-intro before that day's department-specific
  * modules, both before that day's `end`-bucket in-person sign-off — driven by
@@ -128,9 +172,17 @@ export function getDayGroupedSteps<
 }
 
 /** Today's plan: the Universal track plus the employee's own division, in onboarding-day order. */
-export function planQueryOptions(department: Department | null, allDepartments = false) {
+export function planQueryOptions(
+  department: Department | null,
+  subPath: string | null = null,
+  allDepartments = false,
+) {
   return queryOptions({
-    queryKey: ["training-plan", allDepartments ? "all" : (department ?? "none")],
+    queryKey: [
+      "training-plan",
+      allDepartments ? "all" : (department ?? "none"),
+      allDepartments ? "all" : (subPath ?? "none"),
+    ],
     queryFn: async (): Promise<PlanModule[]> => {
       let trackQuery = supabase
         .from("tracks")
@@ -167,6 +219,7 @@ export function planQueryOptions(department: Department | null, allDepartments =
       const trackById = new Map((tracks ?? []).map((t) => [t.id, t]));
 
       return (modules ?? [])
+        .filter((m) => allDepartments || moduleVisibleForSubPath(m, subPath))
         .map((m) => ({
           ...m,
           track: trackById.get(m.track_id)!,

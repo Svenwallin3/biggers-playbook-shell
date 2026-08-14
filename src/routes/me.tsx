@@ -40,7 +40,7 @@ function MePage() {
   const { employee, loading, session } = useAuth();
 
   const planQuery = useQuery({
-    ...planQueryOptions(employee?.department_scope ?? null, false),
+    ...planQueryOptions(employee?.department_scope ?? null, employee?.sub_path ?? null, false),
     enabled: !!employee?.department_scope,
   });
   const onboardingQuery = useQuery({

@@ -27,7 +27,7 @@ export const Route = createFileRoute("/training-library")({
 function TrainingLibraryPage() {
   const { employee, loading, isManagerOrOwner } = useAuth();
   const planQuery = useQuery({
-    ...planQueryOptions(employee?.department_scope ?? null, isManagerOrOwner),
+    ...planQueryOptions(employee?.department_scope ?? null, employee?.sub_path ?? null, isManagerOrOwner),
     enabled: !!employee,
   });
 
