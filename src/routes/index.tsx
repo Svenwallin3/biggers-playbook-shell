@@ -23,7 +23,7 @@ import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { StepTypeChip } from "@/components/training/StepTypeChip";
 import { ProgressRing } from "@/components/training/ProgressRing";
 import { trackTheme } from "@/lib/track-theme";
-import { LocationChoice, PathChoice } from "@/components/PathChoice";
+import { LocationChoice, PathChoice, SubPathChoice } from "@/components/PathChoice";
 import { ManagerDailyBrief } from "@/components/manager/ManagerDailyBrief";
 import { MascotImage } from "@/components/brand/MascotImage";
 import { ReportDeliveryIssueDialog } from "@/components/sourcing/ReportDeliveryIssueDialog";
@@ -34,6 +34,7 @@ import {
   progressQueryOptions,
   setStepProgress,
   trainerSignoffTypes,
+  branchOptionsQueryOptions,
 } from "@/lib/training.queries";
 
 const title = "Today's training — Biggers Training Platform";
@@ -144,6 +145,7 @@ function IndexPage() {
     enabled: !!employee,
   });
   const progressQuery = useQuery(progressQueryOptions(employee?.id));
+  const branchQuery = useQuery(branchOptionsQueryOptions(employee?.department_scope ?? null));
 
   const progressByStep = new Map(
     (progressQuery.data ?? []).map((record) => [record.step_id, record]),
@@ -220,6 +222,21 @@ function IndexPage() {
   }
   if (isStaff && employee.path === "market" && !employee.location_id) {
     return <LocationChoice />;
+  }
+  // Branch gate: only for divisions that actually split (2+ branch values), and
+  // only once Days 1-2 of shared content are done. Day 4's shared modules are
+  // deliberately excluded — waiting on them would push this to the last day.
+  if (isStaff && employee.path && !employee.sub_path && (branchQuery.data ?? []).length >= 2) {
+    const earlySteps = modules
+      .filter((m) => m.day_assignment === 1 || m.day_assignment === 2)
+      .flatMap((m) => m.steps);
+    const earlyDone = earlySteps.every((s) => {
+      const status = progressByStep.get(s.id)?.status;
+      return status === "completed" || status === "signed_off";
+    });
+    if (!planQuery.isPending && earlySteps.length > 0 && earlyDone) {
+      return <SubPathChoice department={employee.department_scope} />;
+    }
   }
 
   return (
