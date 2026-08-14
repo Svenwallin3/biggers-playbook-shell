@@ -95,17 +95,24 @@ function ModulePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
-        .select("department_scope")
+        .select("department_scope, sub_path")
         .eq("id", subjectId!)
         .maybeSingle();
       if (error) throw error;
-      return data?.department_scope ?? null;
+      return {
+        department_scope: data?.department_scope ?? null,
+        sub_path: data?.sub_path ?? null,
+      };
     },
   });
   const subjectDepartment =
-    isAdmin && trainee ? (traineeQuery.data ?? null) : (employee?.department_scope ?? null);
+    isAdmin && trainee
+      ? (traineeQuery.data?.department_scope ?? null)
+      : (employee?.department_scope ?? null);
+  const subjectSubPath =
+    isAdmin && trainee ? (traineeQuery.data?.sub_path ?? null) : (employee?.sub_path ?? null);
   const planQuery = useQuery({
-    ...planQueryOptions(subjectDepartment),
+    ...planQueryOptions(subjectDepartment, subjectSubPath),
     enabled: Boolean(subjectId) && !(isAdmin && trainee && traineeQuery.isPending),
   });
   // One flat, ordered walk through every step in the plan: each day's self-paced
