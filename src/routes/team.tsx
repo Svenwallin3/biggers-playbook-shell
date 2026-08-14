@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { employeesQueryOptions, type EmployeeRow } from "@/lib/admin.queries";
 import { onboardingCompletionQueryOptions } from "@/lib/queue.queries";
 import { divisionLabel } from "@/lib/reference.queries";
+import { branchOptionsQueryOptions } from "@/lib/training.queries";
 import type { Database } from "@/integrations/supabase/types";
 
 type AuthTier = Database["public"]["Enums"]["auth_tier"];
@@ -38,6 +39,45 @@ const statuses: { value: EmployeeStatus; label: string }[] = [
 ];
 const departments: Department[] = ["universal", "market", "kitchen", "delivery"];
 const NONE = "__none__";
+
+/** Owner-only branch (sub_path) control; "n/a" when the division has no branch split. */
+function BranchCell({
+  employee: e,
+  disabled,
+  onChange,
+}: {
+  employee: EmployeeRow;
+  disabled: boolean;
+  onChange: (value: string | null) => void;
+}) {
+  const branchQuery = useQuery(branchOptionsQueryOptions(e.department_scope));
+  const options = branchQuery.data ?? [];
+  if (branchQuery.isPending) {
+    return <span className="text-sm text-muted-foreground">…</span>;
+  }
+  if (options.length < 2) {
+    return <span className="text-xs text-muted-foreground">n/a</span>;
+  }
+  return (
+    <Select
+      value={e.sub_path ?? NONE}
+      disabled={disabled}
+      onValueChange={(v) => onChange(v === NONE ? null : v)}
+    >
+      <SelectTrigger className="h-8">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={NONE}>None</SelectItem>
+        {options.map((o) => (
+          <SelectItem key={o} value={o}>
+            {o}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 /** Market runs two sites; Kitchen and Delivery are single-site, so they stay null. */
 const locations: { value: string; label: string }[] = [
@@ -135,6 +175,7 @@ function TeamPage() {
                   <TableHead className="w-[150px]">General Manager</TableHead>
                   <TableHead className="w-[170px]">Division</TableHead>
                   <TableHead className="w-[150px]">Path</TableHead>
+                  <TableHead className="w-[150px]">Branch</TableHead>
                   <TableHead className="w-[190px]">Location</TableHead>
                 </>
               ) : (
@@ -275,6 +316,15 @@ function TeamPage() {
                     </SelectContent>
                   </Select>
                 </TableCell>
+                ) : null}
+                {isOwner ? (
+                  <TableCell>
+                    <BranchCell
+                      employee={e}
+                      disabled={update.isPending}
+                      onChange={(sub_path) => update.mutate({ id: e.id, patch: { sub_path } })}
+                    />
+                  </TableCell>
                 ) : null}
                 <TableCell>
                   {!isOwner ? (
