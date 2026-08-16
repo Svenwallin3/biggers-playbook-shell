@@ -1,6 +1,6 @@
 import { useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, MapPin, ShoppingBasket, UtensilsCrossed } from "lucide-react";
+import { Building2, MapPin, ShoppingBasket, Truck, UtensilsCrossed } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -61,6 +61,7 @@ function ChoiceScreen<T extends string>({
 const pathOptions = [
   { label: "Kitchen", value: "kitchen", icon: UtensilsCrossed },
   { label: "Markets", value: "market", icon: ShoppingBasket },
+  { label: "Delivery", value: "delivery", icon: Truck },
 ] as const;
 
 const locationOptions = [
