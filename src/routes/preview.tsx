@@ -243,6 +243,8 @@ function PreviewPage() {
       : String(activeModule.day_assignment);
 
   const visibleTracks = allTracks.filter((t) => !t.is_deleted);
+  // Universal is never a standalone path — it merges into each division automatically.
+  const pickableTracks = visibleTracks.filter((t) => t.department !== "universal");
 
   if (!activeTrack) {
     return (
@@ -258,7 +260,7 @@ function PreviewPage() {
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-3">
-              {visibleTracks.map((t) => (
+              {pickableTracks.map((t) => (
                 <Link
                   key={t.id}
                   to="/preview"
@@ -278,7 +280,7 @@ function PreviewPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
-        {visibleTracks.map((t) => (
+        {pickableTracks.map((t) => (
           <Link
             key={t.id}
             to="/preview"
