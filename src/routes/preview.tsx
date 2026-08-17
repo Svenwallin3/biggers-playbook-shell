@@ -615,6 +615,8 @@ function PreviewPage() {
             <p className="text-xs text-muted-foreground">{stepTypeLabels[activeStep.step_type]}</p>
           }
         />
+      ) : activeModule ? (
+        <p className="text-sm text-muted-foreground">This module has no steps yet.</p>
       ) : null}
     </div>
   );
