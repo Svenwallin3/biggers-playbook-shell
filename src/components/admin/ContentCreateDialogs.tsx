@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import {
   stepTypeLabels,
+  branchOptionsQueryOptions,
   type ContentStatus,
   type Department,
   type StepType,
@@ -230,11 +231,13 @@ export function NewTrackDialog({
 
 export function NewModuleDialog({
   trackId,
+  department,
   nextSequence,
   disabled,
   onCreated,
 }: {
   trackId: string;
+  department: Department | null;
   nextSequence: number;
   disabled?: boolean | undefined;
   onCreated: (moduleId: string) => void;
@@ -252,6 +255,12 @@ export function NewModuleDialog({
   };
   const [form, setForm] = useState(empty);
   const patch = (p: Partial<typeof empty>) => setForm((f) => ({ ...f, ...p }));
+  const [subPathIsCustom, setSubPathIsCustom] = useState(false);
+  const branchQuery = useQuery({
+    ...branchOptionsQueryOptions(department ?? null),
+    enabled: !!department,
+  });
+  const branchChoices = Array.from(new Set(branchQuery.data ?? [])).sort();
 
   return (
     <CreateDialog
@@ -264,7 +273,10 @@ export function NewModuleDialog({
           + Module
         </Button>
       }
-      reset={() => setForm({ ...empty, sequence_order: String(nextSequence) })}
+      reset={() => {
+        setForm({ ...empty, sequence_order: String(nextSequence) });
+        setSubPathIsCustom(false);
+      }}
       onCreated={onCreated}
       onSubmit={async () => {
         const { data, error } = await supabase
@@ -322,12 +334,39 @@ export function NewModuleDialog({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="module-subpath">Sub-path</Label>
-          <Input
-            id="module-subpath"
-            value={form.sub_path}
-            maxLength={60}
-            onChange={(e) => patch({ sub_path: e.target.value })}
-          />
+          <Select
+            value={subPathIsCustom ? "__custom__" : form.sub_path || "__none__"}
+            onValueChange={(v) => {
+              if (v === "__custom__") {
+                setSubPathIsCustom(true);
+                return;
+              }
+              setSubPathIsCustom(false);
+              patch({ sub_path: v === "__none__" ? "" : v });
+            }}
+          >
+            <SelectTrigger id="module-subpath">
+              <SelectValue placeholder="None" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">None</SelectItem>
+              {branchChoices.map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
+              ))}
+              <SelectItem value="__custom__">Custom…</SelectItem>
+            </SelectContent>
+          </Select>
+          {subPathIsCustom ? (
+            <Input
+              aria-label="Custom branch name"
+              placeholder="New branch name"
+              value={form.sub_path}
+              maxLength={60}
+              onChange={(e) => patch({ sub_path: e.target.value })}
+            />
+          ) : null}
         </div>
         <div className="space-y-2">
           <Label htmlFor="module-day">Day assignment</Label>
