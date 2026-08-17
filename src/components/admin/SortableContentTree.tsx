@@ -166,11 +166,27 @@ export function SortableContentTree({
   const [saving, setSaving] = useState(false);
   const selectedRef = useRef<HTMLButtonElement | null>(null);
 
-  // Bring the selected step into view — matters when arriving via ?stepId=…
+  // Collapse state — collapsed by default, remembered in the browser only.
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
   useEffect(() => {
-    if (selection.kind !== "step" || !selection.id) return;
-    selectedRef.current?.scrollIntoView({ block: "nearest" });
-  }, [selection.kind, selection.id, steps.length]);
+    try {
+      const raw = window.localStorage.getItem(OPEN_STORAGE_KEY);
+      if (raw) setOpenMap(JSON.parse(raw) as Record<string, boolean>);
+    } catch {
+      /* ignore unreadable storage */
+    }
+  }, []);
+  const setOpen = (next: Record<string, boolean>) => {
+    setOpenMap(next);
+    try {
+      window.localStorage.setItem(OPEN_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore unwritable storage */
+    }
+  };
+  const isOpen = (key: string) => openMap[key] === true;
+  const toggle = (key: string) => setOpen({ ...openMap, [key]: !openMap[key] });
+
 
   // Server order is the source of truth; local copies only exist so a drop can
   // reflow instantly and be reverted if the database rejects it.
