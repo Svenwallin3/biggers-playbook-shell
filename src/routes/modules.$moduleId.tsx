@@ -20,7 +20,7 @@ import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { TraineeWalk } from "@/components/training/TraineeWalk";
-import { ModuleThemeCard } from "@/components/training/ModuleThemeCard";
+import { ModuleThemeCard, introCardText } from "@/components/training/ModuleThemeCard";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getDayGroupedSteps,
@@ -352,7 +352,10 @@ function ModulePage() {
 
       <TraineeWalk
         contentHeader={
-          <ModuleThemeCard description={mod.description} trackName={mod.track?.name} />
+          <ModuleThemeCard
+            description={introCardText(active, mod.description)}
+            trackName={mod.track?.name}
+          />
         }
         walk={walkEntries}
         activeModule={walkModule}

@@ -24,7 +24,7 @@ import { SortableContentTree } from "@/components/admin/SortableContentTree";
 import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPanels";
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { TraineeWalk } from "@/components/training/TraineeWalk";
-import { ModuleThemeCard } from "@/components/training/ModuleThemeCard";
+import { ModuleThemeCard, introCardText } from "@/components/training/ModuleThemeCard";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { StepTypeChip } from "@/components/training/StepTypeChip";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
@@ -545,7 +545,7 @@ function PreviewPage() {
                 </p>
               </div>
               <ModuleThemeCard
-                description={activeModule.description}
+                description={introCardText(activeStep, activeModule.description)}
                 trackName={activeTrack.name}
               />
             </div>
