@@ -137,13 +137,9 @@ function PreviewPage() {
   // A trainee always gets Universal alongside their own division, so preview it that way too.
   const universalTrackIds = allTracks.filter((t) => t.department === "universal").map((t) => t.id);
   const isUniversalTrack = activeTrack?.department === "universal";
-  const dayKeys = new Set(ownModules.map((m) => m.day_assignment ?? 99));
   const sharedModules =
     activeTrack && !isUniversalTrack
-      ? buildModules(
-          (m) => universalTrackIds.includes(m.track_id) && dayKeys.has(m.day_assignment ?? 99),
-          true,
-        )
+      ? buildModules((m) => universalTrackIds.includes(m.track_id), true)
       : [];
 
   const trackModules = [...sharedModules, ...ownModules].sort(
