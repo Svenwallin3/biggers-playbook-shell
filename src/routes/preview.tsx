@@ -229,12 +229,21 @@ function PreviewPage() {
   const days: Array<{ key: string; label: string; moduleId: string; day: number | null }> = [];
   for (const m of trackModules) {
     const key = m.day_assignment === null ? "unassigned" : String(m.day_assignment);
-    if (days.some((d) => d.key === key)) continue;
+    const existing = days.find((d) => d.key === key);
+    if (existing) {
+      // Prefer a module that actually has steps as the jump target.
+      if (!existing.hasSteps && m.steps.length > 0) {
+        existing.moduleId = m.id;
+        existing.hasSteps = true;
+      }
+      continue;
+    }
     days.push({
       key,
       label: m.day_assignment === null ? "Unassigned" : `Day ${m.day_assignment}`,
       moduleId: m.id,
       day: m.day_assignment,
+      hasSteps: m.steps.length > 0,
     });
   }
   const activeDayKey =
