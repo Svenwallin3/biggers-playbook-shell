@@ -1,6 +1,20 @@
 import { trackTheme } from "@/lib/track-theme";
 import { renderFormattedText } from "@/lib/richText";
 
+/**
+ * Which intro text (if any) a given step should show above its content:
+ * step hides it, step overrides it, or the module's own description.
+ */
+export function introCardText(
+  step: { card_override_text?: string | null; hide_module_card?: boolean | null } | null | undefined,
+  moduleDescription: string | null | undefined,
+): string | null {
+  if (step?.hide_module_card) return null;
+  const override = step?.card_override_text?.trim();
+  if (override) return override;
+  return moduleDescription ?? null;
+}
+
 /** Shared "Read this first" module theme callout (trainee route + preview). */
 export function ModuleThemeCard({
   description,

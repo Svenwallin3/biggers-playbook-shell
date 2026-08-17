@@ -595,6 +595,8 @@ interface StepDraft {
   content_body: string;
   content_notes: string;
   location_tag: string;
+  card_override_text: string;
+  hide_module_card: boolean;
   video_url: string;
   media_url: string | null;
   media_recommendation: "none" | "photo" | "video";
@@ -609,6 +611,8 @@ function draftFromStep(step: StepRow): StepDraft {
     content_body: step.content_body ?? "",
     content_notes: step.content_notes ?? "",
     location_tag: step.location_tag ?? "",
+    card_override_text: step.card_override_text ?? "",
+    hide_module_card: step.hide_module_card ?? false,
     video_url: step.video_url ?? "",
     media_url: step.media_url ?? null,
     media_recommendation: step.media_recommendation ?? "none",
@@ -680,6 +684,8 @@ export function StepEditPanel({
           content_body: draft.content_body.trim() || null,
           content_notes: draft.content_notes.trim() || null,
           location_tag: draft.location_tag.trim() || null,
+          card_override_text: draft.card_override_text.trim() || null,
+          hide_module_card: draft.hide_module_card,
           video_url: draft.video_url.trim() || null,
           media_url: draft.media_url,
           media_recommendation: draft.media_recommendation,
@@ -885,6 +891,32 @@ export function StepEditPanel({
               disabled={!canEditDirect}
               onChange={(e) => patch({ content_notes: e.target.value })}
             />
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="card-override">Intro card override (optional)</Label>
+              <Textarea
+                id="card-override"
+                rows={2}
+                value={draft.card_override_text}
+                maxLength={600}
+                disabled={!canEditDirect || draft.hide_module_card}
+                onChange={(e) => patch({ card_override_text: e.target.value })}
+                placeholder="Leave empty to show the module's own intro card text."
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="hide-module-card"
+                checked={draft.hide_module_card}
+                disabled={!canEditDirect}
+                onCheckedChange={(v) => patch({ hide_module_card: v === true })}
+              />
+              <Label htmlFor="hide-module-card" className="font-normal">
+                Hide the module intro card on this step
+              </Label>
+            </div>
           </div>
 
           {blockFirst ? null : (
