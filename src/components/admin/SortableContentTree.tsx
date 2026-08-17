@@ -187,7 +187,6 @@ export function SortableContentTree({
   const isOpen = (key: string) => openMap[key] === true;
   const toggle = (key: string) => setOpen({ ...openMap, [key]: !openMap[key] });
 
-
   // Server order is the source of truth; local copies only exist so a drop can
   // reflow instantly and be reverted if the database rejects it.
   const serverTrackOrder = useMemo(() => tracks.map((t) => t.id), [tracks]);
@@ -280,7 +279,8 @@ export function SortableContentTree({
   const activeStep = activeId?.startsWith("s-") ? stepById.get(activeId.slice(2)) : undefined;
 
   const trackAcceptsActiveModule = (track: TrackRow) =>
-    !activeModule || (canReorderModulesIn(track) && !!activeModule.track && canReorderModulesIn(activeModule.track));
+    !activeModule ||
+    (canReorderModulesIn(track) && !!activeModule.track && canReorderModulesIn(activeModule.track));
 
   const onDragStart = (event: DragStartEvent) => setActiveId(String(event.active.id));
 
@@ -369,7 +369,9 @@ export function SortableContentTree({
     sourceList.splice(sourceList.indexOf(movedId), 1);
     nextMap[sourceTrackId] = sourceList;
     const destList = nextMap[destTrackId] ?? [];
-    const overIndex = overKey.startsWith("m-") ? destList.indexOf(overKey.slice(2)) : destList.length;
+    const overIndex = overKey.startsWith("m-")
+      ? destList.indexOf(overKey.slice(2))
+      : destList.length;
     destList.splice(overIndex < 0 ? destList.length : overIndex, 0, movedId);
     nextMap[destTrackId] = destList;
     setModuleOrder(nextMap);
@@ -423,10 +425,7 @@ export function SortableContentTree({
               a.key === "adhoc" ? 1 : b.key === "adhoc" ? -1 : a.key.localeCompare(b.key),
             );
             return (
-              <div
-                key={track.id}
-                className={blocked ? "cursor-not-allowed opacity-40" : undefined}
-              >
+              <div key={track.id} className={blocked ? "cursor-not-allowed opacity-40" : undefined}>
                 <SortableRow
                   id={`t-${track.id}`}
                   enabled={canReorderTracks}
@@ -452,110 +451,114 @@ export function SortableContentTree({
                   </div>
                 </SortableRow>
                 {trackOpen ? (
-                <div className="space-y-3">
-                  <SortableContext
-                    items={trackModules.map((m) => `m-${m.id}`)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {dayGroups.map((group) => {
-                      const dayKey = `d-${track.id}-${group.key}`;
-                      const dayOpen = isOpen(dayKey);
-                      return (
-                        <div key={group.key} className="ml-7">
-                          <div className="flex items-center gap-1">
-                            <Disclosure
-                              open={dayOpen}
-                              onToggle={() => toggle(dayKey)}
-                              label={dayLabelOf(group.key)}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => toggle(dayKey)}
-                              className="min-w-0 flex-1 rounded px-2 py-1 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted"
-                            >
-                              {dayLabelOf(group.key)} ({group.modules.length})
-                            </button>
-                          </div>
-                          {dayOpen ? (
-                            <div className="mt-2 space-y-3">
-                    {group.modules.map((m) => {
-                      const moduleOpen = isOpen(`m-${m.id}`);
-                      return (
-                      <div key={m.id}>
-                        <SortableRow
-                          id={`m-${m.id}`}
-                          enabled={canReorderModulesIn(track)}
-                          handleLabel={`Reorder module ${m.name}`}
-                        >
-                          <div className="flex items-center gap-1">
-                            <Disclosure
-                              open={moduleOpen}
-                              onToggle={() => toggle(`m-${m.id}`)}
-                              label={m.name}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => onSelect({ kind: "module", id: m.id })}
-                              className={`min-w-0 flex-1 rounded px-2 py-1 text-left text-sm font-medium transition-colors hover:bg-muted ${
-                                selection.kind === "module" && selection.id === m.id
-                                  ? "bg-muted"
-                                  : ""
-                              }`}
-                            >
-                              {renderModuleLabel(m)}
-                            </button>
-                          </div>
-                        </SortableRow>
-                        {moduleOpen ? (
-                        <ul className="ml-7 mt-1 space-y-0.5 border-l border-border pl-3">
-                          <SortableContext
-                            items={(stepOrder[m.id] ?? []).map((id) => `s-${id}`)}
-                            strategy={verticalListSortingStrategy}
-                          >
-                            {(stepOrder[m.id] ?? [])
-                              .map((id) => stepById.get(id))
-                              .filter((s): s is StepRow => Boolean(s))
-                              .map((s) => (
-                                <li key={s.id}>
-                                  <SortableRow
-                                    id={`s-${s.id}`}
-                                    enabled={canReorderModulesIn(track)}
-                                    handleLabel={`Reorder step ${s.title}`}
-                                  >
-                                    <button
-                                      type="button"
-                                      ref={
-                                        selection.kind === "step" && selection.id === s.id
-                                          ? selectedRef
-                                          : undefined
-                                      }
-                                      onClick={() => onSelect({ kind: "step", id: s.id })}
-                                      className={`w-full rounded px-2 py-1 text-left text-sm transition-colors hover:bg-muted ${
-                                        selection.kind === "step" && selection.id === s.id
-                                          ? "bg-muted font-medium"
-                                          : "text-muted-foreground"
-                                      }`}
-                                    >
-                                      {renderStepLabel(s)}
-                                    </button>
-                                  </SortableRow>
-                                </li>
-                              ))}
-                          </SortableContext>
-                          <li>{renderModuleChildren(m, track)}</li>
-                        </ul>
-                        ) : null}
-                      </div>
-                      );
-                    })}
+                  <div className="space-y-3">
+                    <SortableContext
+                      items={trackModules.map((m) => `m-${m.id}`)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {dayGroups.map((group) => {
+                        const dayKey = `d-${track.id}-${group.key}`;
+                        const dayOpen = isOpen(dayKey);
+                        return (
+                          <div key={group.key} className="ml-7">
+                            <div className="flex items-center gap-1">
+                              <Disclosure
+                                open={dayOpen}
+                                onToggle={() => toggle(dayKey)}
+                                label={dayLabelOf(group.key)}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => toggle(dayKey)}
+                                className="min-w-0 flex-1 rounded px-2 py-1 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted"
+                              >
+                                {dayLabelOf(group.key)} ({group.modules.length})
+                              </button>
                             </div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </SortableContext>
-                  {renderTrackFooter(track)}
-                </div>
+                            {dayOpen ? (
+                              <div className="mt-2 space-y-3">
+                                {group.modules.map((m) => {
+                                  const moduleOpen = isOpen(`m-${m.id}`);
+                                  return (
+                                    <div key={m.id}>
+                                      <SortableRow
+                                        id={`m-${m.id}`}
+                                        enabled={canReorderModulesIn(track)}
+                                        handleLabel={`Reorder module ${m.name}`}
+                                      >
+                                        <div className="flex items-center gap-1">
+                                          <Disclosure
+                                            open={moduleOpen}
+                                            onToggle={() => toggle(`m-${m.id}`)}
+                                            label={m.name}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => onSelect({ kind: "module", id: m.id })}
+                                            className={`min-w-0 flex-1 rounded px-2 py-1 text-left text-sm font-medium transition-colors hover:bg-muted ${
+                                              selection.kind === "module" && selection.id === m.id
+                                                ? "bg-muted"
+                                                : ""
+                                            }`}
+                                          >
+                                            {renderModuleLabel(m)}
+                                          </button>
+                                        </div>
+                                      </SortableRow>
+                                      {moduleOpen ? (
+                                        <ul className="ml-7 mt-1 space-y-0.5 border-l border-border pl-3">
+                                          <SortableContext
+                                            items={(stepOrder[m.id] ?? []).map((id) => `s-${id}`)}
+                                            strategy={verticalListSortingStrategy}
+                                          >
+                                            {(stepOrder[m.id] ?? [])
+                                              .map((id) => stepById.get(id))
+                                              .filter((s): s is StepRow => Boolean(s))
+                                              .map((s) => (
+                                                <li key={s.id}>
+                                                  <SortableRow
+                                                    id={`s-${s.id}`}
+                                                    enabled={canReorderModulesIn(track)}
+                                                    handleLabel={`Reorder step ${s.title}`}
+                                                  >
+                                                    <button
+                                                      type="button"
+                                                      ref={
+                                                        selection.kind === "step" &&
+                                                        selection.id === s.id
+                                                          ? selectedRef
+                                                          : undefined
+                                                      }
+                                                      onClick={() =>
+                                                        onSelect({ kind: "step", id: s.id })
+                                                      }
+                                                      className={`w-full rounded px-2 py-1 text-left text-sm transition-colors hover:bg-muted ${
+                                                        selection.kind === "step" &&
+                                                        selection.id === s.id
+                                                          ? "bg-muted font-medium"
+                                                          : "text-muted-foreground"
+                                                      }`}
+                                                    >
+                                                      {renderStepLabel(s)}
+                                                    </button>
+                                                  </SortableRow>
+                                                </li>
+                                              ))}
+                                          </SortableContext>
+                                          <li>{renderModuleChildren(m, track)}</li>
+                                        </ul>
+                                      ) : null}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </SortableContext>
+                    {renderTrackFooter(track)}
+                  </div>
                 ) : null}
               </div>
             );
