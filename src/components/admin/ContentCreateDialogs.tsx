@@ -375,11 +375,13 @@ export function NewStepDialog({
   moduleId,
   nextSequence,
   disabled,
+  canEditDirect,
   onCreated,
 }: {
   moduleId: string;
   nextSequence: number;
   disabled?: boolean | undefined;
+  canEditDirect: boolean;
   onCreated: (stepId: string) => void;
 }) {
   const empty = {
@@ -472,17 +474,23 @@ export function NewStepDialog({
           </Select>
         </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="step-body">Content body</Label>
-        <Textarea
-          id="step-body"
-          rows={5}
-          value={form.content_body}
-          maxLength={4000}
-          placeholder="One numbered step per line."
-          onChange={(e) => patch({ content_body: e.target.value })}
-        />
-      </div>
+      {canEditDirect ? (
+        <p className="rounded-md border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground">
+          Add content as blocks after creating this step.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          <Label htmlFor="step-body">Content body</Label>
+          <Textarea
+            id="step-body"
+            rows={5}
+            value={form.content_body}
+            maxLength={4000}
+            placeholder="One numbered step per line."
+            onChange={(e) => patch({ content_body: e.target.value })}
+          />
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="step-notes">Content notes (admin-only)</Label>
         <Textarea
@@ -494,15 +502,17 @@ export function NewStepDialog({
         />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="step-video">Video link (YouTube)</Label>
-          <Input
-            id="step-video"
-            value={form.video_url}
-            maxLength={300}
-            onChange={(e) => patch({ video_url: e.target.value })}
-          />
-        </div>
+        {canEditDirect ? null : (
+          <div className="space-y-2">
+            <Label htmlFor="step-video">Video link (YouTube)</Label>
+            <Input
+              id="step-video"
+              value={form.video_url}
+              maxLength={300}
+              onChange={(e) => patch({ video_url: e.target.value })}
+            />
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="step-loc">Location tag</Label>
           <Input
