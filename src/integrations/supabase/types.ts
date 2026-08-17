@@ -1010,6 +1010,7 @@ export type Database = {
       }
       steps: {
         Row: {
+          card_override_text: string | null
           content_body: string | null
           content_notes: string | null
           content_status: Database["public"]["Enums"]["content_status"]
@@ -1017,6 +1018,7 @@ export type Database = {
           day_position: string
           deleted_at: string | null
           deleted_by: string | null
+          hide_module_card: boolean
           id: string
           is_deleted: boolean
           location_tag: string | null
@@ -1032,6 +1034,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          card_override_text?: string | null
           content_body?: string | null
           content_notes?: string | null
           content_status?: Database["public"]["Enums"]["content_status"]
@@ -1039,6 +1042,7 @@ export type Database = {
           day_position?: string
           deleted_at?: string | null
           deleted_by?: string | null
+          hide_module_card?: boolean
           id?: string
           is_deleted?: boolean
           location_tag?: string | null
@@ -1054,6 +1058,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          card_override_text?: string | null
           content_body?: string | null
           content_notes?: string | null
           content_status?: Database["public"]["Enums"]["content_status"]
@@ -1061,6 +1066,7 @@ export type Database = {
           day_position?: string
           deleted_at?: string | null
           deleted_by?: string | null
+          hide_module_card?: boolean
           id?: string
           is_deleted?: boolean
           location_tag?: string | null
