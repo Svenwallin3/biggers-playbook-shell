@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { ChevronRight, GripVertical } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -28,6 +28,41 @@ import type { ModuleRow, StepRow, TrackRow } from "@/lib/training.queries";
 type ModuleWithTrack = ModuleRow & { track: TrackRow | undefined };
 
 type Selection = { kind: "step" | "module" | "track"; id: string };
+
+const OPEN_STORAGE_KEY = "bmtp.content-tree.open";
+
+/** Day/assignable grouping key for a module. */
+function dayKeyOf(m: ModuleRow) {
+  return m.day_assignment === null || m.day_assignment === undefined
+    ? "adhoc"
+    : `day-${m.day_assignment}`;
+}
+function dayLabelOf(key: string) {
+  return key === "adhoc" ? "Assignable / Ad Hoc" : `Day ${key.slice(4)}`;
+}
+
+/** Chevron disclosure trigger used at all three tree levels. */
+function Disclosure({
+  open,
+  onToggle,
+  label,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-label={`${open ? "Collapse" : "Expand"} ${label}`}
+      className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      <ChevronRight className={`size-4 transition-transform ${open ? "rotate-90" : ""}`} />
+    </button>
+  );
+}
 
 /** Persistently visible grab handle. Muted (no listeners) when not allowed. */
 function Handle({
