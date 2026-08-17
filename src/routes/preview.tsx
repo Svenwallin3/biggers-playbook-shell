@@ -455,6 +455,7 @@ function PreviewPage() {
                   renderTrackFooter={(track) => (
                     <NewModuleDialog
                       trackId={track.id}
+                      department={track.department}
                       nextSequence={allModules.filter((m) => m.track_id === track.id).length + 1}
                       disabled={!canEditDepartment(track.department)}
                       onCreated={() => undefined}
