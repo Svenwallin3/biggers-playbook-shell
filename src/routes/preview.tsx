@@ -374,7 +374,7 @@ function PreviewPage() {
         <p className="text-sm text-muted-foreground">This track has no live modules yet.</p>
       ) : null}
 
-      {activeModule && activeStep ? (
+      {activeModule ? (
         <TraineeWalk
           walk={walk}
           activeModule={activeModule}
@@ -558,10 +558,12 @@ function PreviewPage() {
                     </Sheet>
                   ) : null}
                 </div>
-                <p className="shrink-0 text-xs font-medium text-muted-foreground">
-                  Step {activeModule.steps.findIndex((s) => s.id === activeStep.id) + 1} of{" "}
-                  {activeModule.steps.length}
-                </p>
+                {activeStep ? (
+                  <p className="shrink-0 text-xs font-medium text-muted-foreground">
+                    Step {activeModule.steps.findIndex((s) => s.id === activeStep.id) + 1} of{" "}
+                    {activeModule.steps.length}
+                  </p>
+                ) : null}
               </div>
               <ModuleThemeCard
                 description={introCardText(activeStep, activeModule.description)}
@@ -570,7 +572,7 @@ function PreviewPage() {
             </div>
           }
           stepTitleAction={
-            canEditDirect || canSuggest ? (
+            activeStep && (canEditDirect || canSuggest) ? (
               <Sheet open={stepSheetOpen} onOpenChange={setStepSheetOpen}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -616,11 +618,13 @@ function PreviewPage() {
             ) : null
           }
           footer={
-            <p className="text-xs text-muted-foreground">{stepTypeLabels[activeStep.step_type]}</p>
+            activeStep ? (
+              <p className="text-xs text-muted-foreground">
+                {stepTypeLabels[activeStep.step_type]}
+              </p>
+            ) : null
           }
         />
-      ) : activeModule ? (
-        <p className="text-sm text-muted-foreground">This module has no steps yet.</p>
       ) : null}
     </div>
   );

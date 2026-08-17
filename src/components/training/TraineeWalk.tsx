@@ -21,7 +21,7 @@ type Props<M extends WalkModuleLike> = {
   /** The whole ordered plan walk (already day-grouped). */
   walk: WalkEntry<M>[];
   activeModule: M;
-  activeStep: StepRow;
+  activeStep: StepRow | undefined;
   isStepDone: (stepId: string) => boolean;
   /** Admins/preview bypass the completion gate entirely. */
   allowFreeNav: boolean;
@@ -85,7 +85,7 @@ export function TraineeWalk<M extends WalkModuleLike>({
   footer,
   onEndOfDayHome,
 }: Props<M>) {
-  const activeIndex = walk.findIndex((w) => w.step.id === activeStep.id);
+  const activeIndex = activeStep ? walk.findIndex((w) => w.step.id === activeStep.id) : -1;
   const prevEntry = activeIndex > 0 ? walk[activeIndex - 1] : undefined;
   const nextEntry = activeIndex >= 0 ? walk[activeIndex + 1] : undefined;
   const isLastStep = activeIndex >= 0 && !nextEntry;
@@ -114,7 +114,7 @@ export function TraineeWalk<M extends WalkModuleLike>({
 
   const moduleTarget = (m: M) => m.steps.find((s) => !isStepDone(s.id)) ?? m.steps[0];
 
-  const needsTrainer = trainerSignoffTypes.includes(activeStep.step_type);
+  const needsTrainer = activeStep ? trainerSignoffTypes.includes(activeStep.step_type) : false;
   const dayHasTrainerStep = dayEntries.some((e) => trainerSignoffTypes.includes(e.step.step_type));
   const showTrainerFollowUp = !needsTrainer && dayHasTrainerStep;
 
@@ -205,7 +205,7 @@ export function TraineeWalk<M extends WalkModuleLike>({
             </p>
             <div className={`${chipRow} md:rounded-lg md:bg-secondary/40 md:p-1.5`}>
               {activeModule.steps.map((s, i) => {
-                const isActive = s.id === activeStep.id;
+                const isActive = s.id === activeStep?.id;
                 const locked = !isActive && !isReachable(s.id);
                 const base =
                   "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1 text-[11px] md:w-full md:shrink md:items-start md:whitespace-normal md:px-2.5 md:py-1.5 md:text-[13px]";
@@ -263,21 +263,25 @@ export function TraineeWalk<M extends WalkModuleLike>({
       <div className="min-w-0 space-y-6">
         {contentHeader}
 
-        <StepRenderer
-          step={activeStep}
-          titleAs="h1"
-          titleAction={stepTitleAction}
-          quizzes={quizzes}
-          isAdmin={isAdmin}
-          signedOff={signedOff}
-          canSignOff={canSignOff}
-          signingOff={signingOff}
-          {...(onSignOff ? { onSignOff } : {})}
-          initialedBy={initialedBy}
-          initialedAt={initialedAt}
-          loggingInitials={loggingInitials}
-          onLogInitials={onLogInitials}
-        />
+        {activeStep ? (
+          <StepRenderer
+            step={activeStep}
+            titleAs="h1"
+            titleAction={stepTitleAction}
+            quizzes={quizzes}
+            isAdmin={isAdmin}
+            signedOff={signedOff}
+            canSignOff={canSignOff}
+            signingOff={signingOff}
+            {...(onSignOff ? { onSignOff } : {})}
+            initialedBy={initialedBy}
+            initialedAt={initialedAt}
+            loggingInitials={loggingInitials}
+            onLogInitials={onLogInitials}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">This module has no steps yet.</p>
+        )}
 
         {showTrainerFollowUp ? (
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
