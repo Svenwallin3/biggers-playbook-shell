@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoUpload } from "@/components/PhotoUpload";
-import { StepBlocksEditor } from "@/components/admin/StepBlocksEditor";
+import { StepBlocksEditor, hasLegacyContent } from "@/components/admin/StepBlocksEditor";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
 import {
@@ -655,6 +655,12 @@ export function StepEditPanel({
     },
   });
   const hasBlocks = (blockCountQuery.data ?? 0) > 0;
+  const legacyHasContent = hasLegacyContent({
+    content_body: step.content_body,
+    media_url: step.media_url,
+    video_url: step.video_url,
+  });
+  const blockFirst = hasBlocks || !legacyHasContent;
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["content-tree"] });
@@ -822,10 +828,11 @@ export function StepEditPanel({
             </div>
           </div>
 
-          {hasBlocks ? (
+          {blockFirst ? (
+            hasBlocks || !canEditDirect ? (
             <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
               <p className="text-sm font-medium">This step uses content blocks</p>
-              {canEditDirect ? (
+              {hasBlocks && canEditDirect ? (
                 <p className="mt-1 text-sm text-muted-foreground">
                   Edit them below — the plain-text body and legacy media fields no longer affect
                   what a trainee sees.
@@ -838,6 +845,7 @@ export function StepEditPanel({
                 </p>
               )}
             </div>
+            ) : null
           ) : (
             <div className="space-y-2">
               <Label htmlFor="body">Content body</Label>
@@ -853,7 +861,7 @@ export function StepEditPanel({
             </div>
           )}
 
-          {canSuggest && !hasBlocks ? (
+          {canSuggest && !blockFirst ? (
             <div className="space-y-2">
               <Label htmlFor="why">How do you know it should change?</Label>
               <Textarea
@@ -879,7 +887,7 @@ export function StepEditPanel({
             />
           </div>
 
-          {hasBlocks ? null : (
+          {blockFirst ? null : (
             <>
               <div className="space-y-2">
                 <Label htmlFor="video">Video link (YouTube)</Label>
@@ -959,7 +967,7 @@ export function StepEditPanel({
 
           <div className="flex flex-wrap gap-2">
             {canSuggest ? (
-              hasBlocks ? null : (
+              blockFirst ? null : (
               <Button disabled={suggest.isPending || !employeeId} onClick={() => suggest.mutate()}>
                 {suggest.isPending ? "Submitting…" : "Submit for approval"}
               </Button>
