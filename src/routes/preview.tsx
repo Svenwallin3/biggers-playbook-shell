@@ -485,7 +485,11 @@ function PreviewPage() {
                       moduleId={m.id}
                       nextSequence={allSteps.filter((s) => s.module_id === m.id).length + 1}
                       disabled={!canEditDepartment(track.department)}
-                      onCreated={(id) => select({ kind: "step", id })}
+                      canEditDirect={canEditDirect}
+                      onCreated={(id) => {
+                        select({ kind: "step", id });
+                        setStepSheetOpen(true);
+                      }}
                     />
                   )}
                 />

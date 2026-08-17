@@ -221,6 +221,7 @@ function ContentEditorPage() {
                 moduleId={m.id}
                 nextSequence={steps.filter((s) => s.module_id === m.id).length + 1}
                 disabled={!canEditDepartment(track.department)}
+                canEditDirect={canEditDirectInDepartment(track.department)}
                 onCreated={(id) => setSelectedId(id)}
               />
             )}
