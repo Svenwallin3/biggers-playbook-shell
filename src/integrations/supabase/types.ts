@@ -463,6 +463,7 @@ export type Database = {
       }
       modules: {
         Row: {
+          category: string | null
           created_at: string
           day_assignment: number | null
           deleted_at: string | null
@@ -480,6 +481,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           day_assignment?: number | null
           deleted_at?: string | null
@@ -497,6 +499,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           day_assignment?: number | null
           deleted_at?: string | null
