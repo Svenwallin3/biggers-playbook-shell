@@ -1,38 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -43,14 +16,10 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  assignableEmployeesQueryOptions,
-  assignableModulesQueryOptions,
   assignmentsQueryOptions,
-  createAssignableModuleAssignment,
   endAssignableModuleAssignment,
 } from "@/lib/admin.queries";
 import { signoffBacklogQueryOptions } from "@/lib/backlog.queries";
-import { cn } from "@/lib/utils";
 
 const departmentLabels: Record<string, string> = {
   universal: "Unassigned / Universal",
@@ -140,137 +109,6 @@ function SignoffBacklogSection() {
   );
 }
 
-function NewAssignmentDialog({ actorId }: { actorId: string | null }) {
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [employeeOpen, setEmployeeOpen] = useState(false);
-  const [employeeId, setEmployeeId] = useState("");
-  const [moduleId, setModuleId] = useState("");
-  const [dueDate, setDueDate] = useState("");
-
-  const employees = useQuery({ ...assignableEmployeesQueryOptions(), enabled: open });
-  const modules = useQuery({ ...assignableModulesQueryOptions(), enabled: open });
-  const selectedEmployee = (employees.data ?? []).find((e) => e.id === employeeId);
-
-  const create = useMutation({
-    mutationFn: async () => {
-      if (!employeeId) throw new Error("Pick an employee.");
-      if (!moduleId) throw new Error("Pick a module.");
-      await createAssignableModuleAssignment({
-        employeeId,
-        moduleId,
-        dueDate: dueDate || null,
-        assignedBy: actorId,
-      });
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["assignments"] });
-      setOpen(false);
-      setEmployeeId("");
-      setModuleId("");
-      setDueDate("");
-      toast.success("Assignment created.");
-    },
-    onError: (error: Error) => toast.error("Couldn't assign", { description: error.message }),
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Button size="sm" onClick={() => setOpen(true)}>
-        New assignment
-      </Button>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>New assignment</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Employee</Label>
-            <Popover open={employeeOpen} onOpenChange={setEmployeeOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-between font-normal">
-                  <span className="truncate">
-                    {selectedEmployee
-                      ? (selectedEmployee.full_name ?? selectedEmployee.email)
-                      : "Select an employee"}
-                  </span>
-                  <ChevronsUpDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search employees…" />
-                  <CommandList>
-                    <CommandEmpty>No employee found.</CommandEmpty>
-                    <CommandGroup>
-                      {(employees.data ?? []).map((e) => {
-                        const label = e.full_name ?? e.email;
-                        return (
-                          <CommandItem
-                            key={e.id}
-                            value={label}
-                            onSelect={() => {
-                              setEmployeeId(e.id);
-                              setEmployeeOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                employeeId === e.id ? "opacity-100" : "opacity-0",
-                              )}
-                            />
-                            {label}
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="assign-module">Module</Label>
-            <Select value={moduleId} onValueChange={setModuleId}>
-              <SelectTrigger id="assign-module">
-                <SelectValue placeholder="Select a restricted module" />
-              </SelectTrigger>
-              <SelectContent>
-                {(modules.data ?? []).map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.name}
-                    {m.track ? ` — ${m.track.name}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="assign-due">Due date (optional)</Label>
-            <Input
-              id="assign-due"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button disabled={create.isPending} onClick={() => create.mutate()}>
-            {create.isPending ? "Assigning…" : "Assign"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export const Route = createFileRoute("/compliance")({
   head: () => ({
     meta: [
@@ -339,12 +177,11 @@ function CompliancePage() {
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
           <div>
-            <CardTitle className="text-base">Assignments</CardTitle>
+            <CardTitle className="text-base">Assignable module completion</CardTitle>
             <CardDescription>
               {rows.length} active assignment{rows.length === 1 ? "" : "s"}.
             </CardDescription>
           </div>
-          {canAssign ? <NewAssignmentDialog actorId={employee?.id ?? null} /> : null}
         </CardHeader>
         <CardContent>
           {query.isPending ? (

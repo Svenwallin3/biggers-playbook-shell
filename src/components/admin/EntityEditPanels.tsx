@@ -35,6 +35,7 @@ import { StepBlocksEditor, hasLegacyContent } from "@/components/admin/StepBlock
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
 import {
+  moduleCategoryOptionsQueryOptions,
   submitModuleDeleteRequest,
   submitStepSuggestion,
   versionHistoryQueryOptions,
@@ -260,6 +261,19 @@ export function ModuleEditPanel({
       is_assignable: module.is_assignable,
     });
   }, [module.id, module.updated_at]);
+  const [category, setCategory] = useState(module.category ?? "");
+  const [categoryIsCustom, setCategoryIsCustom] = useState(false);
+  useEffect(() => {
+    setCategory(module.category ?? "");
+    setCategoryIsCustom(false);
+  }, [module.id, module.updated_at]);
+  const categoryQuery = useQuery({
+    ...moduleCategoryOptionsQueryOptions(department ?? null),
+    enabled: !!department,
+  });
+  const categoryChoices = Array.from(
+    new Set([...(categoryQuery.data ?? []), ...(module.category ? [module.category] : [])]),
+  ).sort();
   const patch = (p: Partial<typeof empty>) => setForm((f) => ({ ...f, ...p }));
   const branchQuery = useQuery({
     ...branchOptionsQueryOptions(department ?? null),
@@ -403,6 +417,46 @@ export function ModuleEditPanel({
               Assignable module (restricted / assigned individually)
             </Label>
           </div>
+          {form.is_assignable ? (
+            <div className="space-y-2 sm:max-w-sm">
+              <Label htmlFor="mod-category">Category</Label>
+              <Select
+                value={categoryIsCustom ? "__custom__" : category || "__none__"}
+                disabled={!canEdit}
+                onValueChange={(v) => {
+                  if (v === "__custom__") {
+                    setCategoryIsCustom(true);
+                    return;
+                  }
+                  setCategoryIsCustom(false);
+                  setCategory(v === "__none__" ? "" : v);
+                }}
+              >
+                <SelectTrigger id="mod-category">
+                  <SelectValue placeholder="Uncategorized" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Uncategorized</SelectItem>
+                  {categoryChoices.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__custom__">Custom…</SelectItem>
+                </SelectContent>
+              </Select>
+              {categoryIsCustom ? (
+                <Input
+                  aria-label="Custom category name"
+                  placeholder="New category name"
+                  value={category}
+                  maxLength={60}
+                  disabled={!canEdit}
+                  onChange={(e) => setCategory(e.target.value)}
+                />
+              ) : null}
+            </div>
+          ) : null}
 
           <Separator />
 
@@ -418,6 +472,7 @@ export function ModuleEditPanel({
                   sequence_order: Number(form.sequence_order) || module.sequence_order,
                   location_tag: form.location_tag.trim() || null,
                   is_assignable: form.is_assignable,
+                  category: form.is_assignable ? category.trim() || null : null,
                 })
               }
             >

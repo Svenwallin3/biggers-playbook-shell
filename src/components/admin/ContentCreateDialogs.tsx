@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { moduleCategoryOptionsQueryOptions } from "@/lib/admin.queries";
 import {
   stepTypeLabels,
   branchOptionsQueryOptions,
@@ -234,12 +235,21 @@ export function NewModuleDialog({
   department,
   nextSequence,
   disabled,
+  defaultIsAssignable = false,
+  defaultCategory = "",
+  trigger,
   onCreated,
 }: {
   trackId: string;
   department: Department | null;
   nextSequence: number;
   disabled?: boolean | undefined;
+  /** Contextual creation (Assign Training page) pre-checks "assignable". */
+  defaultIsAssignable?: boolean;
+  /** Contextual creation pre-selects the category section it was launched from. */
+  defaultCategory?: string;
+  /** Optional custom trigger; defaults to the "+ Module" ghost button. */
+  trigger?: ReactNode;
   onCreated: (moduleId: string) => void;
 }) {
   const empty = {
@@ -250,17 +260,26 @@ export function NewModuleDialog({
     sub_path: "",
     day_assignment: "",
     sequence_order: String(nextSequence),
-    is_assignable: false,
+    is_assignable: defaultIsAssignable,
+    category: defaultCategory,
     location_tag: "",
   };
   const [form, setForm] = useState(empty);
   const patch = (p: Partial<typeof empty>) => setForm((f) => ({ ...f, ...p }));
   const [subPathIsCustom, setSubPathIsCustom] = useState(false);
+  const [categoryIsCustom, setCategoryIsCustom] = useState(false);
   const branchQuery = useQuery({
     ...branchOptionsQueryOptions(department ?? null),
     enabled: !!department,
   });
   const branchChoices = Array.from(new Set(branchQuery.data ?? [])).sort();
+  const categoryQuery = useQuery({
+    ...moduleCategoryOptionsQueryOptions(department ?? null),
+    enabled: !!department,
+  });
+  const categoryChoices = Array.from(
+    new Set([...(categoryQuery.data ?? []), ...(defaultCategory ? [defaultCategory] : [])]),
+  ).sort();
 
   return (
     <CreateDialog
@@ -269,13 +288,16 @@ export function NewModuleDialog({
       successMessage="Module created."
       disabled={disabled}
       trigger={
+        trigger ?? (
         <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
           + Module
         </Button>
+        )
       }
       reset={() => {
         setForm({ ...empty, sequence_order: String(nextSequence) });
         setSubPathIsCustom(false);
+        setCategoryIsCustom(false);
       }}
       onCreated={onCreated}
       onSubmit={async () => {
@@ -290,6 +312,7 @@ export function NewModuleDialog({
             day_assignment: form.day_assignment ? Number(form.day_assignment) : null,
             sequence_order: Number(form.sequence_order) || nextSequence,
             is_assignable: form.is_assignable,
+            category: form.is_assignable ? form.category.trim() || null : null,
             location_tag: form.location_tag.trim() || null,
           })
           .select("id")
@@ -406,6 +429,44 @@ export function NewModuleDialog({
           Assignable module (restricted / assigned individually)
         </Label>
       </div>
+      {form.is_assignable ? (
+        <div className="space-y-2 sm:max-w-sm">
+          <Label htmlFor="module-category">Category</Label>
+          <Select
+            value={categoryIsCustom ? "__custom__" : form.category || "__none__"}
+            onValueChange={(v) => {
+              if (v === "__custom__") {
+                setCategoryIsCustom(true);
+                return;
+              }
+              setCategoryIsCustom(false);
+              patch({ category: v === "__none__" ? "" : v });
+            }}
+          >
+            <SelectTrigger id="module-category">
+              <SelectValue placeholder="Uncategorized" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Uncategorized</SelectItem>
+              {categoryChoices.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+              <SelectItem value="__custom__">Custom…</SelectItem>
+            </SelectContent>
+          </Select>
+          {categoryIsCustom ? (
+            <Input
+              aria-label="Custom category name"
+              placeholder="New category name"
+              value={form.category}
+              maxLength={60}
+              onChange={(e) => patch({ category: e.target.value })}
+            />
+          ) : null}
+        </div>
+      ) : null}
     </CreateDialog>
   );
 }
