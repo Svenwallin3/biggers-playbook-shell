@@ -198,6 +198,37 @@ export function assignableEmployeesQueryOptions() {
 
 export type AssignableModule = ModuleRow & { track: TrackRow | null };
 
+/**
+ * Distinct `category` values already used by assignable modules in a division.
+ * Same shape/reasoning as `branchOptionsQueryOptions` for `sub_path`: no enum,
+ * no hardcoded list, division-agnostic.
+ */
+export function moduleCategoryOptionsQueryOptions(department: string | null) {
+  return queryOptions({
+    queryKey: ["module-category-options", department ?? "none"],
+    enabled: !!department,
+    queryFn: async (): Promise<string[]> => {
+      const { data: tracks, error: trackError } = await supabase
+        .from("tracks")
+        .select("id")
+        .eq("department", department as never)
+        .eq("is_deleted", false);
+      if (trackError) throw trackError;
+      const trackIds = (tracks ?? []).map((t) => t.id);
+      if (!trackIds.length) return [];
+
+      const { data, error } = await supabase
+        .from("modules")
+        .select("category")
+        .in("track_id", trackIds)
+        .eq("is_deleted", false)
+        .not("category", "is", null);
+      if (error) throw error;
+      return [...new Set((data ?? []).map((m) => m.category).filter(Boolean) as string[])].sort();
+    },
+  });
+}
+
 /** Restricted / position modules that can be handed to an individual employee. */
 export function assignableModulesQueryOptions() {
   return queryOptions({
