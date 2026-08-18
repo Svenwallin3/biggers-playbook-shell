@@ -77,7 +77,9 @@ export function HeadingBlock({ text, level = "h2" }: { text: string; level?: "h2
 }
 
 export function ParagraphBlock({ text }: { text: string }) {
-  return <p className="text-sm leading-relaxed">{renderFormattedText(text)}</p>;
+  return (
+    <p className="whitespace-pre-line text-sm leading-relaxed">{renderFormattedText(text)}</p>
+  );
 }
 
 export function BulletedList({ items }: { items: string[] }) {
