@@ -35,6 +35,7 @@ import { StepBlocksEditor, hasLegacyContent } from "@/components/admin/StepBlock
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
 import {
+  moduleCategoryOptionsQueryOptions,
   submitModuleDeleteRequest,
   submitStepSuggestion,
   versionHistoryQueryOptions,
