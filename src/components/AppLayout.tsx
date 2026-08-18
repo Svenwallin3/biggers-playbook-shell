@@ -27,6 +27,7 @@ export function AppLayout() {
   const isAdminScreen = [
     "/admin",
     "/approvals",
+    "/assign-training",
     "/compliance",
     "/delivery-issues",
     "/huddle-notes",
@@ -60,6 +61,7 @@ export function AppLayout() {
         { label: "Huddle & Notes", to: "/huddle-notes" },
         { label: "Delivery Issues", to: "/delivery-issues" },
         { label: "Compliance", to: "/compliance" },
+        { label: "Assign Training", to: "/assign-training" },
         { label: "Merge", to: "/merge-tool" },
       ]
     : isGeneralManager
@@ -67,11 +69,13 @@ export function AppLayout() {
           { label: "Team", to: "/team" },
           { label: "Huddle & Notes", to: "/huddle-notes" },
           { label: "Delivery Issues", to: "/delivery-issues" },
+          { label: "Assign Training", to: "/assign-training" },
         ]
       : isManagerOrOwner
         ? [
             { label: "Huddle & Notes", to: "/huddle-notes" },
             { label: "Delivery Issues", to: "/delivery-issues" },
+            { label: "Assign Training", to: "/assign-training" },
           ]
         : [];
 

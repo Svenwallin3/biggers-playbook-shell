@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApprovalsRouteImport } from './routes/approvals'
+import { Route as AssignTrainingRouteImport } from './routes/assign-training'
 import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as DeliveryIssuesRouteImport } from './routes/delivery-issues'
 import { Route as HuddleNotesRouteImport } from './routes/huddle-notes'
@@ -43,6 +44,11 @@ const IndexRoute = IndexRouteImport.update({
 const ApprovalsRoute = ApprovalsRouteImport.update({
   id: '/approvals',
   path: '/approvals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssignTrainingRoute = AssignTrainingRouteImport.update({
+  id: '/assign-training',
+  path: '/assign-training',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComplianceRoute = ComplianceRouteImport.update({
@@ -164,6 +170,7 @@ const ReferenceSourcingRoute = ReferenceSourcingRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
+  '/assign-training': typeof AssignTrainingRoute
   '/compliance': typeof ComplianceRoute
   '/delivery-issues': typeof DeliveryIssuesRoute
   '/huddle-notes': typeof HuddleNotesRoute
@@ -191,6 +198,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
+  '/assign-training': typeof AssignTrainingRoute
   '/compliance': typeof ComplianceRoute
   '/delivery-issues': typeof DeliveryIssuesRoute
   '/huddle-notes': typeof HuddleNotesRoute
@@ -218,6 +226,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/approvals': typeof ApprovalsRoute
+  '/assign-training': typeof AssignTrainingRoute
   '/compliance': typeof ComplianceRoute
   '/delivery-issues': typeof DeliveryIssuesRoute
   '/huddle-notes': typeof HuddleNotesRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/approvals'
+    | '/assign-training'
     | '/compliance'
     | '/delivery-issues'
     | '/huddle-notes'
@@ -274,6 +284,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/approvals'
+    | '/assign-training'
     | '/compliance'
     | '/delivery-issues'
     | '/huddle-notes'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/approvals'
+    | '/assign-training'
     | '/compliance'
     | '/delivery-issues'
     | '/huddle-notes'
@@ -328,6 +340,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApprovalsRoute: typeof ApprovalsRoute
+  AssignTrainingRoute: typeof AssignTrainingRoute
   ComplianceRoute: typeof ComplianceRoute
   DeliveryIssuesRoute: typeof DeliveryIssuesRoute
   HuddleNotesRoute: typeof HuddleNotesRoute
@@ -361,6 +374,13 @@ declare module '@tanstack/react-router' {
       path: '/approvals'
       fullPath: '/approvals'
       preLoaderRoute: typeof ApprovalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assign-training': {
+      id: '/assign-training'
+      path: '/assign-training'
+      fullPath: '/assign-training'
+      preLoaderRoute: typeof AssignTrainingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compliance': {
@@ -552,6 +572,7 @@ const ReferenceRouteWithChildren = ReferenceRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApprovalsRoute: ApprovalsRoute,
+  AssignTrainingRoute: AssignTrainingRoute,
   ComplianceRoute: ComplianceRoute,
   DeliveryIssuesRoute: DeliveryIssuesRoute,
   HuddleNotesRoute: HuddleNotesRoute,
