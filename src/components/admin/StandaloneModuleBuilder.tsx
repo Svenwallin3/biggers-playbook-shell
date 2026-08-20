@@ -17,7 +17,7 @@ import type { ModuleRow, StepRow, TrackRow } from "@/lib/training.queries";
  */
 export function allStepsQueryOptions(moduleId: string) {
   return queryOptions({
-    queryKey: ["module-all-steps", moduleId],
+    queryKey: ["module", moduleId, "all-steps"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("steps")
@@ -114,7 +114,6 @@ export function StandaloneModuleBuilder({
           canEditDirect={canEditDirect}
           trigger={<Button size="sm">+ Add step</Button>}
           onCreated={() => {
-            void queryClient.invalidateQueries({ queryKey: ["module-all-steps", mod.id] });
             void queryClient.invalidateQueries({ queryKey: ["module", mod.id] });
           }}
         />
