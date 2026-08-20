@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPanels";
+import { NewStepDialog } from "@/components/admin/ContentCreateDialogs";
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
@@ -213,6 +214,7 @@ function ModulePage() {
               moduleId={emptyMod.id}
               nextSequence={1}
               canEditDirect={isOwner || isGeneralManager}
+              trigger={<Button size="sm">+ Add first step</Button>}
               onCreated={(id) => {
                 void queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
                 void navigate({
