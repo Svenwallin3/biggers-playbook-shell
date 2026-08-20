@@ -199,9 +199,7 @@ function ModulePage() {
         mod.track.department === employee.department_scope);
     return (
       <div className="space-y-6">
-        <Link to="/assign-training" className="text-xs text-muted-foreground hover:underline">
-          ← Assign training
-        </Link>
+        <BackLink />
         <StandaloneModuleBuilder
           module={mod}
           canEditDirect={canEditDirect}
