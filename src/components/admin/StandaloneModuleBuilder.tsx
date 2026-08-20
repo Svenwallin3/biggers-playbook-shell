@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPanels";
+import { ModuleEditPanel } from "@/components/admin/EntityEditPanels";
+import { StandaloneStepEditor } from "@/components/admin/StandaloneStepEditor";
+
 import { NewStepDialog } from "@/components/admin/ContentCreateDialogs";
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import type { ModuleRow, StepRow, TrackRow } from "@/lib/training.queries";
