@@ -221,12 +221,29 @@ function AssignTrainingPage() {
                             </p>
                           </div>
                           {canManage ? (
-                            <Button size="sm" onClick={() => setAssignModule(m)}>
-                              Assign
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button asChild size="icon" variant="ghost" className="size-9">
+                                    <Link
+                                      to="/admin/content"
+                                      search={{ moduleId: m.id }}
+                                      aria-label={`Manage content for ${m.name}`}
+                                    >
+                                      <Pencil className="size-4" aria-hidden />
+                                    </Link>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Manage content</TooltipContent>
+                              </Tooltip>
+                              <Button size="sm" onClick={() => setAssignModule(m)}>
+                                Assign
+                              </Button>
+                            </div>
                           ) : (
                             <Badge variant="secondary">View only</Badge>
                           )}
+
                         </div>
                       ))}
                     </CardContent>
