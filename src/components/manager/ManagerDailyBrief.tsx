@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -209,7 +209,7 @@ function TileShell({
   subtext,
   className,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   count?: number;
   label: string;
   subtext?: string | null;

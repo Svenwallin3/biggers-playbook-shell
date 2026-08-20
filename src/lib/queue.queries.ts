@@ -25,6 +25,8 @@ export type QueueEntry = {
   progressId: string | null;
   completed: number;
   total: number;
+  /** Most recent non-empty trainer note left on any of this trainee's steps. */
+  lastNote: string | null;
 };
 
 export type OnboardingProgress = { completed: number; total: number };
@@ -140,7 +142,7 @@ export function trainingQueueQueryOptions(scope: {
 
       const { data: progress, error: progressError } = await supabase
         .from("progress_records")
-        .select("id, employee_id, step_id, status")
+        .select("id, employee_id, step_id, status, notes, updated_at")
         .in(
           "employee_id",
           employees.map((e) => e.id),
@@ -152,6 +154,15 @@ export function trainingQueueQueryOptions(scope: {
           .filter((r) => r.status === "completed" || r.status === "signed_off")
           .map((r) => `${r.employee_id}:${r.step_id}`),
       );
+      const latestNoteByEmployee = new Map<string, { at: string; note: string }>();
+      for (const r of progress ?? []) {
+        const note = (r.notes ?? "").trim();
+        if (!note) continue;
+        const current = latestNoteByEmployee.get(r.employee_id);
+        if (!current || r.updated_at > current.at) {
+          latestNoteByEmployee.set(r.employee_id, { at: r.updated_at, note });
+        }
+      }
       const progressIds = new Map(
         (progress ?? []).map((r) => [`${r.employee_id}:${r.step_id}`, r.id]),
       );
@@ -206,6 +217,7 @@ export function trainingQueueQueryOptions(scope: {
           progressId: next ? (progressIds.get(`${employee.id}:${next.step.id}`) ?? null) : null,
           completed,
           total,
+          lastNote: latestNoteByEmployee.get(employee.id)?.note ?? null,
         };
       });
     },
