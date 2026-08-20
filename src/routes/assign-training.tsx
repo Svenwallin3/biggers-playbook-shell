@@ -203,7 +203,13 @@ function AssignTrainingPage() {
                         defaultCategory={
                           group.category === UNCATEGORIZED ? "" : group.category
                         }
-                        onCreated={(id) => navigate({ to: "/admin/content", search: { moduleId: id } })}
+                        onCreated={(id) =>
+                          navigate({
+                            to: "/modules/$moduleId",
+                            params: { moduleId: id },
+                            search: { preview: true },
+                          })
+                        }
                         trigger={
                           <Button size="sm" variant="outline" className="shrink-0">
                             + New module
