@@ -74,7 +74,9 @@ export function StandaloneModuleBuilder({
         canEdit={canEditDirect}
         employeeId={employeeId}
         deleteRequiresApproval={deleteRequiresApproval}
+        standalone
       />
+
 
       {stepsQuery.isPending ? (
         <p className="text-sm text-muted-foreground">Loading steps…</p>
