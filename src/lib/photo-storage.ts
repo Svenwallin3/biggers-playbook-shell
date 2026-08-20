@@ -124,31 +124,20 @@ async function convertHeicIfNeeded(file: File): Promise<File> {
   if (native) return native;
 
   try {
-    // Dynamic so the ~1.3 MB decoder is only downloaded by HEIC uploaders.
-    // Interop is defensive: the package is UMD, so depending on the bundler the
-    // callable can sit on the namespace, `.default`, or `.default.default`.
-    const mod = (await import("heic2any")) as unknown as {
-      default?: { default?: unknown } | unknown;
-    };
-    const inner = mod?.default as { default?: unknown } | undefined;
-    const candidate = inner?.default ?? mod?.default ?? mod;
-    if (typeof candidate !== "function") {
-      throw new Error("heic2any did not resolve to a callable export");
-    }
-    const convert = candidate as (opts: {
-      blob: Blob;
-      toType?: string;
-      quality?: number;
-    }) => Promise<Blob | Blob[]>;
-    const result = await convert({ blob: file, toType: "image/jpeg", quality: 0.85 });
-    const blob = Array.isArray(result) ? result[0] : result;
-    if (!blob || !blob.size) throw new Error("heic2any returned an empty image");
+    // Dynamic so the decoder is only downloaded by HEIC uploaders. heic-to
+    // wraps a current libheif/libde265 build, which (unlike heic2any's older
+    // bundle) reconstructs the grid-tiled primary image modern iPhones write
+    // alongside HDR gain map / style / sky-matte auxiliary images.
+    const { heicTo } = await import("heic-to");
+    const blob = await heicTo({ blob: file, type: "image/jpeg", quality: 0.85 });
+    if (!blob || !blob.size) throw new Error("heic-to returned an empty image");
     return asJpegFile(blob, file.name);
   } catch (error) {
     console.error("HEIC conversion failed:", error);
     throw new HeicConversionError();
   }
 }
+
 
 export async function uploadPhoto(file: File, folder: string): Promise<string> {
   const converted = await convertHeicIfNeeded(file);
