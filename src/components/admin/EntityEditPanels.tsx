@@ -249,6 +249,7 @@ export function ModuleEditPanel({
   canEdit,
   employeeId,
   deleteRequiresApproval = false,
+  standalone = false,
   onSaved,
 }: {
   module: ModuleRow;
@@ -261,7 +262,14 @@ export function ModuleEditPanel({
   onSaved?: () => void;
   /** GM path: the guard_module_delete trigger rejects a direct hide, so ask an Owner. */
   deleteRequiresApproval?: boolean;
+  /**
+   * Standalone/assignable authoring: branch, day assignment and sequence order are
+   * meaningless here and a stray day number would silently un-standalone the module,
+   * so those fields are neither rendered nor written.
+   */
+  standalone?: boolean;
 }) {
+
   const empty = {
     name: module.name,
     description: module.description ?? "",
