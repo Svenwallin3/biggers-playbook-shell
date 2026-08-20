@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Pencil } from "lucide-react";
 
 import { NewModuleDialog } from "@/components/admin/ContentCreateDialogs";
 import { NewAssignmentDialog } from "@/components/admin/NewAssignmentDialog";
@@ -16,10 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { contentTreeQueryOptions } from "@/lib/admin.queries";
 import type { Department, ModuleRow } from "@/lib/training.queries";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/assign-training")({
   head: () => ({
