@@ -490,3 +490,25 @@ function ModulePage() {
     </div>
   );
 }
+
+// Real history-back navigation: the module can be reached from Today, the training
+// queue, Assign Training, or search — a fixed destination is always a guess.
+function BackLink() {
+  const router = useRouter();
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      className="text-xs text-muted-foreground hover:underline"
+      onClick={() => {
+        if (router.history.canGoBack()) {
+          router.history.back();
+        } else {
+          void navigate({ to: "/" });
+        }
+      }}
+    >
+      ← Back
+    </button>
+  );
+}
