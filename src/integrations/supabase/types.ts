@@ -356,6 +356,7 @@ export type Database = {
           is_deleted: boolean
           manager_tip: string
           sequence_order: number
+          standard_context: string | null
           standard_text: string
           updated_at: string
         }
@@ -370,6 +371,7 @@ export type Database = {
           is_deleted?: boolean
           manager_tip: string
           sequence_order?: number
+          standard_context?: string | null
           standard_text: string
           updated_at?: string
         }
@@ -384,6 +386,7 @@ export type Database = {
           is_deleted?: boolean
           manager_tip?: string
           sequence_order?: number
+          standard_context?: string | null
           standard_text?: string
           updated_at?: string
         }
@@ -416,6 +419,7 @@ export type Database = {
           is_deleted: boolean
           location_tag: string | null
           note_text: string
+          photo_url: string | null
           updated_at: string
         }
         Insert: {
@@ -429,6 +433,7 @@ export type Database = {
           is_deleted?: boolean
           location_tag?: string | null
           note_text: string
+          photo_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -442,6 +447,7 @@ export type Database = {
           is_deleted?: boolean
           location_tag?: string | null
           note_text?: string
+          photo_url?: string | null
           updated_at?: string
         }
         Relationships: [
