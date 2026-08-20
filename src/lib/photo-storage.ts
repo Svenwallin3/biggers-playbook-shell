@@ -64,8 +64,26 @@ export async function compressImage(file: File): Promise<File> {
   }
 }
 
+/** iPhone HEIC/HEIF → JPEG, client-side. Falls back to the original on failure. */
+async function convertHeicIfNeeded(file: File): Promise<File> {
+  const looksHeic =
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    /\.(heic|heif)$/i.test(file.name);
+  if (!looksHeic) return file;
+  try {
+    const heic2any = (await import("heic2any")).default;
+    const result = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+    const blob = (Array.isArray(result) ? result[0] : result) as Blob;
+    const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+    return new File([blob], name, { type: "image/jpeg", lastModified: Date.now() });
+  } catch {
+    return file;
+  }
+}
+
 export async function uploadPhoto(file: File, folder: string): Promise<string> {
-  const prepared = await compressImage(file);
+  const prepared = await compressImage(await convertHeicIfNeeded(file));
   const ext = prepared.name.split(".").pop()?.toLowerCase() ?? "jpg";
   const path = `${folder}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage
