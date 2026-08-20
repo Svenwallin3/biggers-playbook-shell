@@ -52,6 +52,9 @@ const title = "Huddle & Notes — Biggers Training Platform";
 const description = "Author the daily huddle card rotation and dated manager notes in-app.";
 
 export const Route = createFileRoute("/huddle-notes")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    view: typeof search.view === "string" ? search.view : undefined,
+  }),
   head: () => ({
     meta: [
       { title },
@@ -512,8 +515,80 @@ function ManagerNotesTab() {
   );
 }
 
+/** Read view: today's notes for the manager's own division, with photos. */
+function TodayNotesTab() {
+  const { employee, isOwner, isManagerOrOwner } = useAuth();
+  const department = huddleDepartmentForPath(employee?.path ?? null);
+  const locationId = employee?.location_id ?? null;
+  const notesQuery = useQuery(todaysManagerNotesQueryOptions(department, locationId));
+  const notes = notesQuery.data ?? [];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          {notes.length} note{notes.length === 1 ? "" : "s"} for today · {divisionLabel(department)}
+        </p>
+        {employee ? (
+          <AddNoteDialog
+            department={department}
+            locationId={locationId}
+            employeeId={employee.id}
+            isOwner={isOwner}
+          />
+        ) : null}
+      </div>
+
+      {notesQuery.isPending ? (
+        <p className="text-sm text-muted-foreground">Loading notes…</p>
+      ) : notes.length ? (
+        <ul className="space-y-3">
+          {notes.map((note) => (
+            <li key={note.id} className="rounded-lg border border-border bg-card p-3">
+              <div className="flex items-start gap-2">
+                <p className="min-w-0 flex-1 whitespace-pre-line text-sm leading-relaxed">
+                  {note.note_text}
+                </p>
+                {isManagerOrOwner && employee ? (
+                  <DeleteNoteButton noteId={note.id} employeeId={employee.id} />
+                ) : null}
+              </div>
+              {note.photo_url ? <NotePhoto path={note.photo_url} /> : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+          No notes for today yet.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function NotePhoto({ path }: { path: string }) {
+  const url = usePhotoUrl(path);
+  return (
+    <div className="mt-2 space-y-2">
+      <StoredPhoto path={path} alt="Manager note photo" className="max-h-80" />
+      {url.data ? (
+        <a
+          href={url.data}
+          download
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+        >
+          <Download className="size-4" /> Download photo
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
 function HuddleNotesPage() {
   const { loading, session, isOwner, isManagerOrOwner } = useAuth();
+  const { view } = Route.useSearch();
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (!session) return <Navigate to="/login" />;
@@ -535,22 +610,24 @@ function HuddleNotesPage() {
         </p>
       </div>
 
-      {isOwner ? (
-        <Tabs defaultValue="huddle">
-          <TabsList>
-            <TabsTrigger value="huddle">Huddle cards</TabsTrigger>
-            <TabsTrigger value="notes">Manager notes</TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue={view === "today" ? "today" : isOwner ? "huddle" : "notes"}>
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="today">Today</TabsTrigger>
+          {isOwner ? <TabsTrigger value="huddle">Huddle cards</TabsTrigger> : null}
+          <TabsTrigger value="notes">Manager notes</TabsTrigger>
+        </TabsList>
+        <TabsContent value="today" className="mt-4">
+          <TodayNotesTab />
+        </TabsContent>
+        {isOwner ? (
           <TabsContent value="huddle" className="mt-4">
             <HuddleCardsTab />
           </TabsContent>
-          <TabsContent value="notes" className="mt-4">
-            <ManagerNotesTab />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <ManagerNotesTab />
-      )}
+        ) : null}
+        <TabsContent value="notes" className="mt-4">
+          <ManagerNotesTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
