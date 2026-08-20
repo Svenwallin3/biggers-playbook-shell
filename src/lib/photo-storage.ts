@@ -127,9 +127,11 @@ async function convertHeicIfNeeded(file: File): Promise<File> {
     // Dynamic so the ~1.3 MB decoder is only downloaded by HEIC uploaders.
     // Interop is defensive: the package is UMD, so depending on the bundler the
     // callable can sit on the namespace, `.default`, or `.default.default`.
-    const mod = (await import("heic2any")) as unknown as Record<string, unknown>;
-    const candidate =
-      (mod as { default?: { default?: unknown } })?.default?.default ?? mod?.default ?? mod;
+    const mod = (await import("heic2any")) as unknown as {
+      default?: { default?: unknown } | unknown;
+    };
+    const inner = mod?.default as { default?: unknown } | undefined;
+    const candidate = inner?.default ?? mod?.default ?? mod;
     if (typeof candidate !== "function") {
       throw new Error("heic2any did not resolve to a callable export");
     }
