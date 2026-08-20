@@ -502,13 +502,18 @@ export function ModuleEditPanel({
                 save.mutate({
                   name: form.name.trim(),
                   description: form.description.trim() || null,
-                  sub_path: form.sub_path.trim() || null,
-                  day_assignment: form.day_assignment ? Number(form.day_assignment) : null,
-                  sequence_order: Number(form.sequence_order) || module.sequence_order,
+                  ...(standalone
+                    ? {}
+                    : {
+                        sub_path: form.sub_path.trim() || null,
+                        day_assignment: form.day_assignment ? Number(form.day_assignment) : null,
+                        sequence_order: Number(form.sequence_order) || module.sequence_order,
+                      }),
                   location_tag: form.location_tag.trim() || null,
                   is_assignable: form.is_assignable,
                   category: form.is_assignable ? category.trim() || null : null,
                 })
+
               }
             >
               {save.isPending ? "Saving…" : "Save changes"}
