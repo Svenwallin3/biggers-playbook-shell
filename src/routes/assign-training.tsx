@@ -152,7 +152,13 @@ function AssignTrainingPage() {
                 department={division}
                 nextSequence={modules.filter((m) => m.track_id === divisionTrack.id).length + 1}
                 defaultIsAssignable
-                onCreated={(id) => navigate({ to: "/admin/content", search: { moduleId: id } })}
+                onCreated={(id) =>
+                  navigate({
+                    to: "/modules/$moduleId",
+                    params: { moduleId: id },
+                    search: { preview: true },
+                  })
+                }
                 trigger={
                   <Button size="sm" variant="outline">
                     + New module
@@ -226,8 +232,9 @@ function AssignTrainingPage() {
                                 <TooltipTrigger asChild>
                                   <Button asChild size="icon" variant="ghost" className="size-9">
                                     <Link
-                                      to="/admin/content"
-                                      search={{ moduleId: m.id }}
+                                      to="/modules/$moduleId"
+                                      params={{ moduleId: m.id }}
+                                      search={{ preview: true }}
                                       aria-label={`Manage content for ${m.name}`}
                                     >
                                       <Pencil className="size-4" aria-hidden />
