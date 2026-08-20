@@ -484,7 +484,7 @@ export function NewStepDialog({
   disabled?: boolean | undefined;
   canEditDirect: boolean;
   onCreated: (stepId: string) => void;
-  trigger?: React.ReactNode;
+  trigger?: ReactNode;
 }) {
   const empty = {
     title: "",
