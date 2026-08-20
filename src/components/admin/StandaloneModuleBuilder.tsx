@@ -47,11 +47,12 @@ export function StandaloneModuleBuilder({
   canCreate: boolean;
   employeeId?: string | undefined;
   deleteRequiresApproval: boolean;
-  onPreviewAsTrainee: () => void;
+  onPreviewAsTrainee: () => void | Promise<void>;
 }) {
   const queryClient = useQueryClient();
   const stepsQuery = useQuery(allStepsQueryOptions(mod.id));
   const steps = stepsQuery.data ?? [];
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -62,11 +63,24 @@ export function StandaloneModuleBuilder({
             Standalone module — everything on one page, no step-by-step walk.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={onPreviewAsTrainee}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={previewLoading}
+          onClick={async () => {
+            setPreviewLoading(true);
+            try {
+              await onPreviewAsTrainee();
+            } finally {
+              setPreviewLoading(false);
+            }
+          }}
+        >
           <Eye className="size-4" aria-hidden="true" />
-          Preview as trainee
+          {previewLoading ? "Loading…" : "Preview as trainee"}
         </Button>
       </div>
+
 
       <ModuleEditPanel
         module={mod}
