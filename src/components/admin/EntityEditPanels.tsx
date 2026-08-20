@@ -367,64 +367,69 @@ export function ModuleEditPanel({
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="mod-subpath">Branch (sub-path)</Label>
-              <Select
-                value={subPathIsCustom ? "__custom__" : form.sub_path || "__none__"}
-                disabled={!canEdit}
-                onValueChange={(v) => {
-                  if (v === "__custom__") {
-                    setSubPathIsCustom(true);
-                    return;
-                  }
-                  setSubPathIsCustom(false);
-                  patch({ sub_path: v === "__none__" ? "" : v });
-                }}
-              >
-                <SelectTrigger id="mod-subpath">
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">None</SelectItem>
-                  {branchChoices.map((b) => (
-                    <SelectItem key={b} value={b}>
-                      {b}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="__custom__">Custom…</SelectItem>
-                </SelectContent>
-              </Select>
-              {subPathIsCustom ? (
-                <Input
-                  aria-label="Custom branch name"
-                  placeholder="New branch name"
-                  value={form.sub_path}
-                  maxLength={60}
-                  disabled={!canEdit}
-                  onChange={(e) => patch({ sub_path: e.target.value })}
-                />
-              ) : null}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="mod-day">Day assignment</Label>
-              <Input
-                id="mod-day"
-                type="number"
-                value={form.day_assignment}
-                disabled={!canEdit}
-                onChange={(e) => patch({ day_assignment: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="mod-seq">Sequence order</Label>
-              <Input
-                id="mod-seq"
-                type="number"
-                value={form.sequence_order}
-                disabled={!canEdit}
-                onChange={(e) => patch({ sequence_order: e.target.value })}
-              />
-            </div>
+            {standalone ? null : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="mod-subpath">Branch (sub-path)</Label>
+                  <Select
+                    value={subPathIsCustom ? "__custom__" : form.sub_path || "__none__"}
+                    disabled={!canEdit}
+                    onValueChange={(v) => {
+                      if (v === "__custom__") {
+                        setSubPathIsCustom(true);
+                        return;
+                      }
+                      setSubPathIsCustom(false);
+                      patch({ sub_path: v === "__none__" ? "" : v });
+                    }}
+                  >
+                    <SelectTrigger id="mod-subpath">
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">None</SelectItem>
+                      {branchChoices.map((b) => (
+                        <SelectItem key={b} value={b}>
+                          {b}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__custom__">Custom…</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {subPathIsCustom ? (
+                    <Input
+                      aria-label="Custom branch name"
+                      placeholder="New branch name"
+                      value={form.sub_path}
+                      maxLength={60}
+                      disabled={!canEdit}
+                      onChange={(e) => patch({ sub_path: e.target.value })}
+                    />
+                  ) : null}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="mod-day">Day assignment</Label>
+                  <Input
+                    id="mod-day"
+                    type="number"
+                    value={form.day_assignment}
+                    disabled={!canEdit}
+                    onChange={(e) => patch({ day_assignment: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="mod-seq">Sequence order</Label>
+                  <Input
+                    id="mod-seq"
+                    type="number"
+                    value={form.sequence_order}
+                    disabled={!canEdit}
+                    onChange={(e) => patch({ sequence_order: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="mod-loc">Location tag</Label>
               <Input
