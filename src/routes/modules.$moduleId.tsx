@@ -181,65 +181,43 @@ function ModulePage() {
   if (!moduleQuery.data) {
     return <p className="text-sm text-muted-foreground">Module not found.</p>;
   }
-  if (!moduleQuery.data.steps.length) {
-    const emptyMod = moduleQuery.data.module;
-    // Creating brand-new content is broader than direct-editing existing content:
-    // any manager in their own division, or an owner anywhere (mirrors /admin/content).
-    const canCreateHere =
-      isOwner ||
-      (employee?.auth_tier === "manager" &&
-        !!emptyMod.track?.department &&
-        emptyMod.track.department === employee.department_scope);
-    if (!canCreateHere) {
-      return <p className="text-sm text-muted-foreground">This module has no steps yet.</p>;
-    }
-    return (
-      <div className="space-y-6">
-        <Link to="/" className="text-xs text-muted-foreground hover:underline">
-          ← Today&apos;s training
-        </Link>
-        <ModuleHeader
-          as="h2"
-          trackName={emptyMod.track?.name}
-          subPath={emptyMod.sub_path}
-          dayAssignment={emptyMod.day_assignment}
-          name={emptyMod.name}
-        />
-        <div className="rounded-lg border border-dashed border-border p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            This module has no steps yet. Add the first one to start building it.
-          </p>
-          <div className="mt-4 flex justify-center">
-            <NewStepDialog
-              moduleId={emptyMod.id}
-              nextSequence={1}
-              canEditDirect={isOwner || isGeneralManager}
-              trigger={<Button size="sm">+ Add first step</Button>}
-              onCreated={(id) => {
-                void queryClient.invalidateQueries({ queryKey: ["module", moduleId] });
-                void navigate({
-                  to: "/modules/$moduleId",
-                  params: { moduleId },
-                  search: {
-                    step: id,
-                    ...(trainee ? { trainee } : {}),
-                    ...(previewMode ? { preview: true } : {}),
-                  },
-                });
-                setStepSheetOpen(true);
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const { module: mod, steps, quizzes } = moduleQuery.data;
   // Mirrors the gating in /admin/content — RLS is still the real boundary.
   const inDivision = mod.track?.department === employee?.department_scope;
   const canEditDirect = isOwner || (isGeneralManager && inDivision);
   const canSuggest = isManagerOrOwner && !canEditDirect && inDivision;
+
+  // Standalone (non-day) modules are authored as one flat page, never a paginated walk.
+  // Only ever true for an editor in preview mode — real trainees are untouched.
+  if (previewMode && canEditDirect && mod.day_assignment === null && !traineePreview) {
+    const canCreateHere =
+      isOwner ||
+      (employee?.auth_tier === "manager" &&
+        !!mod.track?.department &&
+        mod.track.department === employee.department_scope);
+    return (
+      <div className="space-y-6">
+        <Link to="/" className="text-xs text-muted-foreground hover:underline">
+          ← Today&apos;s training
+        </Link>
+        <StandaloneModuleBuilder
+          module={mod}
+          canEditDirect={canEditDirect}
+          canSuggest={canSuggest}
+          canCreate={canCreateHere}
+          employeeId={employee?.id}
+          deleteRequiresApproval={isGeneralManager && !isOwner}
+          onPreviewAsTrainee={() => setTraineePreview(true)}
+        />
+      </div>
+    );
+  }
+
+  if (!steps.length) {
+    return <p className="text-sm text-muted-foreground">This module has no steps yet.</p>;
+  }
+
+
   const active = steps.find((s) => s.id === stepParam) ?? steps[0]!;
   const activeRecord = progressByStep.get(active.id);
   const activeComplete =
