@@ -152,7 +152,7 @@ function AssignTrainingPage() {
                 department={division}
                 nextSequence={modules.filter((m) => m.track_id === divisionTrack.id).length + 1}
                 defaultIsAssignable
-                onCreated={() => undefined}
+                onCreated={(id) => navigate({ to: "/admin/content", search: { moduleId: id } })}
                 trigger={
                   <Button size="sm" variant="outline">
                     + New module
@@ -197,7 +197,7 @@ function AssignTrainingPage() {
                         defaultCategory={
                           group.category === UNCATEGORIZED ? "" : group.category
                         }
-                        onCreated={() => undefined}
+                        onCreated={(id) => navigate({ to: "/admin/content", search: { moduleId: id } })}
                         trigger={
                           <Button size="sm" variant="outline" className="shrink-0">
                             + New module
