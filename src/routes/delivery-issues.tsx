@@ -93,7 +93,8 @@ function DeliveryIssuesPage() {
                   <p className="text-sm leading-relaxed">{issue.issue_description}</p>
                   <p className="text-xs text-muted-foreground">
                     Reported by {personName(issue.reporter)} · Assigned to{" "}
-                    {personName(issue.assignee)} · {formatDate(issue.created_at)}
+                    {personName(issue.assignee)} · Reported {formatDate(issue.created_at)}
+                    {issue.truck_date ? ` · Truck ${issue.truck_date}` : ""}
                   </p>
                   <Button
                     size="sm"
@@ -116,7 +117,8 @@ function DeliveryIssuesPage() {
                   <TableHead>Issue</TableHead>
                   <TableHead>Reported by</TableHead>
                   <TableHead>Assigned to</TableHead>
-                  <TableHead>Created</TableHead>
+                  <TableHead>Truck date</TableHead>
+                  <TableHead>Reported</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -131,6 +133,7 @@ function DeliveryIssuesPage() {
                     </TableCell>
                     <TableCell>{personName(issue.reporter)}</TableCell>
                     <TableCell>{personName(issue.assignee)}</TableCell>
+                    <TableCell>{issue.truck_date ?? "—"}</TableCell>
                     <TableCell>{formatDate(issue.created_at)}</TableCell>
                     <TableCell className="text-right">
                       <Button
