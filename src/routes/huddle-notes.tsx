@@ -33,11 +33,17 @@ import {
   setHuddleCardDeleted,
   setManagerNoteDeleted,
   todayISODate,
+  todaysManagerNotesQueryOptions,
+  huddleDepartmentForPath,
   updateHuddleCard,
   updateManagerNote,
   type HuddleCardRow,
   type ManagerNoteRow,
 } from "@/lib/huddle.queries";
+import { AddNoteDialog, DeleteNoteButton } from "@/components/manager/ManagerDailyBrief";
+import { StoredPhoto } from "@/components/PhotoUpload";
+import { usePhotoUrl } from "@/lib/photo-storage";
+import { Download } from "lucide-react";
 import {
   divisionLabel,
   divisionOptions,
