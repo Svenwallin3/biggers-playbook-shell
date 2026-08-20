@@ -306,9 +306,7 @@ function ModulePage() {
         </div>
       ) : null}
       <div className="flex items-center justify-between gap-3">
-        <Link to="/" className="text-xs text-muted-foreground hover:underline">
-          ← Today&apos;s training
-        </Link>
+        <BackLink />
       </div>
 
       <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur supports-backdrop-filter:bg-background/80 sm:-mx-6 sm:px-6">
