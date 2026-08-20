@@ -36,7 +36,8 @@ export function PhotoUpload({
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    const isHeic = /\.(heic|heif)$/i.test(file.name);
+    if (!file.type.startsWith("image/") && !isHeic) {
       toast.error("Pick an image file.");
       return;
     }
@@ -66,7 +67,7 @@ export function PhotoUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         className="sr-only"
         onChange={(e) => void handleFile(e.target.files?.[0])}
       />
