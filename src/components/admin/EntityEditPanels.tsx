@@ -71,17 +71,30 @@ function HistoryCard({
 }) {
   const historyQuery = useQuery(versionHistoryQueryOptions(entityType, entityId));
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Version history</CardTitle>
-        <CardDescription>Every edit is captured — nothing is overwritten silently.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {historyQuery.isPending ? (
-          <p className="text-sm text-muted-foreground">Loading history…</p>
-        ) : !historyQuery.data?.length ? (
-          <p className="text-sm text-muted-foreground">No recorded edits for this {label} yet.</p>
-        ) : (
+    <Collapsible defaultOpen={false}>
+      <Card>
+        <CollapsibleTrigger className="group flex w-full items-start justify-between gap-3 text-left">
+          <CardHeader className="flex-1">
+            <CardTitle className="text-base">Version history</CardTitle>
+            <CardDescription>
+              Every edit is captured — nothing is overwritten silently.
+            </CardDescription>
+          </CardHeader>
+          <ChevronDown
+            className="mr-6 mt-6 size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180"
+            aria-hidden="true"
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent>
+            {historyQuery.isPending ? (
+              <p className="text-sm text-muted-foreground">Loading history…</p>
+            ) : !historyQuery.data?.length ? (
+              <p className="text-sm text-muted-foreground">
+                No recorded edits for this {label} yet.
+              </p>
+            ) : (
+
           <ul className="space-y-3">
             {historyQuery.data.map((v) => {
               const snap = (v.snapshot ?? {}) as Record<string, unknown>;
