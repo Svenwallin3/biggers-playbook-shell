@@ -5,7 +5,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { removePhoto, uploadPhoto, usePhotoUrl } from "@/lib/photo-storage";
+import {
+  HeicConversionError,
+  removePhoto,
+  uploadPhoto,
+  usePhotoUrl,
+} from "@/lib/photo-storage";
 
 export type PhotoUploadProps = {
   /** Stored object path (or null when there's no photo yet). */
@@ -52,9 +57,13 @@ export function PhotoUpload({
       onChange(path);
       if (previousPath && !/^https?:\/\//.test(previousPath)) void removePhoto(previousPath);
     } catch (error) {
-      toast.error("Couldn't upload that photo", {
-        description: error instanceof Error ? error.message : undefined,
-      });
+      if (error instanceof HeicConversionError) {
+        toast.error(error.message);
+      } else {
+        toast.error("Couldn't upload that photo", {
+          description: error instanceof Error ? error.message : undefined,
+        });
+      }
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";

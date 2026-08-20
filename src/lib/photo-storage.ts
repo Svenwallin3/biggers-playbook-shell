@@ -64,26 +64,97 @@ export async function compressImage(file: File): Promise<File> {
   }
 }
 
-/** iPhone HEIC/HEIF → JPEG, client-side. Falls back to the original on failure. */
-async function convertHeicIfNeeded(file: File): Promise<File> {
-  const looksHeic =
+/** Thrown when an iPhone HEIC photo can't be turned into a JPEG we can display. */
+export class HeicConversionError extends Error {
+  constructor() {
+    super("Couldn't convert this photo — try saving it as a JPEG first, then upload again.");
+    this.name = "HeicConversionError";
+  }
+}
+
+function looksHeic(file: File) {
+  return (
     file.type === "image/heic" ||
     file.type === "image/heif" ||
-    /\.(heic|heif)$/i.test(file.name);
-  if (!looksHeic) return file;
+    file.type === "image/heic-sequence" ||
+    file.type === "image/heif-sequence" ||
+    /\.(heic|heif)$/i.test(file.name)
+  );
+}
+
+function asJpegFile(blob: Blob, originalName: string) {
+  const name = originalName.replace(/\.[^.]+$/, "") + ".jpg";
+  return new File([blob], name, { type: "image/jpeg", lastModified: Date.now() });
+}
+
+/**
+ * Safari/WebKit can decode HEIC natively — much faster and far more reliable
+ * than the JS decoder. Returns null anywhere else (Chrome/Firefox/Edge).
+ */
+async function nativeHeicToJpeg(file: File): Promise<File | null> {
+  if (typeof createImageBitmap !== "function" || typeof document === "undefined") return null;
   try {
-    const heic2any = (await import("heic2any")).default;
-    const result = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
-    const blob = (Array.isArray(result) ? result[0] : result) as Blob;
-    const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
-    return new File([blob], name, { type: "image/jpeg", lastModified: Date.now() });
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close?.();
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
+    );
+    if (!blob || !blob.size) return null;
+    return asJpegFile(blob, file.name);
   } catch {
-    return file;
+    return null;
+  }
+}
+
+/**
+ * iPhone HEIC/HEIF → JPEG, client-side. Never returns an unconverted HEIC:
+ * an unusable upload that renders as a broken image everywhere is worse than a
+ * clear error, so a failure throws HeicConversionError for the caller to show.
+ */
+async function convertHeicIfNeeded(file: File): Promise<File> {
+  if (!looksHeic(file)) return file;
+
+  const native = await nativeHeicToJpeg(file);
+  if (native) return native;
+
+  try {
+    // Dynamic so the ~1.3 MB decoder is only downloaded by HEIC uploaders.
+    // Interop is defensive: the package is UMD, so depending on the bundler the
+    // callable can sit on the namespace, `.default`, or `.default.default`.
+    const mod = (await import("heic2any")) as unknown as {
+      default?: { default?: unknown } | unknown;
+    };
+    const inner = mod?.default as { default?: unknown } | undefined;
+    const candidate = inner?.default ?? mod?.default ?? mod;
+    if (typeof candidate !== "function") {
+      throw new Error("heic2any did not resolve to a callable export");
+    }
+    const convert = candidate as (opts: {
+      blob: Blob;
+      toType?: string;
+      quality?: number;
+    }) => Promise<Blob | Blob[]>;
+    const result = await convert({ blob: file, toType: "image/jpeg", quality: 0.85 });
+    const blob = Array.isArray(result) ? result[0] : result;
+    if (!blob || !blob.size) throw new Error("heic2any returned an empty image");
+    return asJpegFile(blob, file.name);
+  } catch (error) {
+    console.error("HEIC conversion failed:", error);
+    throw new HeicConversionError();
   }
 }
 
 export async function uploadPhoto(file: File, folder: string): Promise<string> {
-  const prepared = await compressImage(await convertHeicIfNeeded(file));
+  const converted = await convertHeicIfNeeded(file);
+  const prepared = await compressImage(converted);
+  // Last line of defence: never store a HEIC — it can't render outside Safari.
+  if (looksHeic(prepared)) throw new HeicConversionError();
   const ext = prepared.name.split(".").pop()?.toLowerCase() ?? "jpg";
   const path = `${folder}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage
@@ -92,6 +163,7 @@ export async function uploadPhoto(file: File, folder: string): Promise<string> {
   if (error) throw error;
   return path;
 }
+
 
 export async function removePhoto(path: string) {
   // Best-effort cleanup; a dangling object is harmless.
