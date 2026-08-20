@@ -1,39 +1,23 @@
-import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  BookOpen,
-  Check,
-  ChevronRight,
-  Compass,
-  Lock,
-  PartyPopper,
-  Search,
-} from "lucide-react";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { BookOpen, Check, ChevronRight, GraduationCap } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { FlagStepButton } from "@/components/training/FlagStepButton";
-import { AskAssistant } from "@/components/training/AskAssistant";
-import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { StepTypeChip } from "@/components/training/StepTypeChip";
 import { ProgressRing } from "@/components/training/ProgressRing";
-import { trackTheme } from "@/lib/track-theme";
 import { LocationChoice, PathChoice, SubPathChoice } from "@/components/PathChoice";
-import { ManagerDailyBrief } from "@/components/manager/ManagerDailyBrief";
-import { MascotImage } from "@/components/brand/MascotImage";
-import { ReportDeliveryIssueDialog } from "@/components/sourcing/ReportDeliveryIssueDialog";
+import {
+  ManagerTileGrid,
+  QuickActionRow,
+  SourcingTile,
+  StandardOfTheDay,
+} from "@/components/manager/ManagerDailyBrief";
 import { useAuth } from "@/hooks/useAuth";
 import type { PlanModule, ProgressRow } from "@/lib/training.queries";
 import {
   planQueryOptions,
   progressQueryOptions,
-  setStepProgress,
-  trainerSignoffTypes,
   branchOptionsQueryOptions,
 } from "@/lib/training.queries";
 
@@ -137,8 +121,6 @@ function HospitalityWelcome({
 
 function IndexPage() {
   const { employee, loading, session } = useAuth();
-  const queryClient = useQueryClient();
-  const [reportOpen, setReportOpen] = useState(false);
 
   const planQuery = useQuery({
     ...planQueryOptions(employee?.department_scope ?? null, employee?.sub_path ?? null),
@@ -150,18 +132,6 @@ function IndexPage() {
   const progressByStep = new Map(
     (progressQuery.data ?? []).map((record) => [record.step_id, record]),
   );
-
-  const toggle = useMutation({
-    mutationFn: (input: { stepId: string; completed: boolean }) =>
-      setStepProgress({
-        employeeId: employee!.id,
-        stepId: input.stepId,
-        completed: input.completed,
-        existingId: progressByStep.get(input.stepId)?.id,
-      }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["progress", employee?.id] }),
-    onError: (error: Error) => toast.error("Couldn't save that", { description: error.message }),
-  });
 
   if (loading) {
     return <p className="text-sm text-muted-foreground">Loading your training…</p>;
@@ -187,7 +157,6 @@ function IndexPage() {
       progressByStep.get(s.id)?.status === "signed_off",
   ).length;
   const pct = Math.round((done / Math.max(allSteps.length, 1)) * 100);
-  const trainingComplete = allSteps.length > 0 && done === allSteps.length;
   // The single "one thing to do next" across the whole ordered plan.
   const upNext = (() => {
     for (const mod of modules) {
@@ -238,10 +207,17 @@ function IndexPage() {
     }
   }
 
+  const isManagerTier = employee.auth_tier !== "staff";
+
   return (
-    <div className="space-y-6">
-      {employee.auth_tier !== "staff" ? <ManagerDailyBrief employee={employee} /> : null}
-      {upNext && !trainingComplete ? (
+    <div className="space-y-5">
+      <StandardOfTheDay employee={employee} />
+
+      <QuickActionRow />
+
+      {isManagerTier ? <ManagerTileGrid employee={employee} /> : null}
+
+      {!isManagerTier && upNext ? (
         <section className="overflow-hidden rounded-2xl bg-linear-to-br from-hero to-hero-edge text-hero-foreground shadow-md">
           <div className="flex flex-wrap items-start justify-between gap-5 px-5 py-6 sm:gap-6 sm:px-8 sm:py-7">
             <div className="min-w-0 flex-1">
@@ -290,236 +266,32 @@ function IndexPage() {
             />
           </div>
         </section>
-      ) : (
-        <section className="rounded-2xl border border-primary/25 bg-primary-tint px-5 py-5 sm:px-6">
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <PartyPopper className="size-5" aria-hidden />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h1 className="font-display text-2xl font-semibold tracking-tight">
-                Training complete, {(employee.full_name ?? employee.email).split(" ")[0]}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {allSteps.length
-                  ? `All ${allSteps.length} steps signed off. Come back any time for a refresher.`
-                  : "No modules are assigned to your path yet."}
-              </p>
-            </div>
-            <Button asChild variant="outline" className="shrink-0">
-              <Link to="/training-library">
-                <BookOpen className="mr-1.5 size-4" />
-                Browse all training
-              </Link>
-            </Button>
-            <MascotImage path="mascot/empty.png" alt="" />
-          </div>
-        </section>
-      )}
+      ) : null}
 
-      <section className="rounded-xl border border-border bg-card px-5 py-5">
-        <AskAssistant />
-        <Link to="/search" className="mt-3 block">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              readOnly
-              placeholder="Search every module, step, and sourcing entry…"
-              className="h-12 cursor-pointer border-border bg-background pl-9 text-base shadow-xs"
-            />
-          </div>
-        </Link>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Button variant="outline" onClick={() => setReportOpen(true)}>
-            <AlertTriangle className="mr-1.5 size-4" />
-            Report a delivery issue
-          </Button>
-          {trainingComplete ? null : (
-            <span className="text-xs text-muted-foreground">
-              Something wrong with a truck order? Tell us here — anyone can report.
-            </span>
-          )}
-        </div>
-      </section>
+      {!isManagerTier ? <SourcingTile /> : null}
 
-      <ReportDeliveryIssueDialog open={reportOpen} onOpenChange={setReportOpen} />
-
-      <section className="space-y-4">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Today, in order
-        </h2>
-
-        {planQuery.isPending ? (
-          <p className="text-sm text-muted-foreground">Loading modules…</p>
-        ) : null}
-        {planQuery.isError ? (
-          <p className="text-sm text-destructive">Couldn&apos;t load your modules.</p>
-        ) : null}
-        {!planQuery.isPending && !modules.length ? (
-          <p className="text-sm text-muted-foreground">
-            No modules are assigned to your path yet.
-          </p>
-        ) : null}
-
-        {modules.map((mod, modIndex) => {
-          const moduleDone = mod.steps.every((s) => {
-            const r = progressByStep.get(s.id);
-            return r?.status === "completed" || r?.status === "signed_off";
-          });
-          const firstOpenIndex = modules.findIndex((m) =>
-            m.steps.some((s) => {
-              const r = progressByStep.get(s.id);
-              return !(r?.status === "completed" || r?.status === "signed_off");
-            }),
-          );
-          const isActive = modIndex === firstOpenIndex;
-          const isFuture = firstOpenIndex !== -1 && modIndex > firstOpenIndex;
-          const theme = trackTheme(mod.track.name);
-          return (
-          <Card
-            key={mod.id}
-            className={
-              "relative overflow-hidden pl-1.5 " +
-              (isActive
-                ? "border-primary/45 shadow-md ring-1 ring-primary/15"
-                : isFuture
-                  ? "border-dashed bg-muted/30 opacity-70"
-                  : "bg-card/70")
-            }
+      <div className="divide-y divide-border rounded-xl border border-border bg-card">
+        {isManagerTier && upNext ? (
+          <Link
+            to="/modules/$moduleId"
+            params={{ moduleId: upNext.module.id }}
+            search={{ step: upNext.step.id, trainee: undefined }}
+            className="flex min-h-12 items-center gap-3 px-4 py-3 hover:bg-muted/50"
           >
-            <span
-              className={`absolute inset-y-0 left-0 w-1.5 ${theme.rail} ${isFuture ? "opacity-40" : ""}`}
-              aria-hidden
-            />
-            <CardContent className={isActive ? "py-5" : "py-4"}>
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p
-                    className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                      isFuture ? "text-muted-foreground" : theme.label
-                    }`}
-                  >
-                    {isActive ? (
-                      <span className="rounded-sm bg-accent px-1.5 py-0.5 text-[10px] font-bold text-accent-foreground">
-                        In progress
-                      </span>
-                    ) : moduleDone ? (
-                      <Check className="size-3.5 text-success" />
-                    ) : isFuture ? (
-                      <Lock className="size-3 text-muted-foreground" />
-                    ) : null}
-                    {mod.track.name}
-                    {mod.sub_path ? ` · ${mod.sub_path}` : ""}
-                    {mod.day_assignment ? ` · Day ${mod.day_assignment}` : ""}
-                  </p>
-                  <Link
-                    to="/modules/$moduleId"
-                    params={{ moduleId: mod.id }}
-                    search={{ step: undefined }}
-                    className={`font-display font-semibold hover:underline ${
-                      isActive ? "text-xl" : "text-base"
-                    }`}
-                  >
-                    {mod.name}
-                  </Link>
-                  {mod.description && isActive ? (
-                    <p className="mt-1 text-sm text-muted-foreground">{mod.description}</p>
-                  ) : null}
-                </div>
-              </div>
-
-              <ul className="mt-3 divide-y divide-border/70 border-t border-border/70">
-                {mod.steps.map((step) => {
-                  const record = progressByStep.get(step.id);
-                  const complete =
-                    record?.status === "completed" || record?.status === "signed_off";
-                  const trainerOnly = trainerSignoffTypes.includes(step.step_type);
-                  return (
-                    <li
-                      key={step.id}
-                      className={`flex flex-wrap items-center justify-between gap-2 py-1.5 ${
-                        complete ? "opacity-60" : ""
-                      }`}
-                    >
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <Checkbox
-                          checked={complete}
-                          disabled={trainerOnly || toggle.isPending}
-                          aria-label={
-                            trainerOnly
-                              ? "Trainer sign-off required"
-                              : `Mark ${step.title} complete`
-                          }
-                          onCheckedChange={(value) =>
-                            toggle.mutate({ stepId: step.id, completed: value === true })
-                          }
-                        />
-                        <Link
-                          to="/modules/$moduleId"
-                          params={{ moduleId: mod.id }}
-                          search={{ step: step.id }}
-                          className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-sm hover:underline"
-                        >
-                          <span className={complete ? "text-muted-foreground line-through" : ""}>
-                            {step.sequence_order}. {step.title}
-                          </span>
-                          <StepTypeChip type={step.step_type} />
-                          <StepStatusBadge status={step.content_status} />
-                          {trainerOnly && !complete ? (
-                            <span className="text-xs font-medium text-accent">
-                              Trainer sign-off
-                            </span>
-                          ) : null}
-                        </Link>
-                      </div>
-                      <FlagStepButton
-                        stepId={step.id}
-                        stepTitle={step.title}
-                        moduleId={mod.id}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
-            </CardContent>
-          </Card>
-          );
-        })}
-      </section>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Link to="/training-library" className="block">
-          <Card className="h-full border-primary/30 bg-primary/8 transition-colors hover:border-primary">
-            <CardContent className="flex items-center gap-3 py-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
-                <BookOpen className="size-5" />
-              </span>
-              <div className="flex-1">
-                <p className="font-display text-base font-semibold">Browse all training</p>
-                <p className="text-sm text-muted-foreground">
-                  Refreshers on anything you&apos;ve already covered
-                </p>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link to="/reference/sourcing" className="block">
-          <Card className="h-full border-accent/35 bg-accent/10 transition-colors hover:border-accent">
-            <CardContent className="flex items-center gap-3 py-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent/20 text-accent-foreground">
-                <Compass className="size-5" />
-              </span>
-              <div className="flex-1">
-                <p className="font-display text-base font-semibold">Sourcing Board</p>
-                <p className="text-sm text-muted-foreground">
-                  Where our products come from — guest questions, answered
-                </p>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
+            <GraduationCap className="size-4 shrink-0 text-primary" aria-hidden />
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">
+              Your training · today
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+          </Link>
+        ) : null}
+        <Link
+          to="/training-library"
+          className="flex min-h-12 items-center gap-3 px-4 py-3 hover:bg-muted/50"
+        >
+          <BookOpen className="size-4 shrink-0 text-primary" aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">Browse all training</span>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
         </Link>
       </div>
     </div>
