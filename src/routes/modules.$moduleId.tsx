@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronLeft, ChevronRight, Eye, Lock, Pencil, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -199,9 +199,7 @@ function ModulePage() {
         mod.track.department === employee.department_scope);
     return (
       <div className="space-y-6">
-        <Link to="/assign-training" className="text-xs text-muted-foreground hover:underline">
-          ← Assign training
-        </Link>
+        <BackLink />
         <StandaloneModuleBuilder
           module={mod}
           canEditDirect={canEditDirect}
@@ -308,9 +306,7 @@ function ModulePage() {
         </div>
       ) : null}
       <div className="flex items-center justify-between gap-3">
-        <Link to="/" className="text-xs text-muted-foreground hover:underline">
-          ← Today&apos;s training
-        </Link>
+        <BackLink />
       </div>
 
       <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur supports-backdrop-filter:bg-background/80 sm:-mx-6 sm:px-6">
@@ -492,5 +488,27 @@ function ModulePage() {
         }
       />
     </div>
+  );
+}
+
+// Real history-back navigation: the module can be reached from Today, the training
+// queue, Assign Training, or search — a fixed destination is always a guess.
+function BackLink() {
+  const router = useRouter();
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      className="text-xs text-muted-foreground hover:underline"
+      onClick={() => {
+        if (router.history.canGoBack()) {
+          router.history.back();
+        } else {
+          void navigate({ to: "/" });
+        }
+      }}
+    >
+      ← Back
+    </button>
   );
 }
