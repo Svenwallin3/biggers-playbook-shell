@@ -219,7 +219,6 @@ function ModulePage() {
     return <p className="text-sm text-muted-foreground">This module has no steps yet.</p>;
   }
 
-
   const active = steps.find((s) => s.id === stepParam) ?? steps[0]!;
   const activeRecord = progressByStep.get(active.id);
   const activeComplete =
