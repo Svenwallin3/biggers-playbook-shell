@@ -97,13 +97,13 @@ export function StandaloneModuleBuilder({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <StepEditPanel
+              <StandaloneStepEditor
                 step={s}
-                stepModule={mod}
                 canEditDirect={canEditDirect}
                 canSuggest={canSuggest}
                 employeeId={employeeId}
               />
+
               {s.step_type === "quiz" ? <QuizQuestionsPanel stepId={s.id} /> : null}
             </CardContent>
           </Card>
