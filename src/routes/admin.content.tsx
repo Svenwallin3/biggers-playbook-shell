@@ -94,7 +94,7 @@ function unmetMediaRecommendation(s: {
 
 function ContentEditorPage() {
   const { employee, isManagerOrOwner, isOwner, isGeneralManager, loading } = useAuth();
-  const { stepId } = Route.useSearch();
+  const { stepId, moduleId } = Route.useSearch();
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
   const treeQuery = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
@@ -102,7 +102,15 @@ function ContentEditorPage() {
   const [selection, setSelection] = useState<{
     kind: "step" | "module" | "track";
     id: string;
-  }>({ kind: "step", id: stepId ?? "" });
+    // Steps stay the more specific selection when both params are present.
+  }>(
+    stepId
+      ? { kind: "step", id: stepId }
+      : moduleId
+        ? { kind: "module", id: moduleId }
+        : { kind: "step", id: "" },
+  );
+
   const selectedId = selection.kind === "step" ? selection.id : "";
   const setSelectedId = (id: string) => setSelection({ kind: "step", id });
   const tracks = treeQuery.data?.tracks ?? [];
