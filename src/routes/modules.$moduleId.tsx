@@ -16,11 +16,11 @@ import {
 } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPanels";
-import { NewStepDialog } from "@/components/admin/ContentCreateDialogs";
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { FlagStepButton } from "@/components/training/FlagStepButton";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { TraineeWalk } from "@/components/training/TraineeWalk";
+import { StandaloneModuleBuilder } from "@/components/admin/StandaloneModuleBuilder";
 import { ModuleThemeCard, introCardText } from "@/components/training/ModuleThemeCard";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -79,6 +79,8 @@ function ModulePage() {
   const navigate = useNavigate();
   const [stepSheetOpen, setStepSheetOpen] = useState(false);
   const [moduleSheetOpen, setModuleSheetOpen] = useState(false);
+  // Standalone-module builder: temporarily swap into the trainee-accurate walk.
+  const [traineePreview, setTraineePreview] = useState(false);
   const isAdmin = employee?.auth_tier === "manager" || employee?.auth_tier === "owner";
   // Preview is ignored entirely for non-admins, so a staff member can't opt out of real progress.
   const previewMode = Boolean(preview) && isAdmin;
@@ -285,6 +287,12 @@ function ModulePage() {
 
   return (
     <div className="space-y-6">
+      {traineePreview ? (
+        <Button variant="outline" size="sm" onClick={() => setTraineePreview(false)}>
+          <ChevronLeft className="size-4" aria-hidden="true" />
+          Back to builder
+        </Button>
+      ) : null}
       {previewMode ? (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3">
           <Eye className="size-4 text-warning" aria-hidden="true" />
