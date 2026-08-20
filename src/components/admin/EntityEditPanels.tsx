@@ -835,7 +835,8 @@ export function StepEditPanel({
     onError: (error: Error) => toast.error("Couldn't submit", { description: error.message }),
   });
 
-  const historyQuery = useQuery(versionHistoryQueryOptions("steps", step.id));
+
+
 
   return (
     <>
