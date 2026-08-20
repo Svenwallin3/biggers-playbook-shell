@@ -1134,55 +1134,68 @@ export function StepEditPanel({
         />
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Version history</CardTitle>
-          <CardDescription>
-            Every edit is captured. Restoring writes a new version — nothing is overwritten
-            silently.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {historyQuery.isPending ? (
-            <p className="text-sm text-muted-foreground">Loading history…</p>
-          ) : !historyQuery.data?.length ? (
-            <p className="text-sm text-muted-foreground">No recorded edits for this step yet.</p>
-          ) : (
-            <ul className="space-y-3">
-              {historyQuery.data.map((v) => {
-                const snap = (v.snapshot ?? {}) as Record<string, unknown>;
-                return (
-                  <li
-                    key={v.id}
-                    className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3 last:border-0"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{String(snap["title"] ?? "Untitled")}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(v.created_at).toLocaleString()} ·{" "}
-                        {String(snap["content_status"] ?? "")}
-                      </p>
-                      {snap["content_body"] ? (
-                        <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">
-                          {String(snap["content_body"])}
-                        </p>
-                      ) : null}
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={!canEditDirect || restore.isPending}
-                      onClick={() => restore.mutate(snap)}
-                    >
-                      Restore this version
-                    </Button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <Collapsible defaultOpen={false}>
+        <Card>
+          <CollapsibleTrigger className="group flex w-full items-start justify-between gap-3 text-left">
+            <CardHeader className="flex-1">
+              <CardTitle className="text-base">Version history</CardTitle>
+              <CardDescription>
+                Every edit is captured. Restoring writes a new version — nothing is overwritten
+                silently.
+              </CardDescription>
+            </CardHeader>
+            <ChevronDown
+              className="mr-6 mt-6 size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180"
+              aria-hidden="true"
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent>
+              {historyQuery.isPending ? (
+                <p className="text-sm text-muted-foreground">Loading history…</p>
+              ) : !historyQuery.data?.length ? (
+                <p className="text-sm text-muted-foreground">No recorded edits for this step yet.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {historyQuery.data.map((v) => {
+                    const snap = (v.snapshot ?? {}) as Record<string, unknown>;
+                    return (
+                      <li
+                        key={v.id}
+                        className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3 last:border-0"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">
+                            {String(snap["title"] ?? "Untitled")}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(v.created_at).toLocaleString()} ·{" "}
+                            {String(snap["content_status"] ?? "")}
+                          </p>
+                          {snap["content_body"] ? (
+                            <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">
+                              {String(snap["content_body"])}
+                            </p>
+                          ) : null}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={!canEditDirect || restore.isPending}
+                          onClick={() => restore.mutate(snap)}
+                        >
+                          Restore this version
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
     </>
   );
 }
