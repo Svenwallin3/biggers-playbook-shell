@@ -127,6 +127,7 @@ function HuddleCardsTab() {
   const [editing, setEditing] = useState<HuddleCardRow | null>(null);
   const [category, setCategory] = useState("");
   const [standardText, setStandardText] = useState("");
+  const [standardContext, setStandardContext] = useState("");
   const [managerTip, setManagerTip] = useState("");
   const [departments, setDepartments] = useState<string[]>([]);
   const [sequenceOrder, setSequenceOrder] = useState("0");
@@ -149,6 +150,7 @@ function HuddleCardsTab() {
     setEditing(null);
     setCategory("");
     setStandardText("");
+    setStandardContext("");
     setManagerTip("");
     setDepartments([]);
     const next = (cardsQuery.data ?? []).reduce((m, c) => Math.max(m, c.sequence_order), 0) + 1;
@@ -160,6 +162,7 @@ function HuddleCardsTab() {
     setEditing(card);
     setCategory(card.category);
     setStandardText(card.standard_text);
+    setStandardContext(card.standard_context ?? "");
     setManagerTip(card.manager_tip);
     setDepartments(card.departments ?? []);
     setSequenceOrder(String(card.sequence_order));
@@ -175,6 +178,7 @@ function HuddleCardsTab() {
     const payload = {
       category: category.trim(),
       standardText: standardText.trim(),
+      standardContext: standardContext.trim() || null,
       managerTip: managerTip.trim(),
       departments,
       sequenceOrder: Number(sequenceOrder) || 0,
@@ -232,6 +236,9 @@ function HuddleCardsTab() {
               {card.is_deleted ? <Badge variant="destructive">Removed</Badge> : null}
             </div>
             <p className="mt-2 text-sm">{card.standard_text}</p>
+            {card.standard_context ? (
+              <p className="mt-1 text-sm text-muted-foreground">{card.standard_context}</p>
+            ) : null}
             <p className="mt-1 text-xs text-muted-foreground">Tip: {card.manager_tip}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => startEdit(card)}>
@@ -273,6 +280,16 @@ function HuddleCardsTab() {
                 rows={4}
                 value={standardText}
                 onChange={(e) => setStandardText(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="hc-context">Why it matters (shown to everyone)</Label>
+              <Textarea
+                id="hc-context"
+                rows={2}
+                value={standardContext}
+                onChange={(e) => setStandardContext(e.target.value)}
+                placeholder="One plain sentence of context under the standard."
               />
             </div>
             <div className="space-y-1.5">

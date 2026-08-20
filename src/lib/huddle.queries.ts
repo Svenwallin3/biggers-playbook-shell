@@ -146,6 +146,7 @@ export function allManagerNotesQueryOptions() {
 export type HuddleCardInput = {
   category: string;
   standardText: string;
+  standardContext: string | null;
   managerTip: string;
   departments: string[];
   sequenceOrder: number;
@@ -155,6 +156,7 @@ export async function createHuddleCard(input: HuddleCardInput & { createdBy: str
   const { error } = await supabase.from("huddle_cards").insert({
     category: input.category,
     standard_text: input.standardText,
+    standard_context: input.standardContext,
     manager_tip: input.managerTip,
     departments: input.departments,
     sequence_order: input.sequenceOrder,
@@ -169,6 +171,7 @@ export async function updateHuddleCard(id: string, input: HuddleCardInput) {
     .update({
       category: input.category,
       standard_text: input.standardText,
+      standard_context: input.standardContext,
       manager_tip: input.managerTip,
       departments: input.departments,
       sequence_order: input.sequenceOrder,
