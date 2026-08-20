@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPanels";
+import { ModuleEditPanel } from "@/components/admin/EntityEditPanels";
+import { StandaloneStepEditor } from "@/components/admin/StandaloneStepEditor";
+
 import { NewStepDialog } from "@/components/admin/ContentCreateDialogs";
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import type { ModuleRow, StepRow, TrackRow } from "@/lib/training.queries";
@@ -72,7 +74,9 @@ export function StandaloneModuleBuilder({
         canEdit={canEditDirect}
         employeeId={employeeId}
         deleteRequiresApproval={deleteRequiresApproval}
+        standalone
       />
+
 
       {stepsQuery.isPending ? (
         <p className="text-sm text-muted-foreground">Loading steps…</p>
@@ -93,13 +97,13 @@ export function StandaloneModuleBuilder({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <StepEditPanel
+              <StandaloneStepEditor
                 step={s}
-                stepModule={mod}
                 canEditDirect={canEditDirect}
                 canSuggest={canSuggest}
                 employeeId={employeeId}
               />
+
               {s.step_type === "quiz" ? <QuizQuestionsPanel stepId={s.id} /> : null}
             </CardContent>
           </Card>
