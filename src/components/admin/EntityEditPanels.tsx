@@ -816,27 +816,6 @@ export function StepEditPanel({
     onError: (error: Error) => toast.error("Couldn't do that", { description: error.message }),
   });
 
-  const restore = useMutation({
-    mutationFn: async (snapshot: Record<string, unknown>) => {
-      const { error } = await supabase
-        .from("steps")
-        .update({
-          title: String(snapshot["title"] ?? step.title),
-          step_type: snapshot["step_type"] as StepType,
-          content_status: snapshot["content_status"] as ContentStatus,
-          content_body: (snapshot["content_body"] as string | null) ?? null,
-          content_notes: (snapshot["content_notes"] as string | null) ?? null,
-          location_tag: (snapshot["location_tag"] as string | null) ?? null,
-        })
-        .eq("id", step.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      refresh();
-      toast.success("Restored that version — the replaced one is logged too.");
-    },
-    onError: (error: Error) => toast.error("Couldn't restore", { description: error.message }),
-  });
 
   const suggest = useMutation({
     mutationFn: async () => {
