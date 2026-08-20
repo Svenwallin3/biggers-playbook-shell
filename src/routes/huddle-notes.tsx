@@ -59,7 +59,7 @@ const description = "Author the daily huddle card rotation and dated manager not
 
 export const Route = createFileRoute("/huddle-notes")({
   validateSearch: (search: Record<string, unknown>) => ({
-    view: typeof search.view === "string" ? search.view : undefined,
+    view: typeof search["view"] === "string" ? (search["view"] as string) : undefined,
   }),
   head: () => ({
     meta: [
