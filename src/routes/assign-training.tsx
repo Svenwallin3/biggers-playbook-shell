@@ -56,7 +56,9 @@ const UNCATEGORIZED = "Uncategorized";
 function AssignTrainingPage() {
   const { employee, isManagerOrOwner, isOwner, isGeneralManager, loading } = useAuth();
   const canManage = isOwner || isGeneralManager;
+  const navigate = useNavigate();
   const tree = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
+
 
   const [division, setDivision] = useState<Department>("kitchen");
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
