@@ -506,9 +506,11 @@ export function NewStepDialog({
       successMessage="Step created."
       disabled={disabled}
       trigger={
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
-          + Step
-        </Button>
+        trigger ?? (
+          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+            + Step
+          </Button>
+        )
       }
       reset={() => setForm({ ...empty, sequence_order: String(nextSequence) })}
       onCreated={onCreated}
