@@ -477,12 +477,14 @@ export function NewStepDialog({
   disabled,
   canEditDirect,
   onCreated,
+  trigger,
 }: {
   moduleId: string;
   nextSequence: number;
   disabled?: boolean | undefined;
   canEditDirect: boolean;
   onCreated: (stepId: string) => void;
+  trigger?: ReactNode;
 }) {
   const empty = {
     title: "",
@@ -504,9 +506,11 @@ export function NewStepDialog({
       successMessage="Step created."
       disabled={disabled}
       trigger={
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
-          + Step
-        </Button>
+        trigger ?? (
+          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+            + Step
+          </Button>
+        )
       }
       reset={() => setForm({ ...empty, sequence_order: String(nextSequence) })}
       onCreated={onCreated}
