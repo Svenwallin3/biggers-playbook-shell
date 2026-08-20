@@ -5,7 +5,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { removePhoto, uploadPhoto, usePhotoUrl } from "@/lib/photo-storage";
+import {
+  HeicConversionError,
+  removePhoto,
+  uploadPhoto,
+  usePhotoUrl,
+} from "@/lib/photo-storage";
 
 export type PhotoUploadProps = {
   /** Stored object path (or null when there's no photo yet). */
