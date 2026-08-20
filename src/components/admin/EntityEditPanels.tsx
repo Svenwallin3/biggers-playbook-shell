@@ -94,29 +94,31 @@ function HistoryCard({
                 No recorded edits for this {label} yet.
               </p>
             ) : (
-
-          <ul className="space-y-3">
-            {historyQuery.data.map((v) => {
-              const snap = (v.snapshot ?? {}) as Record<string, unknown>;
-              return (
-                <li key={v.id} className="border-b border-border pb-3 last:border-0">
-                  <p className="text-sm font-medium">{String(snap["name"] ?? "Untitled")}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(v.created_at).toLocaleString()}
-                  </p>
-                  {snap["description"] ? (
-                    <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">
-                      {String(snap["description"])}
-                    </p>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+              <ul className="space-y-3">
+                {historyQuery.data.map((v) => {
+                  const snap = (v.snapshot ?? {}) as Record<string, unknown>;
+                  return (
+                    <li key={v.id} className="border-b border-border pb-3 last:border-0">
+                      <p className="text-sm font-medium">{String(snap["name"] ?? "Untitled")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(v.created_at).toLocaleString()}
+                      </p>
+                      {snap["description"] ? (
+                        <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">
+                          {String(snap["description"])}
+                        </p>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
+
 }
 
 function DeleteControls({
