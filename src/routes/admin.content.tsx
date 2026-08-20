@@ -52,10 +52,15 @@ import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/trainin
 import { contentTreeQueryOptions } from "@/lib/admin.queries";
 
 export const Route = createFileRoute("/admin/content")({
-  validateSearch: (search: Record<string, unknown>): { stepId?: string | undefined } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { stepId?: string | undefined; moduleId?: string | undefined } => ({
     // Deep link from the step viewer: open straight to this step's edit panel.
     stepId: typeof search["stepId"] === "string" ? search["stepId"] : undefined,
+    // Deep link from Assign Training: open straight to this module's edit panel.
+    moduleId: typeof search["moduleId"] === "string" ? search["moduleId"] : undefined,
   }),
+
   head: () => ({
     meta: [
       { title: "Content Editor — Biggers Training" },
@@ -89,7 +94,7 @@ function unmetMediaRecommendation(s: {
 
 function ContentEditorPage() {
   const { employee, isManagerOrOwner, isOwner, isGeneralManager, loading } = useAuth();
-  const { stepId } = Route.useSearch();
+  const { stepId, moduleId } = Route.useSearch();
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
   const treeQuery = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
@@ -97,7 +102,15 @@ function ContentEditorPage() {
   const [selection, setSelection] = useState<{
     kind: "step" | "module" | "track";
     id: string;
-  }>({ kind: "step", id: stepId ?? "" });
+    // Steps stay the more specific selection when both params are present.
+  }>(
+    stepId
+      ? { kind: "step", id: stepId }
+      : moduleId
+        ? { kind: "module", id: moduleId }
+        : { kind: "step", id: "" },
+  );
+
   const selectedId = selection.kind === "step" ? selection.id : "";
   const setSelectedId = (id: string) => setSelection({ kind: "step", id });
   const tracks = treeQuery.data?.tracks ?? [];

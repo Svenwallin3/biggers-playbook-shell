@@ -217,11 +217,16 @@ export function SortableContentTree({
   const moduleById = useMemo(() => new Map(modules.map((m) => [m.id, m])), [modules]);
   const stepById = useMemo(() => new Map(steps.map((s) => [s.id, s])), [steps]);
 
-  // Deep-link (?stepId=…): expand division → day → module, then bring it into view.
+  // Deep-link (?stepId=… / ?moduleId=…): expand division → day → module, then bring into view.
   useEffect(() => {
-    if (selection.kind !== "step" || !selection.id) return;
-    const step = stepById.get(selection.id);
-    const mod = step ? moduleById.get(step.module_id) : undefined;
+    if (!selection.id || (selection.kind !== "step" && selection.kind !== "module")) return;
+    const mod =
+      selection.kind === "module"
+        ? moduleById.get(selection.id)
+        : (() => {
+            const step = stepById.get(selection.id);
+            return step ? moduleById.get(step.module_id) : undefined;
+          })();
     if (!mod) return;
     const keys = [`t-${mod.track_id}`, `d-${mod.track_id}-${dayKeyOf(mod)}`, `m-${mod.id}`];
     if (keys.some((k) => openMap[k] !== true)) {
@@ -230,7 +235,8 @@ export function SortableContentTree({
     }
     selectedRef.current?.scrollIntoView({ block: "nearest" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selection.kind, selection.id, steps.length, moduleById, stepById, openMap]);
+  }, [selection.kind, selection.id, steps.length, modules.length, moduleById, stepById, openMap]);
+
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),

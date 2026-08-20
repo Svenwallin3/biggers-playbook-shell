@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Pencil } from "lucide-react";
 
 import { NewModuleDialog } from "@/components/admin/ContentCreateDialogs";
 import { NewAssignmentDialog } from "@/components/admin/NewAssignmentDialog";
@@ -16,10 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { contentTreeQueryOptions } from "@/lib/admin.queries";
 import type { Department, ModuleRow } from "@/lib/training.queries";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/assign-training")({
   head: () => ({
@@ -54,7 +56,9 @@ const UNCATEGORIZED = "Uncategorized";
 function AssignTrainingPage() {
   const { employee, isManagerOrOwner, isOwner, isGeneralManager, loading } = useAuth();
   const canManage = isOwner || isGeneralManager;
+  const navigate = useNavigate();
   const tree = useQuery({ ...contentTreeQueryOptions(), enabled: isManagerOrOwner });
+
 
   const [division, setDivision] = useState<Department>("kitchen");
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -148,7 +152,7 @@ function AssignTrainingPage() {
                 department={division}
                 nextSequence={modules.filter((m) => m.track_id === divisionTrack.id).length + 1}
                 defaultIsAssignable
-                onCreated={() => undefined}
+                onCreated={(id) => navigate({ to: "/admin/content", search: { moduleId: id } })}
                 trigger={
                   <Button size="sm" variant="outline">
                     + New module
@@ -193,7 +197,7 @@ function AssignTrainingPage() {
                         defaultCategory={
                           group.category === UNCATEGORIZED ? "" : group.category
                         }
-                        onCreated={() => undefined}
+                        onCreated={(id) => navigate({ to: "/admin/content", search: { moduleId: id } })}
                         trigger={
                           <Button size="sm" variant="outline" className="shrink-0">
                             + New module
@@ -217,12 +221,29 @@ function AssignTrainingPage() {
                             </p>
                           </div>
                           {canManage ? (
-                            <Button size="sm" onClick={() => setAssignModule(m)}>
-                              Assign
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button asChild size="icon" variant="ghost" className="size-9">
+                                    <Link
+                                      to="/admin/content"
+                                      search={{ moduleId: m.id }}
+                                      aria-label={`Manage content for ${m.name}`}
+                                    >
+                                      <Pencil className="size-4" aria-hidden />
+                                    </Link>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Manage content</TooltipContent>
+                              </Tooltip>
+                              <Button size="sm" onClick={() => setAssignModule(m)}>
+                                Assign
+                              </Button>
+                            </div>
                           ) : (
                             <Badge variant="secondary">View only</Badge>
                           )}
+
                         </div>
                       ))}
                     </CardContent>
