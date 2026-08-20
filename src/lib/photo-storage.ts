@@ -117,7 +117,7 @@ async function nativeHeicToJpeg(file: File): Promise<File | null> {
  * an unusable upload that renders as a broken image everywhere is worse than a
  * clear error, so a failure throws HeicConversionError for the caller to show.
  */
-async function convertHeicIfNeeded(file: File): Promise<File> {
+export async function convertHeicIfNeeded(file: File): Promise<File> {
   if (!looksHeic(file)) return file;
 
   const native = await nativeHeicToJpeg(file);
