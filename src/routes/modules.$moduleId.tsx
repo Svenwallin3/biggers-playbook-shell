@@ -199,8 +199,8 @@ function ModulePage() {
         mod.track.department === employee.department_scope);
     return (
       <div className="space-y-6">
-        <Link to="/" className="text-xs text-muted-foreground hover:underline">
-          ← Today&apos;s training
+        <Link to="/assign-training" className="text-xs text-muted-foreground hover:underline">
+          ← Assign training
         </Link>
         <StandaloneModuleBuilder
           module={mod}
@@ -209,7 +209,11 @@ function ModulePage() {
           canCreate={canCreateHere}
           employeeId={employee?.id}
           deleteRequiresApproval={isGeneralManager && !isOwner}
-          onPreviewAsTrainee={() => setTraineePreview(true)}
+          onPreviewAsTrainee={async () => {
+            await moduleQuery.refetch();
+            setTraineePreview(true);
+          }}
+
         />
       </div>
     );
