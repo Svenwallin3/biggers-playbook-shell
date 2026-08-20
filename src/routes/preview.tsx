@@ -97,7 +97,7 @@ function PreviewPage() {
 
   const buildModules = (predicate: (m: (typeof allModules)[number]) => boolean, shared: boolean) =>
     allModules
-      .filter((m) => predicate(m) && (showHidden || !m.is_deleted))
+      .filter((m) => predicate(m) && !m.is_assignable && (showHidden || !m.is_deleted))
       .map((m) => ({
         ...m,
         isShared: shared,
