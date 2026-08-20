@@ -52,10 +52,15 @@ import { stepTypeLabels, type ContentStatus, type StepType } from "@/lib/trainin
 import { contentTreeQueryOptions } from "@/lib/admin.queries";
 
 export const Route = createFileRoute("/admin/content")({
-  validateSearch: (search: Record<string, unknown>): { stepId?: string | undefined } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { stepId?: string | undefined; moduleId?: string | undefined } => ({
     // Deep link from the step viewer: open straight to this step's edit panel.
     stepId: typeof search["stepId"] === "string" ? search["stepId"] : undefined,
+    // Deep link from Assign Training: open straight to this module's edit panel.
+    moduleId: typeof search["moduleId"] === "string" ? search["moduleId"] : undefined,
   }),
+
   head: () => ({
     meta: [
       { title: "Content Editor — Biggers Training" },
