@@ -1305,6 +1305,16 @@ export type Database = {
         Returns: Database["public"]["Enums"]["auth_tier"]
       }
       delete_step_block: { Args: { p_block_id: string }; Returns: undefined }
+      get_quiz_questions: {
+        Args: { _step_ids: string[] }
+        Returns: {
+          id: string
+          options: Json
+          question: string
+          sequence_order: number
+          step_id: string
+        }[]
+      }
       has_tier: {
         Args: { _tier: Database["public"]["Enums"]["auth_tier"] }
         Returns: boolean
@@ -1321,6 +1331,14 @@ export type Database = {
       }
       my_divisions: { Args: never; Returns: string[] }
       my_location: { Args: never; Returns: string }
+      submit_quiz_answer: {
+        Args: { _chosen_option: number; _quiz_id: string }
+        Returns: {
+          correct_option: number
+          explanation: string
+          is_correct: boolean
+        }[]
+      }
     }
     Enums: {
       auth_tier: "staff" | "manager" | "owner"
