@@ -38,6 +38,7 @@ import { ChevronDown } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { SignoffChecklistEditor, serializeChecklist } from "@/components/admin/SignoffChecklistEditor";
 import { StepBlocksEditor, hasLegacyContent } from "@/components/admin/StepBlocksEditor";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
@@ -696,6 +697,7 @@ interface StepDraft {
   media_url: string | null;
   media_recommendation: "none" | "photo" | "video";
   media_recommendation_note: string;
+  signoff_checklist: SignoffChecklistItem[];
 }
 
 function draftFromStep(step: StepRow): StepDraft {
@@ -712,6 +714,7 @@ function draftFromStep(step: StepRow): StepDraft {
     media_url: step.media_url ?? null,
     media_recommendation: step.media_recommendation ?? "none",
     media_recommendation_note: step.media_recommendation_note ?? "",
+    signoff_checklist: parseSignoffChecklist(step.signoff_checklist),
   };
 }
 
@@ -785,6 +788,7 @@ export function StepEditPanel({
           media_url: draft.media_url,
           media_recommendation: draft.media_recommendation,
           media_recommendation_note: draft.media_recommendation_note.trim() || null,
+          signoff_checklist: serializeChecklist(draft.signoff_checklist),
         })
         .eq("id", step.id);
       if (error) throw error;
