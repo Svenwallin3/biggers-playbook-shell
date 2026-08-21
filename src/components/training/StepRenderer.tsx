@@ -331,13 +331,35 @@ export function StepRenderer({
               <div className="bg-accent/25 px-5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-accent-foreground">
                 Certification moment
               </div>
-              <CardContent className="flex flex-col items-start gap-3 py-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <CardContent className="flex flex-col items-start gap-3 py-5">
+                {canSignOff && !signedOff ? (
+                  <div className="w-full space-y-1.5">
+                    <label
+                      htmlFor={`handoff-${step.id}`}
+                      className="text-xs font-semibold text-foreground"
+                    >
+                      Notes for the next trainer (optional)
+                    </label>
+                    <Textarea
+                      id={`handoff-${step.id}`}
+                      value={handoffNotes}
+                      onChange={(e) => setHandoffNotes(e.target.value)}
+                      rows={2}
+                      placeholder="Anything the next trainer should know…"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Only visible to managers. The trainee won&apos;t see this.
+                    </p>
+                  </div>
+                ) : null}
+                <div className="flex w-full flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <p className="flex items-center gap-2 text-sm font-medium">
                   <UserCheck className="size-4 shrink-0 text-accent" />
                   {step.step_type === "doing_signoff"
                     ? "This is the real certification — your trainer signs off after watching you do it."
                     : "Day 4 is live practice with real customers, supervised by your trainer."}
                 </p>
+
                 <Button
                   disabled={signedOff || !canSignOff || signingOff}
                   onClick={onSignOff}
