@@ -362,7 +362,7 @@ export function StepRenderer({
 
                 <Button
                   disabled={signedOff || !canSignOff || signingOff}
-                  onClick={onSignOff}
+                  onClick={() => onSignOff?.(handoffNotes.trim() || undefined)}
                   className={`h-11 w-full sm:h-9 sm:w-auto ${
                     signedOff
                       ? ""
@@ -378,7 +378,9 @@ export function StepRenderer({
                         : "Sign off"
                       : "Awaiting sign-off"}
                 </Button>
+                </div>
               </CardContent>
+
             </Card>
             </>
           ) : null}
