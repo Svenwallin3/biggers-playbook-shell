@@ -48,10 +48,16 @@ import {
   submitStepSuggestion,
   versionHistoryQueryOptions,
 } from "@/lib/admin.queries";
-import { branchOptionsQueryOptions, stepTypeLabels } from "@/lib/training.queries";
+import {
+  branchOptionsQueryOptions,
+  parseSignoffChecklist,
+  stepTypeLabels,
+  trainerSignoffTypes,
+} from "@/lib/training.queries";
 import type {
   ContentStatus,
   Department,
+  SignoffChecklistItem,
   ModuleRow,
   StepRow,
   StepType,
@@ -1022,6 +1028,14 @@ export function StepEditPanel({
               />
             </>
           )}
+
+          {canEditDirect && trainerSignoffTypes.includes(draft.step_type) ? (
+            <SignoffChecklistEditor
+              items={draft.signoff_checklist}
+              disabled={!canEditDirect}
+              onChange={(signoff_checklist) => patch({ signoff_checklist })}
+            />
+          ) : null}
 
           <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
             <div className="flex flex-wrap items-center gap-2">
