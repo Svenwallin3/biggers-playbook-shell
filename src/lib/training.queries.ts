@@ -431,8 +431,11 @@ export async function signOffStep(input: {
   stepId: string;
   signedOffBy: string;
   existingId?: string | undefined;
+  /** Optional trainer handoff note, manager-visible only. */
+  notes?: string | undefined;
 }) {
   const now = new Date().toISOString();
+  const note = input.notes?.trim();
   const payload = {
     employee_id: input.employeeId,
     step_id: input.stepId,
@@ -440,7 +443,9 @@ export async function signOffStep(input: {
     completed_at: now,
     signed_off_by: input.signedOffBy,
     signed_off_at: now,
+    ...(note ? { notes: note } : {}),
   };
+
 
   if (input.existingId) {
     const { error } = await supabase
