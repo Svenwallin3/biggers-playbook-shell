@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { trainingQueueQueryOptions, type QueueEntry } from "@/lib/queue.queries";
@@ -79,15 +80,21 @@ function TrainingQueuePage() {
     enabled: isManagerOrOwner,
   });
 
+  const [notingId, setNotingId] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState("");
+
   const signOff = useMutation({
-    mutationFn: (entry: QueueEntry) =>
+    mutationFn: ({ entry, notes }: { entry: QueueEntry; notes?: string | undefined }) =>
       signOffStep({
         employeeId: entry.employee.id,
         stepId: entry.step!.id,
         signedOffBy: employee!.id,
         existingId: entry.progressId ?? undefined,
+        notes,
       }),
     onSuccess: () => {
+      setNotingId(null);
+      setNoteDraft("");
       toast.success("Signed off");
       void queryClient.invalidateQueries({ queryKey: ["training-queue"] });
       void queryClient.invalidateQueries({ queryKey: ["progress"] });
@@ -170,15 +177,47 @@ function TrainingQueuePage() {
                         Open module
                       </Link>
                     </Button>
-                    <Button
-                      size="sm"
-                      disabled={signOff.isPending}
-                      onClick={() => signOff.mutate(entry)}
-                    >
-                      Sign off
-                    </Button>
+                    {notingId === entry.employee.id ? (
+                      <Button
+                        size="sm"
+                        disabled={signOff.isPending}
+                        onClick={() => signOff.mutate({ entry, notes: noteDraft })}
+                      >
+                        {signOff.isPending ? "Signing off…" : "Confirm sign-off"}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setNotingId(entry.employee.id);
+                          setNoteDraft("");
+                        }}
+                      >
+                        Sign off
+                      </Button>
+                    )}
                   </div>
                 </div>
+                {notingId === entry.employee.id ? (
+                  <div className="mt-3 space-y-1.5">
+                    <label
+                      htmlFor={`queue-handoff-${entry.employee.id}`}
+                      className="text-xs font-semibold text-foreground"
+                    >
+                      Notes for the next trainer (optional)
+                    </label>
+                    <Textarea
+                      id={`queue-handoff-${entry.employee.id}`}
+                      value={noteDraft}
+                      onChange={(e) => setNoteDraft(e.target.value)}
+                      rows={2}
+                      placeholder="Anything the next trainer should know…"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Only visible to managers. The trainee won&apos;t see this.
+                    </p>
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>
