@@ -7,6 +7,34 @@ export type TrackRow = Database["public"]["Tables"]["tracks"]["Row"];
 export type ModuleRow = Database["public"]["Tables"]["modules"]["Row"];
 export type StepRow = Database["public"]["Tables"]["steps"]["Row"];
 export type QuizRow = Database["public"]["Tables"]["quiz_bank"]["Row"];
+/** Trainee-safe quiz shape — the answer key never leaves the server. */
+export type QuizQuestion = Database["public"]["Functions"]["get_quiz_questions"]["Returns"][number];
+
+/** Fetch quiz questions without correct_option/explanation, via a SECURITY DEFINER RPC. */
+export async function fetchQuizQuestions(stepIds: string[]): Promise<QuizQuestion[]> {
+  if (!stepIds.length) return [];
+  const { data, error } = await supabase.rpc("get_quiz_questions", { _step_ids: stepIds });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export type QuizGrade = {
+  is_correct: boolean;
+  correct_option: number;
+  explanation: string | null;
+};
+
+/** Grade one answer server-side; the attempt is recorded before the result is returned. */
+export async function submitQuizAnswer(quizId: string, chosenOption: number): Promise<QuizGrade> {
+  const { data, error } = await supabase.rpc("submit_quiz_answer", {
+    _quiz_id: quizId,
+    _chosen_option: chosenOption,
+  });
+  if (error) throw error;
+  const row = (data ?? [])[0];
+  if (!row) throw new Error("No grade returned");
+  return row as QuizGrade;
+}
 export type ProgressRow = Database["public"]["Tables"]["progress_records"]["Row"];
 export type SourcingRow = Database["public"]["Tables"]["sourcing_board_entries"]["Row"];
 export type ReferenceDocRow = Database["public"]["Tables"]["reference_documents"]["Row"];
@@ -266,17 +294,7 @@ export function moduleQueryOptions(moduleId: string) {
       if (stepError) throw stepError;
 
       const stepIds = (steps ?? []).map((s) => s.id);
-      let quizzes: QuizRow[] = [];
-      if (stepIds.length) {
-        const { data: quizRows, error: quizError } = await supabase
-          .from("quiz_bank")
-          .select("*")
-          .in("step_id", stepIds)
-          .eq("is_deleted", false)
-          .order("sequence_order");
-        if (quizError) throw quizError;
-        quizzes = quizRows ?? [];
-      }
+      const quizzes = await fetchQuizQuestions(stepIds);
 
       return { module: mod as ModuleRow & { track: TrackRow }, steps: steps ?? [], quizzes };
     },

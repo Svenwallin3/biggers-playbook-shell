@@ -37,7 +37,8 @@ import {
   moduleVisibleForSubPath,
   stepTypeLabels,
 } from "@/lib/training.queries";
-import type { QuizRow, StepRow } from "@/lib/training.queries";
+import { fetchQuizQuestions } from "@/lib/training.queries";
+import type { QuizQuestion, StepRow } from "@/lib/training.queries";
 
 const title = "Preview training — Biggers Training Platform";
 const description =
@@ -161,16 +162,7 @@ function PreviewPage() {
   const quizzesQuery = useQuery({
     queryKey: ["preview-step-quizzes", activeStep?.id],
     enabled: Boolean(activeStep?.id) && activeStep?.step_type === "quiz",
-    queryFn: async (): Promise<QuizRow[]> => {
-      const { data, error } = await supabase
-        .from("quiz_bank")
-        .select("*")
-        .eq("step_id", activeStep!.id)
-        .eq("is_deleted", false)
-        .order("sequence_order");
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: (): Promise<QuizQuestion[]> => fetchQuizQuestions([activeStep!.id]),
   });
 
   const inDivision = activeTrack?.department === employee?.department_scope;

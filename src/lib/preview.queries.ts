@@ -1,8 +1,8 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
-import { trainerSignoffTypes } from "@/lib/training.queries";
-import type { ModuleRow, QuizRow, StepRow, TrackRow } from "@/lib/training.queries";
+import { fetchQuizQuestions, trainerSignoffTypes } from "@/lib/training.queries";
+import type { ModuleRow, QuizQuestion, StepRow, TrackRow } from "@/lib/training.queries";
 
 export type PreviewModule = ModuleRow & { steps: StepRow[] };
 
@@ -27,7 +27,7 @@ export function previewTrackQueryOptions(trackId: string | undefined) {
   return queryOptions({
     queryKey: ["preview-track", trackId],
     enabled: Boolean(trackId),
-    queryFn: async (): Promise<{ modules: PreviewModule[]; quizzes: QuizRow[] }> => {
+    queryFn: async (): Promise<{ modules: PreviewModule[]; quizzes: QuizQuestion[] }> => {
       const { data: modules, error } = await supabase
         .from("modules")
         .select("*")
@@ -46,18 +46,7 @@ export function previewTrackQueryOptions(trackId: string | undefined) {
         .order("sequence_order");
       if (stepError) throw stepError;
 
-      const stepIds = (steps ?? []).map((s) => s.id);
-      let quizzes: QuizRow[] = [];
-      if (stepIds.length) {
-        const { data: quizRows, error: quizError } = await supabase
-          .from("quiz_bank")
-          .select("*")
-          .in("step_id", stepIds)
-          .eq("is_deleted", false)
-          .order("sequence_order");
-        if (quizError) throw quizError;
-        quizzes = quizRows ?? [];
-      }
+      const quizzes = await fetchQuizQuestions((steps ?? []).map((s) => s.id));
 
       const ordered = (modules ?? [])
         .map((m) => ({ ...m, steps: (steps ?? []).filter((s) => s.module_id === m.id) }))
