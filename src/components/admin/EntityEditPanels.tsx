@@ -38,6 +38,7 @@ import { ChevronDown } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { SignoffChecklistEditor, serializeChecklist } from "@/components/admin/SignoffChecklistEditor";
 import { StepBlocksEditor, hasLegacyContent } from "@/components/admin/StepBlocksEditor";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
@@ -47,10 +48,16 @@ import {
   submitStepSuggestion,
   versionHistoryQueryOptions,
 } from "@/lib/admin.queries";
-import { branchOptionsQueryOptions, stepTypeLabels } from "@/lib/training.queries";
+import {
+  branchOptionsQueryOptions,
+  parseSignoffChecklist,
+  stepTypeLabels,
+  trainerSignoffTypes,
+} from "@/lib/training.queries";
 import type {
   ContentStatus,
   Department,
+  SignoffChecklistItem,
   ModuleRow,
   StepRow,
   StepType,
@@ -696,6 +703,7 @@ interface StepDraft {
   media_url: string | null;
   media_recommendation: "none" | "photo" | "video";
   media_recommendation_note: string;
+  signoff_checklist: SignoffChecklistItem[];
 }
 
 function draftFromStep(step: StepRow): StepDraft {
@@ -712,6 +720,7 @@ function draftFromStep(step: StepRow): StepDraft {
     media_url: step.media_url ?? null,
     media_recommendation: step.media_recommendation ?? "none",
     media_recommendation_note: step.media_recommendation_note ?? "",
+    signoff_checklist: parseSignoffChecklist(step.signoff_checklist),
   };
 }
 
@@ -785,6 +794,7 @@ export function StepEditPanel({
           media_url: draft.media_url,
           media_recommendation: draft.media_recommendation,
           media_recommendation_note: draft.media_recommendation_note.trim() || null,
+          signoff_checklist: serializeChecklist(draft.signoff_checklist),
         })
         .eq("id", step.id);
       if (error) throw error;
@@ -1018,6 +1028,14 @@ export function StepEditPanel({
               />
             </>
           )}
+
+          {canEditDirect && trainerSignoffTypes.includes(draft.step_type) ? (
+            <SignoffChecklistEditor
+              items={draft.signoff_checklist}
+              disabled={!canEditDirect}
+              onChange={(signoff_checklist) => patch({ signoff_checklist })}
+            />
+          ) : null}
 
           <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
             <div className="flex flex-wrap items-center gap-2">

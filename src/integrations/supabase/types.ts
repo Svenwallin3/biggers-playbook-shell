@@ -604,6 +604,7 @@ export type Database = {
       }
       progress_records: {
         Row: {
+          checklist_confirmed: Json | null
           completed_at: string | null
           created_at: string
           employee_id: string
@@ -617,6 +618,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          checklist_confirmed?: Json | null
           completed_at?: string | null
           created_at?: string
           employee_id: string
@@ -630,6 +632,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          checklist_confirmed?: Json | null
           completed_at?: string | null
           created_at?: string
           employee_id?: string
@@ -1036,6 +1039,7 @@ export type Database = {
           media_url: string | null
           module_id: string
           sequence_order: number
+          signoff_checklist: Json | null
           step_type: Database["public"]["Enums"]["step_type"]
           supports_manager_initials: boolean
           title: string
@@ -1060,6 +1064,7 @@ export type Database = {
           media_url?: string | null
           module_id: string
           sequence_order?: number
+          signoff_checklist?: Json | null
           step_type?: Database["public"]["Enums"]["step_type"]
           supports_manager_initials?: boolean
           title: string
@@ -1084,6 +1089,7 @@ export type Database = {
           media_url?: string | null
           module_id?: string
           sequence_order?: number
+          signoff_checklist?: Json | null
           step_type?: Database["public"]["Enums"]["step_type"]
           supports_manager_initials?: boolean
           title?: string

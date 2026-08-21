@@ -6,11 +6,12 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { trainingQueueQueryOptions, type QueueEntry } from "@/lib/queue.queries";
-import { signOffStep, stepTypeLabels } from "@/lib/training.queries";
+import { checklistForDepartment, signOffStep, stepTypeLabels } from "@/lib/training.queries";
 
 const title = "Training Queue — Biggers Training Platform";
 const description =
@@ -82,19 +83,30 @@ function TrainingQueuePage() {
 
   const [notingId, setNotingId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
+  const [checkedItems, setCheckedItems] = useState<string[]>([]);
 
   const signOff = useMutation({
-    mutationFn: ({ entry, notes }: { entry: QueueEntry; notes?: string | undefined }) =>
+    mutationFn: ({
+      entry,
+      notes,
+      checklistConfirmed,
+    }: {
+      entry: QueueEntry;
+      notes?: string | undefined;
+      checklistConfirmed?: string[] | undefined;
+    }) =>
       signOffStep({
         employeeId: entry.employee.id,
         stepId: entry.step!.id,
         signedOffBy: employee!.id,
         existingId: entry.progressId ?? undefined,
         notes,
+        checklistConfirmed,
       }),
     onSuccess: () => {
       setNotingId(null);
       setNoteDraft("");
+      setCheckedItems([]);
       toast.success("Signed off");
       void queryClient.invalidateQueries({ queryKey: ["training-queue"] });
       void queryClient.invalidateQueries({ queryKey: ["progress"] });
@@ -118,9 +130,7 @@ function TrainingQueuePage() {
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">Training Queue</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {isOwner
-            ? "Everyone's next step across all divisions."
-            : "Your division's next steps."}{" "}
+          {isOwner ? "Everyone's next step across all divisions." : "Your division's next steps."}{" "}
           Anyone waiting on a trainer is listed first.
         </p>
       </div>
@@ -143,83 +153,129 @@ function TrainingQueuePage() {
           </p>
         ) : (
           <ul className="space-y-3">
-            {needsYou.map((entry) => (
-              <li
-                key={entry.employee.id}
-                className="rounded-lg border-2 border-warning/50 bg-warning-soft/60 p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="font-display text-base font-semibold tracking-tight">
-                      {name(entry)}{" "}
-                      <span className="text-warning">— needs you: {entry.step!.title}</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {entry.track?.name} · {entry.module?.name}
-                      {entry.module?.day_assignment ? ` · Day ${entry.module.day_assignment}` : ""}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                      <Badge className="bg-warning text-[11px] font-semibold uppercase tracking-wide text-warning-foreground">
-                        {stepTypeLabels[entry.step!.step_type]}
-                      </Badge>
-                      <StepStatusBadge status={entry.step!.content_status} />
-                      <ProgressNote entry={entry} />
+            {needsYou.map((entry) => {
+              const checklist = checklistForDepartment(
+                entry.step?.signoff_checklist,
+                entry.employee.department_scope,
+              );
+              const checklistComplete = checklist.every((item) => checkedItems.includes(item.text));
+              return (
+                <li
+                  key={entry.employee.id}
+                  className="rounded-lg border-2 border-warning/50 bg-warning-soft/60 p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="font-display text-base font-semibold tracking-tight">
+                        {name(entry)}{" "}
+                        <span className="text-warning">— needs you: {entry.step!.title}</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {entry.track?.name} · {entry.module?.name}
+                        {entry.module?.day_assignment
+                          ? ` · Day ${entry.module.day_assignment}`
+                          : ""}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <Badge className="bg-warning text-[11px] font-semibold uppercase tracking-wide text-warning-foreground">
+                          {stepTypeLabels[entry.step!.step_type]}
+                        </Badge>
+                        <StepStatusBadge status={entry.step!.content_status} />
+                        <ProgressNote entry={entry} />
+                      </div>
+                      <HandoffNote entry={entry} />
                     </div>
-                    <HandoffNote entry={entry} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button asChild size="sm" variant="secondary">
-                      <Link
-                        to="/modules/$moduleId"
-                        params={{ moduleId: entry.module!.id }}
-                        search={{ step: entry.step?.id, trainee: entry.employee.id }}
-                      >
-                        Open module
-                      </Link>
-                    </Button>
-                    {notingId === entry.employee.id ? (
-                      <Button
-                        size="sm"
-                        disabled={signOff.isPending}
-                        onClick={() => signOff.mutate({ entry, notes: noteDraft })}
-                      >
-                        {signOff.isPending ? "Signing off…" : "Confirm sign-off"}
+                    <div className="flex items-center gap-2">
+                      <Button asChild size="sm" variant="secondary">
+                        <Link
+                          to="/modules/$moduleId"
+                          params={{ moduleId: entry.module!.id }}
+                          search={{ step: entry.step?.id, trainee: entry.employee.id }}
+                        >
+                          Open module
+                        </Link>
                       </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setNotingId(entry.employee.id);
-                          setNoteDraft("");
-                        }}
+                      {notingId === entry.employee.id ? (
+                        <Button
+                          size="sm"
+                          disabled={signOff.isPending || !checklistComplete}
+                          onClick={() =>
+                            signOff.mutate({
+                              entry,
+                              notes: noteDraft,
+                              ...(checklist.length ? { checklistConfirmed: checkedItems } : {}),
+                            })
+                          }
+                        >
+                          {signOff.isPending ? "Signing off…" : "Confirm sign-off"}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setNotingId(entry.employee.id);
+                            setNoteDraft("");
+                            setCheckedItems([]);
+                          }}
+                        >
+                          Sign off
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  {notingId === entry.employee.id && checklist.length ? (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs font-semibold text-foreground">
+                        Confirm what you covered
+                      </p>
+                      <ul className="space-y-2">
+                        {checklist.map((item) => (
+                          <li key={item.text} className="flex items-start gap-2">
+                            <Checkbox
+                              id={`queue-item-${entry.employee.id}-${item.text}`}
+                              checked={checkedItems.includes(item.text)}
+                              onCheckedChange={(v) =>
+                                setCheckedItems((prev) =>
+                                  v === true
+                                    ? [...prev, item.text]
+                                    : prev.filter((t) => t !== item.text),
+                                )
+                              }
+                            />
+                            <label
+                              htmlFor={`queue-item-${entry.employee.id}-${item.text}`}
+                              className="text-sm leading-snug"
+                            >
+                              {item.text}
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {notingId === entry.employee.id ? (
+                    <div className="mt-3 space-y-1.5">
+                      <label
+                        htmlFor={`queue-handoff-${entry.employee.id}`}
+                        className="text-xs font-semibold text-foreground"
                       >
-                        Sign off
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                {notingId === entry.employee.id ? (
-                  <div className="mt-3 space-y-1.5">
-                    <label
-                      htmlFor={`queue-handoff-${entry.employee.id}`}
-                      className="text-xs font-semibold text-foreground"
-                    >
-                      Notes for the next trainer (optional)
-                    </label>
-                    <Textarea
-                      id={`queue-handoff-${entry.employee.id}`}
-                      value={noteDraft}
-                      onChange={(e) => setNoteDraft(e.target.value)}
-                      rows={2}
-                      placeholder="Anything the next trainer should know…"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Only visible to managers. The trainee won&apos;t see this.
-                    </p>
-                  </div>
-                ) : null}
-              </li>
-            ))}
+                        Notes for the next trainer (optional)
+                      </label>
+                      <Textarea
+                        id={`queue-handoff-${entry.employee.id}`}
+                        value={noteDraft}
+                        onChange={(e) => setNoteDraft(e.target.value)}
+                        rows={2}
+                        placeholder="Anything the next trainer should know…"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Only visible to managers. The trainee won&apos;t see this.
+                      </p>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

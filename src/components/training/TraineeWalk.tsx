@@ -43,7 +43,8 @@ type Props<M extends WalkModuleLike> = {
   signedOff?: boolean;
   canSignOff?: boolean;
   signingOff?: boolean;
-  onSignOff?: (notes?: string) => void;
+  onSignOff?: (notes?: string, checklistConfirmed?: string[]) => void;
+  subjectDepartment?: string | null | undefined;
   initialedBy?: string | null | undefined;
   initialedAt?: string | null | undefined;
   loggingInitials?: boolean;
@@ -78,6 +79,7 @@ export function TraineeWalk<M extends WalkModuleLike>({
   canSignOff = false,
   signingOff = false,
   onSignOff,
+  subjectDepartment,
   initialedBy,
   initialedAt,
   loggingInitials = false,
@@ -274,6 +276,7 @@ export function TraineeWalk<M extends WalkModuleLike>({
             canSignOff={canSignOff}
             signingOff={signingOff}
             {...(onSignOff ? { onSignOff } : {})}
+            subjectDepartment={subjectDepartment}
             initialedBy={initialedBy}
             initialedAt={initialedAt}
             loggingInitials={loggingInitials}

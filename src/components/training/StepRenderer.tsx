@@ -9,6 +9,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { StoredPhoto } from "@/components/PhotoUpload";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +28,7 @@ import { StepTypeChip } from "./StepTypeChip";
 import { VideoEmbed, youTubeId } from "@/components/VideoEmbed";
 import {
   bodyLines,
+  checklistForDepartment,
   trainerSignoffTypes,
   type QuizRow,
   type StepRow,
@@ -191,6 +193,7 @@ export function StepRenderer({
   canSignOff = false,
   signingOff = false,
   onSignOff,
+  subjectDepartment,
   initialedBy,
   initialedAt,
   loggingInitials = false,
@@ -206,7 +209,9 @@ export function StepRenderer({
   /** Viewer is a manager/owner allowed to certify this step. */
   canSignOff?: boolean;
   signingOff?: boolean;
-  onSignOff?: (notes?: string) => void;
+  onSignOff?: (notes?: string, checklistConfirmed?: string[]) => void;
+  /** Division of the trainee being signed off — scopes the sign-off checklist. */
+  subjectDepartment?: string | null | undefined;
   /** Manager-initials record on the viewed employee's progress row. */
   initialedBy?: string | null | undefined;
   initialedAt?: string | null | undefined;
@@ -218,6 +223,9 @@ export function StepRenderer({
   titleAction?: ReactNode;
 }) {
   const [handoffNotes, setHandoffNotes] = useState("");
+  const [checked, setChecked] = useState<string[]>([]);
+  const checklist = checklistForDepartment(step.signoff_checklist, subjectDepartment ?? null);
+  const checklistComplete = checklist.every((item) => checked.includes(item.text));
   const unavailable = step.content_status === "missing" || step.content_status === "blocked";
   const lines = bodyLines(step);
   const Title = titleAs;
@@ -334,6 +342,36 @@ export function StepRenderer({
                 Certification moment
               </div>
               <CardContent className="flex flex-col items-start gap-3 py-5">
+                {canSignOff && !signedOff && checklist.length ? (
+                  <div className="w-full space-y-2">
+                    <p className="text-xs font-semibold text-foreground">
+                      Confirm what you covered
+                    </p>
+                    <ul className="space-y-2">
+                      {checklist.map((item) => (
+                        <li key={item.text} className="flex items-start gap-2">
+                          <Checkbox
+                            id={`signoff-item-${step.id}-${item.text}`}
+                            checked={checked.includes(item.text)}
+                            onCheckedChange={(v) =>
+                              setChecked((prev) =>
+                                v === true
+                                  ? [...prev, item.text]
+                                  : prev.filter((t) => t !== item.text),
+                              )
+                            }
+                          />
+                          <label
+                            htmlFor={`signoff-item-${step.id}-${item.text}`}
+                            className="text-sm leading-snug"
+                          >
+                            {item.text}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
                 {canSignOff && !signedOff ? (
                   <div className="w-full space-y-1.5">
                     <label
@@ -363,8 +401,13 @@ export function StepRenderer({
                 </p>
 
                 <Button
-                  disabled={signedOff || !canSignOff || signingOff}
-                  onClick={() => onSignOff?.(handoffNotes.trim() || undefined)}
+                  disabled={signedOff || !canSignOff || signingOff || !checklistComplete}
+                  onClick={() =>
+                    onSignOff?.(
+                      handoffNotes.trim() || undefined,
+                      checklist.length ? checked : undefined,
+                    )
+                  }
                   className={`h-11 w-full sm:h-9 sm:w-auto ${
                     signedOff
                       ? ""

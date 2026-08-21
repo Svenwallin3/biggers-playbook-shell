@@ -42,8 +42,14 @@ import { StepBlocksEditor, hasLegacyContent } from "@/components/admin/StepBlock
 import { StepHistoryCard } from "@/components/admin/EntityEditPanels";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
 import { submitStepSuggestion } from "@/lib/admin.queries";
-import { stepTypeLabels } from "@/lib/training.queries";
-import type { ContentStatus, StepRow, StepType } from "@/lib/training.queries";
+import { SignoffChecklistEditor, serializeChecklist } from "@/components/admin/SignoffChecklistEditor";
+import { parseSignoffChecklist, stepTypeLabels, trainerSignoffTypes } from "@/lib/training.queries";
+import type {
+  ContentStatus,
+  SignoffChecklistItem,
+  StepRow,
+  StepType,
+} from "@/lib/training.queries";
 
 interface Draft {
   title: string;
@@ -58,6 +64,7 @@ interface Draft {
   media_url: string | null;
   media_recommendation: "none" | "photo" | "video";
   media_recommendation_note: string;
+  signoff_checklist: SignoffChecklistItem[];
 }
 
 function draftFromStep(step: StepRow): Draft {
@@ -74,6 +81,7 @@ function draftFromStep(step: StepRow): Draft {
     media_url: step.media_url ?? null,
     media_recommendation: step.media_recommendation ?? "none",
     media_recommendation_note: step.media_recommendation_note ?? "",
+    signoff_checklist: parseSignoffChecklist(step.signoff_checklist),
   };
 }
 
@@ -144,6 +152,7 @@ export function StandaloneStepEditor({
           media_url: draft.media_url,
           media_recommendation: draft.media_recommendation,
           media_recommendation_note: draft.media_recommendation_note.trim() || null,
+          signoff_checklist: serializeChecklist(draft.signoff_checklist),
         })
         .eq("id", step.id);
       if (error) throw error;
@@ -275,6 +284,14 @@ export function StandaloneStepEditor({
             placeholder="What you'd check before you'd sign off on it."
           />
         </div>
+      ) : null}
+
+      {canEditDirect && trainerSignoffTypes.includes(draft.step_type) ? (
+        <SignoffChecklistEditor
+          items={draft.signoff_checklist}
+          disabled={!canEditDirect}
+          onChange={(signoff_checklist) => patch({ signoff_checklist })}
+        />
       ) : null}
 
       {canEditDirect ? (
