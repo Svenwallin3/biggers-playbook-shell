@@ -29,10 +29,84 @@ import { VideoEmbed, youTubeId } from "@/components/VideoEmbed";
 import {
   bodyLines,
   checklistForDepartment,
+  submitQuizAnswer,
   trainerSignoffTypes,
-  type QuizRow,
+  type QuizGrade,
+  type QuizQuestion,
   type StepRow,
 } from "@/lib/training.queries";
+
+/** One question. Grading happens server-side — the answer key is never sent to the browser. */
+function QuizCard({ quiz }: { quiz: QuizQuestion }) {
+  const [chosen, setChosen] = useState<number | null>(null);
+  const [grade, setGrade] = useState<QuizGrade | null>(null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const options = Array.isArray(quiz.options) ? (quiz.options as unknown[]) : [];
+
+  const answer = async (i: number) => {
+    if (grade || pending) return;
+    setPending(true);
+    setError(null);
+    setChosen(i);
+    try {
+      setGrade(await submitQuizAnswer(quiz.id, i));
+    } catch (e) {
+      setChosen(null);
+      setError(e instanceof Error ? e.message : "Couldn't check that answer.");
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent className="space-y-4 py-6">
+        <p className="flex items-start gap-2 text-sm font-medium">
+          <ListChecks className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          {quiz.question}
+        </p>
+        <div className="space-y-2">
+          {options.map((option, i) => {
+            const isChosen = chosen === i;
+            const isRight = grade ? i === grade.correct_option : false;
+            const tone = !grade
+              ? "border-border hover:bg-accent hover:text-accent-foreground"
+              : isRight
+                ? "border-success bg-success-soft text-success"
+                : isChosen
+                  ? "border-destructive bg-destructive/10 text-destructive"
+                  : "border-border opacity-70";
+            return (
+              <button
+                key={i}
+                type="button"
+                disabled={Boolean(grade) || pending}
+                onClick={() => void answer(i)}
+                className={`min-h-11 w-full rounded-md border px-3 py-2.5 text-left text-sm transition-colors ${tone}`}
+              >
+                {String(option)}
+              </button>
+            );
+          })}
+        </div>
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        {grade ? (
+          <div className="space-y-1">
+            <p
+              className={`text-sm font-semibold ${grade.is_correct ? "text-success" : "text-destructive"}`}
+            >
+              {grade.is_correct ? "Correct" : "Not quite"}
+            </p>
+            {grade.explanation ? (
+              <p className="text-sm text-muted-foreground">{grade.explanation}</p>
+            ) : null}
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
 
 function ManagerInitials({
   initialedBy,
@@ -202,7 +276,7 @@ export function StepRenderer({
   titleAction,
 }: {
   step: StepRow;
-  quizzes?: QuizRow[];
+  quizzes?: QuizQuestion[];
   isAdmin?: boolean;
   /** Already certified by a trainer. */
   signedOff?: boolean;
@@ -290,27 +364,7 @@ export function StepRenderer({
           {step.step_type === "quiz" && quizzes.length ? (
             <div className="space-y-4">
               {quizzes.map((quiz) => (
-                <Card key={quiz.id}>
-                  <CardContent className="space-y-4 py-6">
-                    <p className="flex items-start gap-2 text-sm font-medium">
-                      <ListChecks className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                      {quiz.question}
-                    </p>
-                    <div className="space-y-2">
-                      {(Array.isArray(quiz.options) ? (quiz.options as unknown[]) : []).map(
-                        (option, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            className="min-h-11 w-full rounded-md border border-border px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-                          >
-                            {String(option)}
-                          </button>
-                        ),
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <QuizCard key={quiz.id} quiz={quiz} />
               ))}
             </div>
           ) : null}
