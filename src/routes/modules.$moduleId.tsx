@@ -144,13 +144,22 @@ function ModulePage() {
   });
 
   const signOff = useMutation({
-    mutationFn: ({ stepId, notes }: { stepId: string; notes?: string | undefined }) =>
+    mutationFn: ({
+      stepId,
+      notes,
+      checklistConfirmed,
+    }: {
+      stepId: string;
+      notes?: string | undefined;
+      checklistConfirmed?: string[] | undefined;
+    }) =>
       signOffStep({
         employeeId: subjectId!,
         stepId,
         signedOffBy: employee!.id,
         existingId: progressByStep.get(stepId)?.id,
         notes,
+        checklistConfirmed,
       }),
     onSuccess: () => {
       toast.success("Signed off");
@@ -463,7 +472,10 @@ function ModulePage() {
         signedOff={previewMode ? false : activeSignedOff}
         canSignOff={Boolean(!previewMode && isAdmin && subjectId)}
         signingOff={signOff.isPending}
-        onSignOff={(notes) => signOff.mutate({ stepId: active.id, notes })}
+        onSignOff={(notes, checklistConfirmed) =>
+          signOff.mutate({ stepId: active.id, notes, checklistConfirmed })
+        }
+        subjectDepartment={subjectDepartment}
         initialedBy={previewMode ? null : (activeRecord?.signed_off_by ?? null)}
         initialedAt={previewMode ? null : (activeRecord?.signed_off_at ?? null)}
         loggingInitials={logInitials.isPending}

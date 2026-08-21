@@ -79,6 +79,7 @@ export function TraineeWalk<M extends WalkModuleLike>({
   canSignOff = false,
   signingOff = false,
   onSignOff,
+  subjectDepartment,
   initialedBy,
   initialedAt,
   loggingInitials = false,
@@ -275,6 +276,7 @@ export function TraineeWalk<M extends WalkModuleLike>({
             canSignOff={canSignOff}
             signingOff={signingOff}
             {...(onSignOff ? { onSignOff } : {})}
+            subjectDepartment={subjectDepartment}
             initialedBy={initialedBy}
             initialedAt={initialedAt}
             loggingInitials={loggingInitials}
