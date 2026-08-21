@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   CheckCircle2,
   ListChecks,
@@ -9,6 +9,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { StoredPhoto } from "@/components/PhotoUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { StepStatusBadge } from "./StepStatusBadge";
@@ -205,7 +206,7 @@ export function StepRenderer({
   /** Viewer is a manager/owner allowed to certify this step. */
   canSignOff?: boolean;
   signingOff?: boolean;
-  onSignOff?: () => void;
+  onSignOff?: (notes?: string) => void;
   /** Manager-initials record on the viewed employee's progress row. */
   initialedBy?: string | null | undefined;
   initialedAt?: string | null | undefined;
@@ -216,6 +217,7 @@ export function StepRenderer({
   /** Optional slot rendered inline to the right of the step title. */
   titleAction?: ReactNode;
 }) {
+  const [handoffNotes, setHandoffNotes] = useState("");
   const unavailable = step.content_status === "missing" || step.content_status === "blocked";
   const lines = bodyLines(step);
   const Title = titleAs;
