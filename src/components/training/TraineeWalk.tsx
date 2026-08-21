@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { StepRenderer } from "@/components/training/StepRenderer";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { StepTypeChip } from "@/components/training/StepTypeChip";
-import { trainerSignoffTypes, type QuizRow, type StepRow } from "@/lib/training.queries";
+import { trainerSignoffTypes, type QuizQuestion, type StepRow } from "@/lib/training.queries";
 
 /** The minimum a module needs to look like for the trainee walk. */
 export type WalkModuleLike = {
@@ -37,7 +37,7 @@ type Props<M extends WalkModuleLike> = {
   /** Small badge next to a module chip — used to tag merged-in Universal modules. */
   moduleBadge?: (module: M) => ReactNode;
   stepTitleAction?: ReactNode;
-  quizzes?: QuizRow[];
+  quizzes?: QuizQuestion[];
   /** Passed straight through to StepRenderer. */
   isAdmin?: boolean;
   signedOff?: boolean;
