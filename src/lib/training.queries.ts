@@ -426,6 +426,45 @@ export async function logManagerInitials(input: {
   if (error) throw error;
 }
 
+export type SignoffChecklistDepartment = "kitchen" | "market" | "delivery" | "universal";
+
+export interface SignoffChecklistItem {
+  text: string;
+  department?: SignoffChecklistDepartment | null | undefined;
+}
+
+/** Authored sign-off checklist on a step, tolerant of hand-written jsonb. */
+export function parseSignoffChecklist(value: unknown): SignoffChecklistItem[] {
+  if (!Array.isArray(value)) return [];
+  const items: SignoffChecklistItem[] = [];
+  for (const raw of value) {
+    if (!raw || typeof raw !== "object") continue;
+    const rec = raw as Record<string, unknown>;
+    const text = typeof rec["text"] === "string" ? rec["text"].trim() : "";
+    if (!text) continue;
+    const dept = typeof rec["department"] === "string" ? rec["department"] : null;
+    items.push({
+      text,
+      department:
+        dept === "kitchen" || dept === "market" || dept === "delivery" || dept === "universal"
+          ? dept
+          : null,
+    });
+  }
+  return items;
+}
+
+/** Items that apply to a given trainee: unscoped/universal items plus their own division. */
+export function checklistForDepartment(
+  value: unknown,
+  department: string | null | undefined,
+): SignoffChecklistItem[] {
+  return parseSignoffChecklist(value).filter(
+    (item) =>
+      !item.department || item.department === "universal" || item.department === department,
+  );
+}
+
 export async function signOffStep(input: {
   employeeId: string;
   stepId: string;
@@ -433,9 +472,12 @@ export async function signOffStep(input: {
   existingId?: string | undefined;
   /** Optional trainer handoff note, manager-visible only. */
   notes?: string | undefined;
+  /** Item texts the trainer confirmed at sign-off, when the step has a checklist. */
+  checklistConfirmed?: string[] | undefined;
 }) {
   const now = new Date().toISOString();
   const note = input.notes?.trim();
+  const confirmed = (input.checklistConfirmed ?? []).filter((t) => t.trim().length > 0);
   const payload = {
     employee_id: input.employeeId,
     step_id: input.stepId,
@@ -444,6 +486,7 @@ export async function signOffStep(input: {
     signed_off_by: input.signedOffBy,
     signed_off_at: now,
     ...(note ? { notes: note } : {}),
+    ...(confirmed.length ? { checklist_confirmed: confirmed } : {}),
   };
 
 
