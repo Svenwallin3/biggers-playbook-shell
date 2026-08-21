@@ -1288,6 +1288,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_checklist_instance: {
+        Args: { _instance_id: string }
+        Returns: boolean
+      }
+      can_access_checklist_scope: {
+        Args: { _location_tag: string; _reference_document_id: string }
+        Returns: boolean
+      }
       can_manage_progress_for: {
         Args: { _employee_id: string; _step_id: string }
         Returns: boolean
@@ -1311,6 +1319,7 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["department"]
       }
+      my_divisions: { Args: never; Returns: string[] }
       my_location: { Args: never; Returns: string }
     }
     Enums: {
