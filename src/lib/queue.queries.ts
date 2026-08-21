@@ -27,6 +27,8 @@ export type QueueEntry = {
   total: number;
   /** Most recent non-empty trainer note left on any of this trainee's steps. */
   lastNote: string | null;
+  /** Most recent signed-off trainer handoff note, with the day/module it came from. */
+  lastNoteDetail: { note: string; label: string } | null;
 };
 
 export type OnboardingProgress = { completed: number; total: number };
@@ -142,7 +144,7 @@ export function trainingQueueQueryOptions(scope: {
 
       const { data: progress, error: progressError } = await supabase
         .from("progress_records")
-        .select("id, employee_id, step_id, status, notes, updated_at")
+        .select("id, employee_id, step_id, status, notes, updated_at, signed_off_at")
         .in(
           "employee_id",
           employees.map((e) => e.id),
@@ -162,6 +164,22 @@ export function trainingQueueQueryOptions(scope: {
         if (!current || r.updated_at > current.at) {
           latestNoteByEmployee.set(r.employee_id, { at: r.updated_at, note });
         }
+      }
+      const stepById = new Map((stepsRes.data ?? []).map((s) => [s.id, s]));
+      const moduleById = new Map((modulesRes.data ?? []).map((m) => [m.id, m]));
+      const handoffByEmployee = new Map<string, { at: string; note: string; label: string }>();
+      for (const r of progress ?? []) {
+        const note = (r.notes ?? "").trim();
+        if (!note || r.status !== "signed_off" || !r.signed_off_at) continue;
+        const current = handoffByEmployee.get(r.employee_id);
+        if (current && r.signed_off_at <= current.at) continue;
+        const mod = moduleById.get(stepById.get(r.step_id)?.module_id ?? "");
+        const label = mod?.day_assignment
+          ? `Note from Day ${mod.day_assignment}'s trainer:`
+          : mod
+            ? `Note from ${mod.name}'s trainer:`
+            : "Note from a previous trainer:";
+        handoffByEmployee.set(r.employee_id, { at: r.signed_off_at, note, label });
       }
       const progressIds = new Map(
         (progress ?? []).map((r) => [`${r.employee_id}:${r.step_id}`, r.id]),
@@ -218,6 +236,10 @@ export function trainingQueueQueryOptions(scope: {
           completed,
           total,
           lastNote: latestNoteByEmployee.get(employee.id)?.note ?? null,
+          lastNoteDetail: (() => {
+            const h = handoffByEmployee.get(employee.id);
+            return h ? { note: h.note, label: h.label } : null;
+          })(),
         };
       });
     },
