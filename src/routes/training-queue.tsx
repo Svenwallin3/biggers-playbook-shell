@@ -6,11 +6,12 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { trainingQueueQueryOptions, type QueueEntry } from "@/lib/queue.queries";
-import { signOffStep, stepTypeLabels } from "@/lib/training.queries";
+import { checklistForDepartment, signOffStep, stepTypeLabels } from "@/lib/training.queries";
 
 const title = "Training Queue — Biggers Training Platform";
 const description =
@@ -82,19 +83,30 @@ function TrainingQueuePage() {
 
   const [notingId, setNotingId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
+  const [checkedItems, setCheckedItems] = useState<string[]>([]);
 
   const signOff = useMutation({
-    mutationFn: ({ entry, notes }: { entry: QueueEntry; notes?: string | undefined }) =>
+    mutationFn: ({
+      entry,
+      notes,
+      checklistConfirmed,
+    }: {
+      entry: QueueEntry;
+      notes?: string | undefined;
+      checklistConfirmed?: string[] | undefined;
+    }) =>
       signOffStep({
         employeeId: entry.employee.id,
         stepId: entry.step!.id,
         signedOffBy: employee!.id,
         existingId: entry.progressId ?? undefined,
         notes,
+        checklistConfirmed,
       }),
     onSuccess: () => {
       setNotingId(null);
       setNoteDraft("");
+      setCheckedItems([]);
       toast.success("Signed off");
       void queryClient.invalidateQueries({ queryKey: ["training-queue"] });
       void queryClient.invalidateQueries({ queryKey: ["progress"] });
@@ -143,7 +155,15 @@ function TrainingQueuePage() {
           </p>
         ) : (
           <ul className="space-y-3">
-            {needsYou.map((entry) => (
+            {needsYou.map((entry) => {
+              const checklist = checklistForDepartment(
+                entry.step?.signoff_checklist,
+                entry.employee.department_scope,
+              );
+              const checklistComplete = checklist.every((item) =>
+                checkedItems.includes(item.text),
+              );
+              return (
               <li
                 key={entry.employee.id}
                 className="rounded-lg border-2 border-warning/50 bg-warning-soft/60 p-4"
@@ -180,8 +200,14 @@ function TrainingQueuePage() {
                     {notingId === entry.employee.id ? (
                       <Button
                         size="sm"
-                        disabled={signOff.isPending}
-                        onClick={() => signOff.mutate({ entry, notes: noteDraft })}
+                        disabled={signOff.isPending || !checklistComplete}
+                        onClick={() =>
+                          signOff.mutate({
+                            entry,
+                            notes: noteDraft,
+                            ...(checklist.length ? { checklistConfirmed: checkedItems } : {}),
+                          })
+                        }
                       >
                         {signOff.isPending ? "Signing off…" : "Confirm sign-off"}
                       </Button>
@@ -191,6 +217,7 @@ function TrainingQueuePage() {
                         onClick={() => {
                           setNotingId(entry.employee.id);
                           setNoteDraft("");
+                          setCheckedItems([]);
                         }}
                       >
                         Sign off
@@ -198,6 +225,36 @@ function TrainingQueuePage() {
                     )}
                   </div>
                 </div>
+                {notingId === entry.employee.id && checklist.length ? (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs font-semibold text-foreground">
+                      Confirm what you covered
+                    </p>
+                    <ul className="space-y-2">
+                      {checklist.map((item) => (
+                        <li key={item.text} className="flex items-start gap-2">
+                          <Checkbox
+                            id={`queue-item-${entry.employee.id}-${item.text}`}
+                            checked={checkedItems.includes(item.text)}
+                            onCheckedChange={(v) =>
+                              setCheckedItems((prev) =>
+                                v === true
+                                  ? [...prev, item.text]
+                                  : prev.filter((t) => t !== item.text),
+                              )
+                            }
+                          />
+                          <label
+                            htmlFor={`queue-item-${entry.employee.id}-${item.text}`}
+                            className="text-sm leading-snug"
+                          >
+                            {item.text}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
                 {notingId === entry.employee.id ? (
                   <div className="mt-3 space-y-1.5">
                     <label
