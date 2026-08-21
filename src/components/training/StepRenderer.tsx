@@ -402,7 +402,12 @@ export function StepRenderer({
 
                 <Button
                   disabled={signedOff || !canSignOff || signingOff || !checklistComplete}
-                  onClick={() => onSignOff?.(handoffNotes.trim() || undefined)}
+                  onClick={() =>
+                    onSignOff?.(
+                      handoffNotes.trim() || undefined,
+                      checklist.length ? checked : undefined,
+                    )
+                  }
                   className={`h-11 w-full sm:h-9 sm:w-auto ${
                     signedOff
                       ? ""
