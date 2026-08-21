@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { StickyNote } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -37,6 +39,31 @@ function ProgressNote({ entry }: { entry: QueueEntry }) {
     <span className="text-xs text-muted-foreground">
       {entry.completed} of {entry.total} steps complete
     </span>
+  );
+}
+
+function HandoffNote({ entry }: { entry: QueueEntry }) {
+  const [open, setOpen] = useState(false);
+  if (!entry.lastNoteDetail) return null;
+  return (
+    <div className="pt-1">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+      >
+        <StickyNote className="size-3.5 shrink-0" aria-hidden="true" />
+        Trainer note
+      </button>
+      {open ? (
+        <div className="mt-2 max-w-prose rounded-md border border-border bg-card px-3 py-2 text-xs">
+          <p className="font-semibold text-foreground">{entry.lastNoteDetail.label}</p>
+          <p className="mt-1 whitespace-pre-line text-muted-foreground">
+            {entry.lastNoteDetail.note}
+          </p>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -131,6 +158,7 @@ function TrainingQueuePage() {
                       <StepStatusBadge status={entry.step!.content_status} />
                       <ProgressNote entry={entry} />
                     </div>
+                    <HandoffNote entry={entry} />
                   </div>
                   <div className="flex items-center gap-2">
                     <Button asChild size="sm" variant="secondary">
