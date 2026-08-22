@@ -144,17 +144,19 @@ export function trainingQueueQueryOptions(scope: {
       scope.isOwner ? "all" : (scope.locationId ?? "any"),
     ],
     queryFn: async (): Promise<QueueEntry[]> => {
-      const [employeesRes, tracksRes, modulesRes, stepsRes] = await Promise.all([
-        supabase
-          .from("employees")
-          .select("*")
-          .eq("is_deleted", false)
-          .eq("status", "active")
-          .order("full_name", { nullsFirst: false }),
-        supabase.from("tracks").select("*").eq("is_deleted", false).order("sequence_order"),
-        supabase.from("modules").select("*").eq("is_deleted", false).order("sequence_order"),
-        supabase.from("steps").select("*").eq("is_deleted", false).order("sequence_order"),
-      ]);
+      const [employeesRes, tracksRes, modulesRes, stepsRes, secondaryByEmployee] =
+        await Promise.all([
+          supabase
+            .from("employees")
+            .select("*")
+            .eq("is_deleted", false)
+            .eq("status", "active")
+            .order("full_name", { nullsFirst: false }),
+          supabase.from("tracks").select("*").eq("is_deleted", false).order("sequence_order"),
+          supabase.from("modules").select("*").eq("is_deleted", false).order("sequence_order"),
+          supabase.from("steps").select("*").eq("is_deleted", false).order("sequence_order"),
+          fetchSecondaryByEmployee(),
+        ]);
       if (employeesRes.error) throw employeesRes.error;
       if (tracksRes.error) throw tracksRes.error;
       if (modulesRes.error) throw modulesRes.error;
@@ -163,7 +165,7 @@ export function trainingQueueQueryOptions(scope: {
       let employees = employeesRes.data ?? [];
       if (!scope.isOwner) {
         employees = employees.filter((e) => {
-          const depts = departmentsForEmployee(e.department_scope);
+          const depts = departmentsForEmployee(e.department_scope, secondaryByEmployee[e.id] ?? []);
           if (!scope.department || !depts.includes(scope.department)) return false;
           // Market runs two sites — a Market manager with a location only sees their own.
           if (scope.department === "market" && scope.locationId) {
