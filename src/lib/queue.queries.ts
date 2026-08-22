@@ -59,18 +59,23 @@ export function onboardingCompletionQueryOptions() {
   return queryOptions({
     queryKey: ["onboarding-completion"],
     queryFn: async (): Promise<Record<string, OnboardingProgress>> => {
-      const [employeesRes, tracksRes, modulesRes, stepsRes, progressRes] = await Promise.all([
-        supabase.from("employees").select("id, department_scope, sub_path").eq("is_deleted", false),
-        supabase.from("tracks").select("*").eq("is_deleted", false),
-        supabase
-          .from("modules")
-          .select("*")
-          .eq("is_deleted", false)
-          .eq("is_assignable", false)
-          .order("sequence_order"),
-        supabase.from("steps").select("*").eq("is_deleted", false).order("sequence_order"),
-        supabase.from("progress_records").select("employee_id, step_id, status"),
-      ]);
+      const [employeesRes, tracksRes, modulesRes, stepsRes, progressRes, secondaryByEmployee] =
+        await Promise.all([
+          supabase
+            .from("employees")
+            .select("id, department_scope, sub_path")
+            .eq("is_deleted", false),
+          supabase.from("tracks").select("*").eq("is_deleted", false),
+          supabase
+            .from("modules")
+            .select("*")
+            .eq("is_deleted", false)
+            .eq("is_assignable", false)
+            .order("sequence_order"),
+          supabase.from("steps").select("*").eq("is_deleted", false).order("sequence_order"),
+          supabase.from("progress_records").select("employee_id, step_id, status"),
+          fetchSecondaryByEmployee(),
+        ]);
       if (employeesRes.error) throw employeesRes.error;
       if (tracksRes.error) throw tracksRes.error;
       if (modulesRes.error) throw modulesRes.error;
@@ -95,12 +100,22 @@ export function onboardingCompletionQueryOptions() {
 
       const out: Record<string, OnboardingProgress> = {};
       for (const employee of employeesRes.data ?? []) {
-        const depts = departmentsForEmployee(employee.department_scope);
+        const secondary = secondaryByEmployee[employee.id] ?? [];
+        const depts = departmentsForEmployee(employee.department_scope, secondary);
         let total = 0;
         let completed = 0;
         for (const m of modules) {
           if (!depts.includes(m.track!.department)) continue;
-          if (!moduleVisibleForSubPath(m, employee.sub_path)) continue;
+          if (
+            !moduleVisibleForScope(
+              m,
+              m.track!.department,
+              employee.department_scope,
+              employee.sub_path,
+              secondary,
+            )
+          )
+            continue;
           for (const step of stepsByModule.get(m.id) ?? []) {
             total += 1;
             if (done.has(`${employee.id}:${step.id}`)) completed += 1;
