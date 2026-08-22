@@ -2,17 +2,34 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { EmployeeRow } from "@/lib/admin.queries";
+import type { SecondaryDivisionRow } from "@/lib/cross-training.queries";
 import {
   compareModulesByDay,
   departmentsForEmployee,
   getDayGroupedSteps,
-  moduleVisibleForSubPath,
+  moduleVisibleForScope,
   trainerSignoffTypes,
   type Department,
   type ModuleRow,
+  type SecondaryDivision,
   type StepRow,
   type TrackRow,
 } from "@/lib/training.queries";
+
+/** Active cross-training rows for every employee, keyed by employee id. */
+async function fetchSecondaryByEmployee(): Promise<Record<string, SecondaryDivision[]>> {
+  const { data, error } = await supabase
+    .from("employee_secondary_divisions")
+    .select("id, employee_id, department, sub_path, created_at")
+    .eq("is_deleted", false);
+  if (error) throw error;
+  const out: Record<string, SecondaryDivision[]> = {};
+  for (const row of (data ?? []) as SecondaryDivisionRow[]) {
+    (out[row.employee_id] ??= []).push({ department: row.department, sub_path: row.sub_path });
+  }
+  return out;
+}
+
 
 export type QueueEntry = {
   employee: EmployeeRow;
