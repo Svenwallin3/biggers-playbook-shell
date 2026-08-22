@@ -296,7 +296,17 @@ export function planQueryOptions(
       const trackById = new Map((tracks ?? []).map((t) => [t.id, t]));
 
       return (modules ?? [])
-        .filter((m) => allDepartments || moduleVisibleForSubPath(m, subPath))
+        .filter(
+          (m) =>
+            allDepartments ||
+            moduleVisibleForScope(
+              m,
+              trackById.get(m.track_id)!.department,
+              department,
+              subPath,
+              secondary,
+            ),
+        )
         .map((m) => ({
           ...m,
           track: trackById.get(m.track_id)!,
