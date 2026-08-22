@@ -234,10 +234,18 @@ export function trainingQueueQueryOptions(scope: {
         .sort(compareModulesByDay);
 
       return employees.map((employee) => {
-        const depts = departmentsForEmployee(employee.department_scope);
+        const secondary = secondaryByEmployee[employee.id] ?? [];
+        const depts = departmentsForEmployee(employee.department_scope, secondary);
         const mods = orderedModules.filter(
           (m) =>
-            depts.includes(m.track!.department) && moduleVisibleForSubPath(m, employee.sub_path),
+            depts.includes(m.track!.department) &&
+            moduleVisibleForScope(
+              m,
+              m.track!.department,
+              employee.department_scope,
+              employee.sub_path,
+              secondary,
+            ),
         );
 
         let total = 0;
