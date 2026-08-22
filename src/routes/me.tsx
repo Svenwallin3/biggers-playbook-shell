@@ -11,6 +11,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { onboardingCompletionQueryOptions } from "@/lib/queue.queries";
 import { planQueryOptions, type PlanModule } from "@/lib/training.queries";
+import {
+  employeeSecondaryDivisionsQueryOptions,
+  toSecondaryDivisions,
+} from "@/lib/cross-training.queries";
 import { trackTheme } from "@/lib/track-theme";
 
 const title = "Me — Biggers Training Platform";
@@ -39,9 +43,15 @@ function tierLabel(tier: string | null, canManageTeam: boolean | null) {
 function MePage() {
   const { employee, loading, session } = useAuth();
 
+  const secondaryQuery = useQuery(employeeSecondaryDivisionsQueryOptions(employee?.id));
   const planQuery = useQuery({
-    ...planQueryOptions(employee?.department_scope ?? null, employee?.sub_path ?? null, false),
-    enabled: !!employee?.department_scope,
+    ...planQueryOptions(
+      employee?.department_scope ?? null,
+      employee?.sub_path ?? null,
+      false,
+      toSecondaryDivisions(secondaryQuery.data),
+    ),
+    enabled: !!employee?.department_scope && !secondaryQuery.isPending,
   });
   const onboardingQuery = useQuery({
     ...onboardingCompletionQueryOptions(),

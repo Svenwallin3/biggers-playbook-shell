@@ -2,17 +2,34 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { EmployeeRow } from "@/lib/admin.queries";
+import type { SecondaryDivisionRow } from "@/lib/cross-training.queries";
 import {
   compareModulesByDay,
   departmentsForEmployee,
   getDayGroupedSteps,
-  moduleVisibleForSubPath,
+  moduleVisibleForScope,
   trainerSignoffTypes,
   type Department,
   type ModuleRow,
+  type SecondaryDivision,
   type StepRow,
   type TrackRow,
 } from "@/lib/training.queries";
+
+/** Active cross-training rows for every employee, keyed by employee id. */
+async function fetchSecondaryByEmployee(): Promise<Record<string, SecondaryDivision[]>> {
+  const { data, error } = await supabase
+    .from("employee_secondary_divisions")
+    .select("id, employee_id, department, sub_path, created_at")
+    .eq("is_deleted", false);
+  if (error) throw error;
+  const out: Record<string, SecondaryDivision[]> = {};
+  for (const row of (data ?? []) as SecondaryDivisionRow[]) {
+    (out[row.employee_id] ??= []).push({ department: row.department, sub_path: row.sub_path });
+  }
+  return out;
+}
+
 
 export type QueueEntry = {
   employee: EmployeeRow;
@@ -42,18 +59,23 @@ export function onboardingCompletionQueryOptions() {
   return queryOptions({
     queryKey: ["onboarding-completion"],
     queryFn: async (): Promise<Record<string, OnboardingProgress>> => {
-      const [employeesRes, tracksRes, modulesRes, stepsRes, progressRes] = await Promise.all([
-        supabase.from("employees").select("id, department_scope, sub_path").eq("is_deleted", false),
-        supabase.from("tracks").select("*").eq("is_deleted", false),
-        supabase
-          .from("modules")
-          .select("*")
-          .eq("is_deleted", false)
-          .eq("is_assignable", false)
-          .order("sequence_order"),
-        supabase.from("steps").select("*").eq("is_deleted", false).order("sequence_order"),
-        supabase.from("progress_records").select("employee_id, step_id, status"),
-      ]);
+      const [employeesRes, tracksRes, modulesRes, stepsRes, progressRes, secondaryByEmployee] =
+        await Promise.all([
+          supabase
+            .from("employees")
+            .select("id, department_scope, sub_path")
+            .eq("is_deleted", false),
+          supabase.from("tracks").select("*").eq("is_deleted", false),
+          supabase
+            .from("modules")
+            .select("*")
+            .eq("is_deleted", false)
+            .eq("is_assignable", false)
+            .order("sequence_order"),
+          supabase.from("steps").select("*").eq("is_deleted", false).order("sequence_order"),
+          supabase.from("progress_records").select("employee_id, step_id, status"),
+          fetchSecondaryByEmployee(),
+        ]);
       if (employeesRes.error) throw employeesRes.error;
       if (tracksRes.error) throw tracksRes.error;
       if (modulesRes.error) throw modulesRes.error;
@@ -78,12 +100,22 @@ export function onboardingCompletionQueryOptions() {
 
       const out: Record<string, OnboardingProgress> = {};
       for (const employee of employeesRes.data ?? []) {
-        const depts = departmentsForEmployee(employee.department_scope);
+        const secondary = secondaryByEmployee[employee.id] ?? [];
+        const depts = departmentsForEmployee(employee.department_scope, secondary);
         let total = 0;
         let completed = 0;
         for (const m of modules) {
           if (!depts.includes(m.track!.department)) continue;
-          if (!moduleVisibleForSubPath(m, employee.sub_path)) continue;
+          if (
+            !moduleVisibleForScope(
+              m,
+              m.track!.department,
+              employee.department_scope,
+              employee.sub_path,
+              secondary,
+            )
+          )
+            continue;
           for (const step of stepsByModule.get(m.id) ?? []) {
             total += 1;
             if (done.has(`${employee.id}:${step.id}`)) completed += 1;
@@ -112,17 +144,19 @@ export function trainingQueueQueryOptions(scope: {
       scope.isOwner ? "all" : (scope.locationId ?? "any"),
     ],
     queryFn: async (): Promise<QueueEntry[]> => {
-      const [employeesRes, tracksRes, modulesRes, stepsRes] = await Promise.all([
-        supabase
-          .from("employees")
-          .select("*")
-          .eq("is_deleted", false)
-          .eq("status", "active")
-          .order("full_name", { nullsFirst: false }),
-        supabase.from("tracks").select("*").eq("is_deleted", false).order("sequence_order"),
-        supabase.from("modules").select("*").eq("is_deleted", false).order("sequence_order"),
-        supabase.from("steps").select("*").eq("is_deleted", false).order("sequence_order"),
-      ]);
+      const [employeesRes, tracksRes, modulesRes, stepsRes, secondaryByEmployee] =
+        await Promise.all([
+          supabase
+            .from("employees")
+            .select("*")
+            .eq("is_deleted", false)
+            .eq("status", "active")
+            .order("full_name", { nullsFirst: false }),
+          supabase.from("tracks").select("*").eq("is_deleted", false).order("sequence_order"),
+          supabase.from("modules").select("*").eq("is_deleted", false).order("sequence_order"),
+          supabase.from("steps").select("*").eq("is_deleted", false).order("sequence_order"),
+          fetchSecondaryByEmployee(),
+        ]);
       if (employeesRes.error) throw employeesRes.error;
       if (tracksRes.error) throw tracksRes.error;
       if (modulesRes.error) throw modulesRes.error;
@@ -131,7 +165,7 @@ export function trainingQueueQueryOptions(scope: {
       let employees = employeesRes.data ?? [];
       if (!scope.isOwner) {
         employees = employees.filter((e) => {
-          const depts = departmentsForEmployee(e.department_scope);
+          const depts = departmentsForEmployee(e.department_scope, secondaryByEmployee[e.id] ?? []);
           if (!scope.department || !depts.includes(scope.department)) return false;
           // Market runs two sites — a Market manager with a location only sees their own.
           if (scope.department === "market" && scope.locationId) {
@@ -200,10 +234,18 @@ export function trainingQueueQueryOptions(scope: {
         .sort(compareModulesByDay);
 
       return employees.map((employee) => {
-        const depts = departmentsForEmployee(employee.department_scope);
+        const secondary = secondaryByEmployee[employee.id] ?? [];
+        const depts = departmentsForEmployee(employee.department_scope, secondary);
         const mods = orderedModules.filter(
           (m) =>
-            depts.includes(m.track!.department) && moduleVisibleForSubPath(m, employee.sub_path),
+            depts.includes(m.track!.department) &&
+            moduleVisibleForScope(
+              m,
+              m.track!.department,
+              employee.department_scope,
+              employee.sub_path,
+              secondary,
+            ),
         );
 
         let total = 0;

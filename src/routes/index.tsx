@@ -16,6 +16,10 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import type { PlanModule, ProgressRow } from "@/lib/training.queries";
 import {
+  employeeSecondaryDivisionsQueryOptions,
+  toSecondaryDivisions,
+} from "@/lib/cross-training.queries";
+import {
   planQueryOptions,
   progressQueryOptions,
   branchOptionsQueryOptions,
@@ -122,9 +126,15 @@ function HospitalityWelcome({
 function IndexPage() {
   const { employee, loading, session } = useAuth();
 
+  const secondaryQuery = useQuery(employeeSecondaryDivisionsQueryOptions(employee?.id));
   const planQuery = useQuery({
-    ...planQueryOptions(employee?.department_scope ?? null, employee?.sub_path ?? null),
-    enabled: !!employee,
+    ...planQueryOptions(
+      employee?.department_scope ?? null,
+      employee?.sub_path ?? null,
+      false,
+      toSecondaryDivisions(secondaryQuery.data),
+    ),
+    enabled: !!employee && !secondaryQuery.isPending,
   });
   const progressQuery = useQuery(progressQueryOptions(employee?.id));
   const branchQuery = useQuery(branchOptionsQueryOptions(employee?.department_scope ?? null));

@@ -6,6 +6,10 @@ import { BookOpen, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { planQueryOptions, type PlanModule } from "@/lib/training.queries";
+import {
+  employeeSecondaryDivisionsQueryOptions,
+  toSecondaryDivisions,
+} from "@/lib/cross-training.queries";
 import { trackTheme } from "@/lib/track-theme";
 
 const title = "Browse all training — Biggers Training Platform";
@@ -26,9 +30,15 @@ export const Route = createFileRoute("/training-library")({
 
 function TrainingLibraryPage() {
   const { employee, loading, isManagerOrOwner } = useAuth();
+  const secondaryQuery = useQuery(employeeSecondaryDivisionsQueryOptions(employee?.id));
   const planQuery = useQuery({
-    ...planQueryOptions(employee?.department_scope ?? null, employee?.sub_path ?? null, isManagerOrOwner),
-    enabled: !!employee,
+    ...planQueryOptions(
+      employee?.department_scope ?? null,
+      employee?.sub_path ?? null,
+      isManagerOrOwner,
+      toSecondaryDivisions(secondaryQuery.data),
+    ),
+    enabled: !!employee && !secondaryQuery.isPending,
   });
 
   const grouped = useMemo(() => {

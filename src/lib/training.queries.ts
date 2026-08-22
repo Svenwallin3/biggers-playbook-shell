@@ -71,16 +71,41 @@ export function bodyLines(step: Pick<StepRow, "content_body">) {
     .filter(Boolean);
 }
 
+/** An extra division an employee is cross-trained into, with its own branch. */
+export type SecondaryDivision = { department: Department; sub_path: string | null };
+
 /**
- * The departments an employee's plan should include: their own division plus
- * Universal. Driven by `department_scope` (a real enum column), not string
- * matching on `path` — works for any division without code changes.
+ * The departments an employee's plan should include: Universal, their own
+ * division, plus any active cross-training divisions. Driven by real enum
+ * values, not string matching on `path` — works for any division without code
+ * changes. `department_scope` itself stays single-valued; cross-training lives
+ * in `employee_secondary_divisions`.
  */
 export function departmentsForEmployee(
   department: Department | null | undefined,
+  secondary: SecondaryDivision[] = [],
 ): Department[] {
-  if (!department || department === "universal") return ["universal"];
-  return ["universal", department];
+  const out: Department[] = ["universal"];
+  for (const d of [department, ...secondary.map((s) => s.department)]) {
+    if (d && d !== "universal" && !out.includes(d)) out.push(d);
+  }
+  return out;
+}
+
+/**
+ * Which branch (`sub_path`) applies in a given division for this employee:
+ * their own `sub_path` in their home division, or the branch recorded on the
+ * cross-training row for a secondary division.
+ */
+export function subPathForDepartment(
+  trackDepartment: Department,
+  homeDepartment: Department | null | undefined,
+  homeSubPath: string | null | undefined,
+  secondary: SecondaryDivision[] = [],
+): string | null {
+  const match = secondary.find((s) => s.department === trackDepartment);
+  if (match && trackDepartment !== homeDepartment) return match.sub_path;
+  return homeSubPath ?? null;
 }
 
 /**
@@ -97,6 +122,21 @@ export function moduleVisibleForSubPath(
 ): boolean {
   return !module.sub_path || module.sub_path === employeeSubPath;
 }
+
+/** Branch-aware visibility across home + cross-trained divisions. */
+export function moduleVisibleForScope(
+  module: { sub_path: string | null; track?: { department: Department } | null },
+  trackDepartment: Department,
+  homeDepartment: Department | null | undefined,
+  homeSubPath: string | null | undefined,
+  secondary: SecondaryDivision[] = [],
+): boolean {
+  return moduleVisibleForSubPath(
+    module,
+    subPathForDepartment(trackDepartment, homeDepartment, homeSubPath, secondary),
+  );
+}
+
 
 /** Distinct branch values live on a division's modules, e.g. ["Production","Service"] for Kitchen. Empty array = this division has no branch split. */
 export function branchOptionsQueryOptions(department: Department | null) {
@@ -199,17 +239,26 @@ export function getDayGroupedSteps<
   return groups.flatMap((g) => [...g.start, ...g.middle, ...g.end]);
 }
 
-/** Today's plan: the Universal track plus the employee's own division, in onboarding-day order. */
+/**
+ * Today's plan: the Universal track, the employee's own division, and any
+ * divisions they're cross-trained into, in onboarding-day order.
+ */
 export function planQueryOptions(
   department: Department | null,
   subPath: string | null = null,
   allDepartments = false,
+  secondary: SecondaryDivision[] = [],
 ) {
+  const secondaryKey = secondary
+    .map((s) => `${s.department}:${s.sub_path ?? ""}`)
+    .sort()
+    .join(",");
   return queryOptions({
     queryKey: [
       "training-plan",
       allDepartments ? "all" : (department ?? "none"),
       allDepartments ? "all" : (subPath ?? "none"),
+      allDepartments ? "all" : secondaryKey,
     ],
     queryFn: async (): Promise<PlanModule[]> => {
       let trackQuery = supabase
@@ -218,7 +267,7 @@ export function planQueryOptions(
         .eq("is_deleted", false)
         .order("sequence_order");
       if (!allDepartments) {
-        trackQuery = trackQuery.in("department", departmentsForEmployee(department));
+        trackQuery = trackQuery.in("department", departmentsForEmployee(department, secondary));
       }
       const { data: tracks, error: trackError } = await trackQuery;
       if (trackError) throw trackError;
@@ -247,7 +296,17 @@ export function planQueryOptions(
       const trackById = new Map((tracks ?? []).map((t) => [t.id, t]));
 
       return (modules ?? [])
-        .filter((m) => allDepartments || moduleVisibleForSubPath(m, subPath))
+        .filter(
+          (m) =>
+            allDepartments ||
+            moduleVisibleForScope(
+              m,
+              trackById.get(m.track_id)!.department,
+              department,
+              subPath,
+              secondary,
+            ),
+        )
         .map((m) => ({
           ...m,
           track: trackById.get(m.track_id)!,
