@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -19,9 +20,15 @@ import {
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { employeesQueryOptions, type EmployeeRow } from "@/lib/admin.queries";
+import {
+  addSecondaryDivision,
+  employeeSecondaryDivisionsQueryOptions,
+  endSecondaryDivision,
+} from "@/lib/cross-training.queries";
 import { onboardingCompletionQueryOptions } from "@/lib/queue.queries";
 import { divisionLabel } from "@/lib/reference.queries";
 import { branchOptionsQueryOptions } from "@/lib/training.queries";
@@ -292,6 +299,7 @@ function TeamPage() {
               <TableHead className="w-[150px]">Access tier</TableHead>
               <TableHead className="w-[140px]">Status</TableHead>
               <TableHead className="w-[130px]">Onboarding</TableHead>
+              <TableHead className="w-[210px]">Cross-training</TableHead>
               {isOwner ? (
                 <>
                   <TableHead className="w-[150px]">General Manager</TableHead>
@@ -370,6 +378,9 @@ function TeamPage() {
                       </Badge>
                     );
                   })()}
+                </TableCell>
+                <TableCell>
+                  <CrossTrainingCell employee={e} />
                 </TableCell>
                 {isOwner ? (
                   <TableCell>
