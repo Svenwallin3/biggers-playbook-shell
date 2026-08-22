@@ -276,6 +276,67 @@ export type Database = {
           },
         ]
       }
+      employee_secondary_divisions: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          department: Database["public"]["Enums"]["department"]
+          employee_id: string
+          id: string
+          is_deleted: boolean
+          sub_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department: Database["public"]["Enums"]["department"]
+          employee_id: string
+          id?: string
+          is_deleted?: boolean
+          sub_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          department?: Database["public"]["Enums"]["department"]
+          employee_id?: string
+          id?: string
+          is_deleted?: boolean
+          sub_path?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_secondary_divisions_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_secondary_divisions_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_secondary_divisions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           auth_tier: Database["public"]["Enums"]["auth_tier"]
@@ -1296,6 +1357,7 @@ export type Database = {
         Args: { _location_tag: string; _reference_document_id: string }
         Returns: boolean
       }
+      can_cross_train: { Args: { _employee_id: string }; Returns: boolean }
       can_manage_progress_for: {
         Args: { _employee_id: string; _step_id: string }
         Returns: boolean
