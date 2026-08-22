@@ -114,8 +114,14 @@ function ModulePage() {
       : (employee?.department_scope ?? null);
   const subjectSubPath =
     isAdmin && trainee ? (traineeQuery.data?.sub_path ?? null) : (employee?.sub_path ?? null);
+  const secondaryQuery = useQuery(employeeSecondaryDivisionsQueryOptions(subjectId));
   const planQuery = useQuery({
-    ...planQueryOptions(subjectDepartment, subjectSubPath),
+    ...planQueryOptions(
+      subjectDepartment,
+      subjectSubPath,
+      false,
+      toSecondaryDivisions(secondaryQuery.data),
+    ),
     enabled: Boolean(subjectId) && !(isAdmin && trainee && traineeQuery.isPending),
   });
   // One flat, ordered walk through every step in the plan: each day's self-paced
