@@ -24,6 +24,10 @@ import { StandaloneModuleBuilder } from "@/components/admin/StandaloneModuleBuil
 import { ModuleThemeCard, introCardText } from "@/components/training/ModuleThemeCard";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  employeeSecondaryDivisionsQueryOptions,
+  toSecondaryDivisions,
+} from "@/lib/cross-training.queries";
+import {
   getDayGroupedSteps,
   logManagerInitials,
   moduleQueryOptions,
