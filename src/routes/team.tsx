@@ -161,7 +161,7 @@ function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
       {options.length ? (
         <div className="flex flex-wrap items-center gap-1">
           <Select
-            value={department || undefined}
+            value={department}
             onValueChange={(v) => {
               setDepartment(v as Department);
               setSubPath(NONE);
