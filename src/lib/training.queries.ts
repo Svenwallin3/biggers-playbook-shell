@@ -239,17 +239,26 @@ export function getDayGroupedSteps<
   return groups.flatMap((g) => [...g.start, ...g.middle, ...g.end]);
 }
 
-/** Today's plan: the Universal track plus the employee's own division, in onboarding-day order. */
+/**
+ * Today's plan: the Universal track, the employee's own division, and any
+ * divisions they're cross-trained into, in onboarding-day order.
+ */
 export function planQueryOptions(
   department: Department | null,
   subPath: string | null = null,
   allDepartments = false,
+  secondary: SecondaryDivision[] = [],
 ) {
+  const secondaryKey = secondary
+    .map((s) => `${s.department}:${s.sub_path ?? ""}`)
+    .sort()
+    .join(",");
   return queryOptions({
     queryKey: [
       "training-plan",
       allDepartments ? "all" : (department ?? "none"),
       allDepartments ? "all" : (subPath ?? "none"),
+      allDepartments ? "all" : secondaryKey,
     ],
     queryFn: async (): Promise<PlanModule[]> => {
       let trackQuery = supabase
@@ -258,7 +267,7 @@ export function planQueryOptions(
         .eq("is_deleted", false)
         .order("sequence_order");
       if (!allDepartments) {
-        trackQuery = trackQuery.in("department", departmentsForEmployee(department));
+        trackQuery = trackQuery.in("department", departmentsForEmployee(department, secondary));
       }
       const { data: tracks, error: trackError } = await trackQuery;
       if (trackError) throw trackError;
