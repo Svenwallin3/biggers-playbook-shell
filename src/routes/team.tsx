@@ -79,11 +79,133 @@ function BranchCell({
   );
 }
 
+/**
+ * GM/Owner control for cross-training: shows active secondary divisions with an
+ * "End" action, plus a division (+ branch) picker to add another one. Regular
+ * managers never see this — the RLS on `employee_secondary_divisions` matches.
+ */
+function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
+  const { employee: me } = useAuth();
+  const queryClient = useQueryClient();
+  const rowsQuery = useQuery(employeeSecondaryDivisionsQueryOptions(e.id));
+  const [department, setDepartment] = useState<Department | "">("");
+  const [subPath, setSubPath] = useState<string>(NONE);
+  const branchQuery = useQuery(branchOptionsQueryOptions(department || null));
+  const branchOptions = department ? (branchQuery.data ?? []) : [];
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ["secondary-divisions"] });
+    void queryClient.invalidateQueries({ queryKey: ["training-queue"] });
+    void queryClient.invalidateQueries({ queryKey: ["onboarding-completion"] });
+  };
+
+  const add = useMutation({
+    mutationFn: () =>
+      addSecondaryDivision({
+        employeeId: e.id,
+        department: department as Department,
+        subPath: subPath === NONE ? null : subPath,
+        assignedBy: me?.id ?? null,
+      }),
+    onSuccess: () => {
+      toast.success("Cross-training added");
+      setDepartment("");
+      setSubPath(NONE);
+      invalidate();
+    },
+    onError: (error: Error) =>
+      toast.error("Couldn't add cross-training", { description: error.message }),
+  });
+
+  const end = useMutation({
+    mutationFn: (id: string) => endSecondaryDivision({ id, endedBy: me?.id ?? null }),
+    onSuccess: () => {
+      toast.success("Cross-training ended");
+      invalidate();
+    },
+    onError: (error: Error) =>
+      toast.error("Couldn't end cross-training", { description: error.message }),
+  });
+
+  const taken = new Set((rowsQuery.data ?? []).map((r) => r.department));
+  const options = departments.filter(
+    (d) => d !== "universal" && d !== e.department_scope && !taken.has(d),
+  );
+
+  return (
+    <div className="space-y-2">
+      {(rowsQuery.data ?? []).map((row) => (
+        <div key={row.id} className="flex items-center gap-1">
+          <Badge variant="secondary">
+            {divisionLabel(row.department)}
+            {row.sub_path ? ` · ${row.sub_path}` : ""}
+          </Badge>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            disabled={end.isPending}
+            onClick={() => end.mutate(row.id)}
+          >
+            End
+          </Button>
+        </div>
+      ))}
+      {options.length ? (
+        <div className="flex flex-wrap items-center gap-1">
+          <Select
+            value={department || undefined}
+            onValueChange={(v) => {
+              setDepartment(v as Department);
+              setSubPath(NONE);
+            }}
+          >
+            <SelectTrigger className="h-8 w-[130px]">
+              <SelectValue placeholder="Cross-train…" />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((d) => (
+                <SelectItem key={d} value={d}>
+                  {divisionLabel(d)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {branchOptions.length > 1 ? (
+            <Select value={subPath} onValueChange={setSubPath}>
+              <SelectTrigger className="h-8 w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE}>No branch</SelectItem>
+                {branchOptions.map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          <Button
+            size="sm"
+            className="h-8"
+            disabled={!department || add.isPending}
+            onClick={() => add.mutate()}
+          >
+            Add
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** Market runs two sites; Kitchen and Delivery are single-site, so they stay null. */
 const locations: { value: string; label: string }[] = [
   { value: "market_street", label: "Market Street" },
   { value: "carolina_beach_road", label: "Carolina Beach Road" },
 ];
+
 
 const title = "Team — Biggers Training Platform";
 const description = "Owner tool for setting each employee's access tier and division.";
