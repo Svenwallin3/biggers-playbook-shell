@@ -44,15 +44,15 @@ export async function retrieveContext(question: string): Promise<AskSource[]> {
   const [stepRes, moduleRes, sourcingRes] = await Promise.all([
     supabase
       .from("steps")
-      .select("*, module:modules(id,name,sub_path)")
+      .select("*, module:modules(id,name,path)")
       .eq("is_deleted", false)
       .or(orFor(["title", "content_body"]))
       .limit(25),
     supabase
       .from("modules")
-      .select("id,name,description,sub_path")
+      .select("id,name,description,path")
       .eq("is_deleted", false)
-      .or(orFor(["name", "description", "sub_path"]))
+      .or(orFor(["name", "description", "path"]))
       .limit(10),
     supabase
       .from("sourcing_board_entries")

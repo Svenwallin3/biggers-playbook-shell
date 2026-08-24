@@ -102,13 +102,13 @@ function ModulePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
-        .select("department_scope, sub_path")
+        .select("department_scope, path")
         .eq("id", subjectId!)
         .maybeSingle();
       if (error) throw error;
       return {
         department_scope: data?.department_scope ?? null,
-        sub_path: data?.sub_path ?? null,
+        path: data?.path ?? null,
       };
     },
   });
@@ -116,13 +116,13 @@ function ModulePage() {
     isAdmin && trainee
       ? (traineeQuery.data?.department_scope ?? null)
       : (employee?.department_scope ?? null);
-  const subjectSubPath =
-    isAdmin && trainee ? (traineeQuery.data?.sub_path ?? null) : (employee?.sub_path ?? null);
+  const subjectPath =
+    isAdmin && trainee ? (traineeQuery.data?.path ?? null) : (employee?.path ?? null);
   const secondaryQuery = useQuery(employeeSecondaryDivisionsQueryOptions(subjectId));
   const planQuery = useQuery({
     ...planQueryOptions(
       subjectDepartment,
-      subjectSubPath,
+      subjectPath,
       false,
       toSecondaryDivisions(secondaryQuery.data),
     ),
@@ -336,7 +336,7 @@ function ModulePage() {
               as="h2"
               variant="compact"
               trackName={mod.track?.name}
-              subPath={mod.sub_path}
+              path={mod.path}
               dayAssignment={mod.day_assignment}
               name={mod.name}
             />

@@ -130,9 +130,9 @@ export function SubPathChoice({ department }: { department: Department | null })
       heading="Which track are you training on?"
       blurb="This sets the rest of your training. A manager can change it later."
       options={options}
-      onChoose={async (sub_path) => {
+      onChoose={async (path) => {
         if (!employee) return;
-        await supabase.from("employees").update({ sub_path }).eq("id", employee.id);
+        await supabase.from("employees").update({ path }).eq("id", employee.id);
         await refreshEmployee();
       }}
     />

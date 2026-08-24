@@ -200,7 +200,7 @@ export type AssignableModule = ModuleRow & { track: TrackRow | null };
 
 /**
  * Distinct `category` values already used by assignable modules in a division.
- * Same shape/reasoning as `branchOptionsQueryOptions` for `sub_path`: no enum,
+ * Same shape/reasoning as `branchOptionsQueryOptions` for `path`: no enum,
  * no hardcoded list, division-agnostic.
  */
 export function moduleCategoryOptionsQueryOptions(department: string | null) {

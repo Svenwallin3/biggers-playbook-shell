@@ -91,7 +91,7 @@ function SearchPage() {
                     </Link>
                     <p className="text-xs text-muted-foreground">
                       {mod.track?.name}
-                      {mod.sub_path ? ` · ${mod.sub_path}` : ""}
+                      {mod.path ? ` · ${mod.path}` : ""}
                     </p>
                     {mod.description ? (
                       <p className="mt-1 text-sm text-muted-foreground">{mod.description}</p>

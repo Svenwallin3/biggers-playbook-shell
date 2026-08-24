@@ -257,7 +257,7 @@ export function NewModuleDialog({
     slug: "",
     slugTouched: false,
     description: "",
-    sub_path: "",
+    path: "",
     day_assignment: "",
     sequence_order: String(nextSequence),
     is_assignable: defaultIsAssignable,
@@ -266,7 +266,7 @@ export function NewModuleDialog({
   };
   const [form, setForm] = useState(empty);
   const patch = (p: Partial<typeof empty>) => setForm((f) => ({ ...f, ...p }));
-  const [subPathIsCustom, setSubPathIsCustom] = useState(false);
+  const [pathIsCustom, setPathIsCustom] = useState(false);
   const [categoryIsCustom, setCategoryIsCustom] = useState(false);
   const branchQuery = useQuery({
     ...branchOptionsQueryOptions(department ?? null),
@@ -296,7 +296,7 @@ export function NewModuleDialog({
       }
       reset={() => {
         setForm({ ...empty, sequence_order: String(nextSequence) });
-        setSubPathIsCustom(false);
+        setPathIsCustom(false);
         setCategoryIsCustom(false);
       }}
       onCreated={onCreated}
@@ -308,7 +308,7 @@ export function NewModuleDialog({
             name: form.name.trim(),
             slug: form.slug.trim() || slugify(form.name),
             description: form.description.trim() || null,
-            sub_path: form.sub_path.trim() || null,
+            path: form.path.trim() || null,
             day_assignment: form.day_assignment ? Number(form.day_assignment) : null,
             sequence_order: Number(form.sequence_order) || nextSequence,
             is_assignable: form.is_assignable,
@@ -358,14 +358,14 @@ export function NewModuleDialog({
         <div className="space-y-2">
           <Label htmlFor="module-subpath">Sub-path</Label>
           <Select
-            value={subPathIsCustom ? "__custom__" : form.sub_path || "__none__"}
+            value={pathIsCustom ? "__custom__" : form.path || "__none__"}
             onValueChange={(v) => {
               if (v === "__custom__") {
-                setSubPathIsCustom(true);
+                setPathIsCustom(true);
                 return;
               }
-              setSubPathIsCustom(false);
-              patch({ sub_path: v === "__none__" ? "" : v });
+              setPathIsCustom(false);
+              patch({ path: v === "__none__" ? "" : v });
             }}
           >
             <SelectTrigger id="module-subpath">
@@ -381,13 +381,13 @@ export function NewModuleDialog({
               <SelectItem value="__custom__">Custom…</SelectItem>
             </SelectContent>
           </Select>
-          {subPathIsCustom ? (
+          {pathIsCustom ? (
             <Input
               aria-label="Custom branch name"
               placeholder="New branch name"
-              value={form.sub_path}
+              value={form.path}
               maxLength={60}
-              onChange={(e) => patch({ sub_path: e.target.value })}
+              onChange={(e) => patch({ path: e.target.value })}
             />
           ) : null}
         </div>

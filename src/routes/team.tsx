@@ -47,7 +47,7 @@ const statuses: { value: EmployeeStatus; label: string }[] = [
 const departments: Department[] = ["universal", "market", "kitchen", "delivery"];
 const NONE = "__none__";
 
-/** Owner-only branch (sub_path) control; "n/a" when the division has no branch split. */
+/** Owner-only branch (path) control; "n/a" when the division has no branch split. */
 function BranchCell({
   employee: e,
   disabled,
@@ -67,7 +67,7 @@ function BranchCell({
   }
   return (
     <Select
-      value={e.sub_path ?? NONE}
+      value={e.path ?? NONE}
       disabled={disabled}
       onValueChange={(v) => onChange(v === NONE ? null : v)}
     >
@@ -96,7 +96,7 @@ function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
   const queryClient = useQueryClient();
   const rowsQuery = useQuery(employeeSecondaryDivisionsQueryOptions(e.id));
   const [department, setDepartment] = useState<Department | "">("");
-  const [subPath, setSubPath] = useState<string>(NONE);
+  const [path, setPath] = useState<string>(NONE);
   const branchQuery = useQuery(branchOptionsQueryOptions(department || null));
   const branchOptions = department ? (branchQuery.data ?? []) : [];
 
@@ -111,13 +111,13 @@ function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
       addSecondaryDivision({
         employeeId: e.id,
         department: department as Department,
-        subPath: subPath === NONE ? null : subPath,
+        path: path === NONE ? null : path,
         assignedBy: me?.id ?? null,
       }),
     onSuccess: () => {
       toast.success("Cross-training added");
       setDepartment("");
-      setSubPath(NONE);
+      setPath(NONE);
       invalidate();
     },
     onError: (error: Error) =>
@@ -145,7 +145,7 @@ function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
         <div key={row.id} className="flex items-center gap-1">
           <Badge variant="secondary">
             {divisionLabel(row.department)}
-            {row.sub_path ? ` · ${row.sub_path}` : ""}
+            {row.path ? ` · ${row.path}` : ""}
           </Badge>
           <Button
             variant="ghost"
@@ -164,7 +164,7 @@ function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
             value={department}
             onValueChange={(v) => {
               setDepartment(v as Department);
-              setSubPath(NONE);
+              setPath(NONE);
             }}
           >
             <SelectTrigger className="h-8 w-[130px]">
@@ -179,7 +179,7 @@ function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
             </SelectContent>
           </Select>
           {branchOptions.length > 1 ? (
-            <Select value={subPath} onValueChange={setSubPath}>
+            <Select value={path} onValueChange={setPath}>
               <SelectTrigger className="h-8 w-[120px]">
                 <SelectValue />
               </SelectTrigger>
@@ -450,7 +450,7 @@ function TeamPage() {
                     <BranchCell
                       employee={e}
                       disabled={update.isPending}
-                      onChange={(sub_path) => update.mutate({ id: e.id, patch: { sub_path } })}
+                      onChange={(path) => update.mutate({ id: e.id, patch: { path } })}
                     />
                   </TableCell>
                 ) : null}

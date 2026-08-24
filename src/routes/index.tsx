@@ -131,7 +131,7 @@ function IndexPage() {
   const planQuery = useQuery({
     ...planQueryOptions(
       employee?.department_scope ?? null,
-      employee?.sub_path ?? null,
+      employee?.path ?? null,
       false,
       toSecondaryDivisions(secondaryQuery.data),
     ),
@@ -209,7 +209,7 @@ function IndexPage() {
   }
   // Branch gate: only for divisions that actually split (2+ branch values), and
   // once Day 1 is done — the branch pick is the first thing shown on Day 2.
-  if (isStaff && employee.path && !employee.sub_path && (branchQuery.data ?? []).length >= 2) {
+  if (isStaff && employee.path && !employee.path && (branchQuery.data ?? []).length >= 2) {
     const earlySteps = modules
       .filter((m) => m.day_assignment === 1)
       .flatMap((m) => m.steps);

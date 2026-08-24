@@ -47,7 +47,7 @@ function MePage() {
   const planQuery = useQuery({
     ...planQueryOptions(
       employee?.department_scope ?? null,
-      employee?.sub_path ?? null,
+      employee?.path ?? null,
       false,
       toSecondaryDivisions(secondaryQuery.data),
     ),

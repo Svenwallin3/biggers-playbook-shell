@@ -7,7 +7,7 @@ export type SecondaryDivisionRow = {
   id: string;
   employee_id: string;
   department: Department;
-  sub_path: string | null;
+  path: string | null;
   created_at: string;
 };
 
@@ -22,7 +22,7 @@ export function secondaryDivisionsQueryOptions() {
     queryFn: async (): Promise<Record<string, SecondaryDivisionRow[]>> => {
       const { data, error } = await supabase
         .from("employee_secondary_divisions")
-        .select("id, employee_id, department, sub_path, created_at")
+        .select("id, employee_id, department, path, created_at")
         .eq("is_deleted", false)
         .order("created_at");
       if (error) throw error;
@@ -43,7 +43,7 @@ export function employeeSecondaryDivisionsQueryOptions(employeeId: string | null
     queryFn: async (): Promise<SecondaryDivisionRow[]> => {
       const { data, error } = await supabase
         .from("employee_secondary_divisions")
-        .select("id, employee_id, department, sub_path, created_at")
+        .select("id, employee_id, department, path, created_at")
         .eq("employee_id", employeeId!)
         .eq("is_deleted", false)
         .order("created_at");
@@ -54,19 +54,19 @@ export function employeeSecondaryDivisionsQueryOptions(employeeId: string | null
 }
 
 export function toSecondaryDivisions(rows: SecondaryDivisionRow[] | undefined): SecondaryDivision[] {
-  return (rows ?? []).map((r) => ({ department: r.department, sub_path: r.sub_path }));
+  return (rows ?? []).map((r) => ({ department: r.department, path: r.path }));
 }
 
 export async function addSecondaryDivision(input: {
   employeeId: string;
   department: Department;
-  subPath: string | null;
+  path: string | null;
   assignedBy: string | null;
 }) {
   const { error } = await supabase.from("employee_secondary_divisions").insert({
     employee_id: input.employeeId,
     department: input.department,
-    sub_path: input.subPath,
+    path: input.path,
     assigned_by: input.assignedBy,
   });
   if (error) throw error;

@@ -34,7 +34,7 @@ import { contentTreeQueryOptions } from "@/lib/admin.queries";
 import {
   branchOptionsQueryOptions,
   getDayGroupedSteps,
-  moduleVisibleForSubPath,
+  moduleVisibleForPath,
   stepTypeLabels,
 } from "@/lib/training.queries";
 import { fetchQuizQuestions } from "@/lib/training.queries";
@@ -133,7 +133,7 @@ function PreviewPage() {
   }, [effectiveBranch, branch, navigate]);
   // Branch filter: narrow the division's own modules to one branch; shared/Universal never filter.
   const ownModules = effectiveBranch
-    ? ownModulesAll.filter((m) => moduleVisibleForSubPath(m, effectiveBranch))
+    ? ownModulesAll.filter((m) => moduleVisibleForPath(m, effectiveBranch))
     : ownModulesAll;
   // A trainee always gets Universal alongside their own division, so preview it that way too.
   const universalTrackIds = allTracks.filter((t) => t.department === "universal").map((t) => t.id);
@@ -493,7 +493,7 @@ function PreviewPage() {
                     as="h2"
                     variant="compact"
                     trackName={activeTrack.name}
-                    subPath={activeModule.sub_path}
+                    path={activeModule.path}
                     dayAssignment={activeModule.day_assignment}
                     name={activeModule.name}
                   />
