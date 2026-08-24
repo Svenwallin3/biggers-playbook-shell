@@ -323,24 +323,35 @@ function TeamPage() {
                 <TableCell className="text-muted-foreground">{e.email}</TableCell>
                 <TableCell>
                   <Select
-                    value={e.auth_tier}
+                    value={
+                      e.auth_tier === "manager" && e.can_manage_team
+                        ? "general_manager"
+                        : e.auth_tier
+                    }
                     disabled={update.isPending || (!isOwner && e.auth_tier === "owner")}
                     onValueChange={(v) =>
-                      update.mutate({ id: e.id, patch: { auth_tier: v as AuthTier } })
+                      update.mutate({
+                        id: e.id,
+                        patch:
+                          v === "general_manager"
+                            ? { auth_tier: "manager", can_manage_team: true }
+                            : { auth_tier: v as AuthTier, can_manage_team: false },
+                      })
                     }
                   >
                     <SelectTrigger className="h-8">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {(isOwner ? tiers : gmTiers).map((t) => (
+                      {(isOwner ? ownerTierOptions : gmTiers).map((t) => (
                         <SelectItem key={t} value={t}>
-                          {t}
+                          {t === "general_manager" ? "general manager" : t}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </TableCell>
+
                 <TableCell>
                   <Select
                     value={e.status}
