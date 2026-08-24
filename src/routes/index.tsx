@@ -134,6 +134,7 @@ function IndexPage() {
       employee?.path ?? null,
       false,
       toSecondaryDivisions(secondaryQuery.data),
+      employee?.can_manage_team ?? false,
     ),
     enabled: !!employee && !secondaryQuery.isPending,
   });

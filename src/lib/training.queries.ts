@@ -130,7 +130,10 @@ export function moduleVisibleForScope(
   homeDepartment: Department | null | undefined,
   homePath: string | null | undefined,
   secondary: SecondaryDivision[] = [],
+  isGmOfHomeDivision = false,
 ): boolean {
+  // A GM manages the whole division, so every branch of their home division counts.
+  if (isGmOfHomeDivision && trackDepartment === homeDepartment) return true;
   return moduleVisibleForPath(
     module,
     pathForDepartment(trackDepartment, homeDepartment, homePath, secondary),
@@ -248,6 +251,7 @@ export function planQueryOptions(
   path: string | null = null,
   allDepartments = false,
   secondary: SecondaryDivision[] = [],
+  isGmOfHomeDivision = false,
 ) {
   const secondaryKey = secondary
     .map((s) => `${s.department}:${s.path ?? ""}`)
@@ -259,6 +263,7 @@ export function planQueryOptions(
       allDepartments ? "all" : (department ?? "none"),
       allDepartments ? "all" : (path ?? "none"),
       allDepartments ? "all" : secondaryKey,
+      allDepartments ? "all" : String(isGmOfHomeDivision),
     ],
     queryFn: async (): Promise<PlanModule[]> => {
       let trackQuery = supabase
@@ -305,6 +310,7 @@ export function planQueryOptions(
               department,
               path,
               secondary,
+              isGmOfHomeDivision,
             ),
         )
         .map((m) => ({

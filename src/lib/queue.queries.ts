@@ -63,7 +63,7 @@ export function onboardingCompletionQueryOptions() {
         await Promise.all([
           supabase
             .from("employees")
-            .select("id, department_scope, path")
+            .select("id, department_scope, path, can_manage_team")
             .eq("is_deleted", false),
           supabase.from("tracks").select("*").eq("is_deleted", false),
           supabase
@@ -113,6 +113,7 @@ export function onboardingCompletionQueryOptions() {
               employee.department_scope,
               employee.path,
               secondary,
+              employee.can_manage_team ?? false,
             )
           )
             continue;
@@ -245,6 +246,7 @@ export function trainingQueueQueryOptions(scope: {
               employee.department_scope,
               employee.path,
               secondary,
+              employee.can_manage_team ?? false,
             ),
         );
 
