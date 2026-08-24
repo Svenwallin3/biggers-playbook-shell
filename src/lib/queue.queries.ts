@@ -113,6 +113,7 @@ export function onboardingCompletionQueryOptions() {
               employee.department_scope,
               employee.path,
               secondary,
+              employee.can_manage_team ?? false,
             )
           )
             continue;
