@@ -1,18 +1,35 @@
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowDown,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   ArrowLeft,
-  ArrowUp,
   CheckCircle2,
   ChevronDown,
   FileText,
+  GripVertical,
   ListChecks,
   Printer,
   Search,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,7 +82,9 @@ import {
   submitReferenceDeleteRequest,
   visibleToDivision,
   visibleToLocation,
+  type ReferenceSection,
   type ReferenceDocumentRow,
+
   type ReferenceDocumentType,
   type SubCategoryFilter,
 } from "@/lib/reference.queries";
@@ -147,6 +166,35 @@ function DocumentPrintSheet({ doc, withSignoffLine }: { doc: ReferenceDocumentRo
   );
 }
 
+/**
+ * Wraps one section card so Owners/GMs can drag it by its grip handle. The drag
+ * listeners live on the handle only, so the collapsible header stays clickable.
+ */
+function SortableSection({
+  id,
+  enabled,
+  children,
+}: {
+  id: string;
+  enabled: boolean;
+  children: (handle: Record<string, unknown>) => ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled: !enabled,
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={isDragging ? "relative z-10 opacity-90" : undefined}
+    >
+      {children(enabled ? { ...attributes, ...listeners } : {})}
+    </div>
+  );
+}
+
+
 function Detail({
   doc,
   documentType,
@@ -164,31 +212,60 @@ function Detail({
   const [requesting, setRequesting] = useState(false);
   // Manager Guides: checkboxes are a scratch pad, nothing is persisted or submitted.
   const [localChecks, setLocalChecks] = useState<Record<string, boolean>>({});
-  const sections = docSections(doc);
+  const persisted = docSections(doc);
+  // Optimistic order while the save is in flight, so a drag lands instantly.
+  const [draftOrder, setDraftOrder] = useState<ReferenceSection[] | null>(null);
+  const sections = draftOrder ?? persisted;
   const isChecklist = documentType === "checklist";
   const tracksInstance = isChecklist && !ephemeral;
   // Section reordering is Owner/GM only and writes directly (no suggestion queue).
   const canReorderSections = (isOwner || isGeneralManager) && sections.length > 1;
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
   const reorderSections = useMutation({
-    mutationFn: async (input: { from: number; to: number }) => {
-      const next = [...sections];
-      const moved = next[input.from];
-      if (!moved) return;
-      next.splice(input.from, 1);
-      next.splice(input.to, 0, moved);
+    mutationFn: async (next: ReferenceSection[]) => {
       await saveReferenceSections({
         documentId: doc.id,
         sections: next,
         updatedBy: employee?.id ?? null,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reference-documents"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["reference-documents"] });
+      setDraftOrder(null);
       toast.success("Section order updated.");
     },
-    onError: () => toast.error("Couldn't reorder sections."),
+    onError: () => {
+      setDraftOrder(null);
+      toast.error("Couldn't reorder sections.");
+    },
   });
+
+  const handleSectionDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = Number(active.id);
+    const to = Number(over.id);
+    if (Number.isNaN(from) || Number.isNaN(to)) return;
+    const next = [...sections];
+    const moved = next[from];
+    if (!moved) return;
+    next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setDraftOrder(next);
+    reorderSections.mutate(next);
+  };
+
+  // Drop any stale optimistic order once the refetched document arrives.
+  useEffect(() => {
+    if (!reorderSections.isPending) setDraftOrder(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc.updated_at]);
+
 
   // Shared instance for today (per location when the doc carries a location_tag).
   const instanceQuery = useQuery(
@@ -396,9 +473,21 @@ function Detail({
           </CardContent>
         </Card>
       ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragEnd={handleSectionDragEnd}
+        >
+        <SortableContext
+          items={sections.map((_, i) => String(i))}
+          strategy={verticalListSortingStrategy}
+        >
         <div className="space-y-4">
           {sections.map((section, i) => (
-            <Card key={i}>
+            <SortableSection key={i} id={String(i)} enabled={canReorderSections}>
+              {(handle) => (
+            <Card>
               <Collapsible defaultOpen>
                 <CardContent className="space-y-4 py-4 sm:py-6">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -408,27 +497,18 @@ function Detail({
                     </CollapsibleTrigger>
                     <div className="flex shrink-0 items-center gap-0.5">
                       {canReorderSections ? (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={i === 0 || reorderSections.isPending}
-                            onClick={() => reorderSections.mutate({ from: i, to: i - 1 })}
-                          >
-                            <ArrowUp className="size-4" />
-                            <span className="sr-only">Move section up</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={i === sections.length - 1 || reorderSections.isPending}
-                            onClick={() => reorderSections.mutate({ from: i, to: i + 1 })}
-                          >
-                            <ArrowDown className="size-4" />
-                            <span className="sr-only">Move section down</span>
-                          </Button>
-                        </>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          aria-label="Drag to reorder section"
+                          {...handle}
+                        >
+                          <GripVertical className="size-4 text-muted-foreground" />
+                          <span className="sr-only">Drag to reorder section</span>
+                        </Button>
                       ) : null}
+
                       {isManagerOrOwner ? (
                         documentType === "checklist" ? (
                           <LineItemEditor doc={doc} sectionIndex={i} />
@@ -515,7 +595,10 @@ function Detail({
                 </CardContent>
               </Collapsible>
             </Card>
+              )}
+            </SortableSection>
           ))}
+
           {isManagerOrOwner ? (
             <div className="flex justify-start">
               <AddSectionButton doc={doc} />
@@ -538,7 +621,10 @@ function Detail({
             </div>
           ) : null}
         </div>
+        </SortableContext>
+        </DndContext>
       )}
+
       </div>
     </>
   );
