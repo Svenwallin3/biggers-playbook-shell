@@ -425,27 +425,7 @@ function TeamPage() {
                   )}
                 </TableCell>
                 {isOwner ? (
-                <TableCell>
-                  <Select
-                    value={e.path ?? NONE}
-                    disabled={update.isPending}
-                    onValueChange={(v) =>
-                      update.mutate({ id: e.id, patch: { path: v === NONE ? null : v } })
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>None</SelectItem>
-                      <SelectItem value="market">market</SelectItem>
-                      <SelectItem value="kitchen">kitchen</SelectItem>
-                      <SelectItem value="delivery">delivery</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                ) : null}
-                {isOwner ? (
+
                   <TableCell>
                     <BranchCell
                       employee={e}
