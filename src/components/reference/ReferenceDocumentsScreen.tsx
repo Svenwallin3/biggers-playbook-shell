@@ -566,7 +566,10 @@ function Detail({
                 </CardContent>
               </Collapsible>
             </Card>
+              )}
+            </SortableSection>
           ))}
+
           {isManagerOrOwner ? (
             <div className="flex justify-start">
               <AddSectionButton doc={doc} />
