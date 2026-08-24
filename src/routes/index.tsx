@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StepTypeChip } from "@/components/training/StepTypeChip";
 import { ProgressRing } from "@/components/training/ProgressRing";
-import { LocationChoice, PathChoice, SubPathChoice } from "@/components/PathChoice";
+import { DivisionChoice, LocationChoice, PathChoice } from "@/components/PathChoice";
 import {
   ManagerTileGrid,
   QuickActionRow,
