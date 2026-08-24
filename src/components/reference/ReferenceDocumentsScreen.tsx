@@ -166,6 +166,35 @@ function DocumentPrintSheet({ doc, withSignoffLine }: { doc: ReferenceDocumentRo
   );
 }
 
+/**
+ * Wraps one section card so Owners/GMs can drag it by its grip handle. The drag
+ * listeners live on the handle only, so the collapsible header stays clickable.
+ */
+function SortableSection({
+  id,
+  enabled,
+  children,
+}: {
+  id: string;
+  enabled: boolean;
+  children: (handle: Record<string, unknown>) => ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled: !enabled,
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={isDragging ? "relative z-10 opacity-90" : undefined}
+    >
+      {children(enabled ? { ...attributes, ...listeners } : {})}
+    </div>
+  );
+}
+
+
 function Detail({
   doc,
   documentType,
