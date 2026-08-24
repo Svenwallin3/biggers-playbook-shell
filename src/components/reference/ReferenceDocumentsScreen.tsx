@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
   CheckCircle2,
   ChevronDown,
   FileText,
@@ -52,6 +54,7 @@ import {
 } from "@/lib/checklist-instances.queries";
 import {
   docSections,
+  saveReferenceSections,
   groupBy,
   divisionGroupLabel,
   locationLabel,
@@ -164,6 +167,28 @@ function Detail({
   const sections = docSections(doc);
   const isChecklist = documentType === "checklist";
   const tracksInstance = isChecklist && !ephemeral;
+  // Section reordering is Owner/GM only and writes directly (no suggestion queue).
+  const canReorderSections = (isOwner || isGeneralManager) && sections.length > 1;
+
+  const reorderSections = useMutation({
+    mutationFn: async (input: { from: number; to: number }) => {
+      const next = [...sections];
+      const moved = next[input.from];
+      if (!moved) return;
+      next.splice(input.from, 1);
+      next.splice(input.to, 0, moved);
+      await saveReferenceSections({
+        documentId: doc.id,
+        sections: next,
+        updatedBy: employee?.id ?? null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reference-documents"] });
+      toast.success("Section order updated.");
+    },
+    onError: () => toast.error("Couldn't reorder sections."),
+  });
 
   // Shared instance for today (per location when the doc carries a location_tag).
   const instanceQuery = useQuery(
@@ -381,13 +406,37 @@ function Detail({
                       <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
                       <h2 className="font-display text-base font-semibold">{section.title}</h2>
                     </CollapsibleTrigger>
-                    {isManagerOrOwner ? (
-                      documentType === "checklist" ? (
-                        <LineItemEditor doc={doc} sectionIndex={i} />
-                      ) : (
-                        <SectionBodyEditor doc={doc} sectionIndex={i} />
-                      )
-                    ) : null}
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      {canReorderSections ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={i === 0 || reorderSections.isPending}
+                            onClick={() => reorderSections.mutate({ from: i, to: i - 1 })}
+                          >
+                            <ArrowUp className="size-4" />
+                            <span className="sr-only">Move section up</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={i === sections.length - 1 || reorderSections.isPending}
+                            onClick={() => reorderSections.mutate({ from: i, to: i + 1 })}
+                          >
+                            <ArrowDown className="size-4" />
+                            <span className="sr-only">Move section down</span>
+                          </Button>
+                        </>
+                      ) : null}
+                      {isManagerOrOwner ? (
+                        documentType === "checklist" ? (
+                          <LineItemEditor doc={doc} sectionIndex={i} />
+                        ) : (
+                          <SectionBodyEditor doc={doc} sectionIndex={i} />
+                        )
+                      ) : null}
+                    </div>
                   </div>
 
                   <CollapsibleContent className="space-y-4">
