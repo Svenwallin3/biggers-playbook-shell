@@ -302,8 +302,8 @@ function TeamPage() {
               <TableHead className="w-[210px]">Cross-training</TableHead>
               {isOwner ? (
                 <>
-                  <TableHead className="w-[150px]">General Manager</TableHead>
                   <TableHead className="w-[170px]">Division</TableHead>
+
                   <TableHead className="w-[150px]">Path</TableHead>
                   <TableHead className="w-[150px]">Branch</TableHead>
                   <TableHead className="w-[190px]">Location</TableHead>
