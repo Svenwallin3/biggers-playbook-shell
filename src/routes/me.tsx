@@ -152,7 +152,7 @@ function MePage() {
             </>
           ) : (
             <Badge variant="outline">
-              {onboarding.completed}/{onboarding.total}
+              {onboarding.completed}/{onboarding.total} steps
             </Badge>
           )}
         </div>
