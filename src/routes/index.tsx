@@ -24,6 +24,7 @@ import {
   progressQueryOptions,
   branchOptionsQueryOptions,
 } from "@/lib/training.queries";
+import { onboardingCompletionQueryOptions } from "@/lib/queue.queries";
 
 const title = "Today's training — Biggers Training Platform";
 const description =
@@ -138,6 +139,10 @@ function IndexPage() {
   });
   const progressQuery = useQuery(progressQueryOptions(employee?.id));
   const branchQuery = useQuery(branchOptionsQueryOptions(employee?.department_scope ?? null));
+  const onboardingQuery = useQuery({
+    ...onboardingCompletionQueryOptions(),
+    enabled: !!employee,
+  });
 
   const progressByStep = new Map(
     (progressQuery.data ?? []).map((record) => [record.step_id, record]),
