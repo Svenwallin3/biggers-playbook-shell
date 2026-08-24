@@ -173,7 +173,9 @@ function Detail({
   const reorderSections = useMutation({
     mutationFn: async (input: { from: number; to: number }) => {
       const next = [...sections];
-      const [moved] = next.splice(input.from, 1);
+      const moved = next[input.from];
+      if (!moved) return;
+      next.splice(input.from, 1);
       next.splice(input.to, 0, moved);
       await saveReferenceSections({
         documentId: doc.id,
