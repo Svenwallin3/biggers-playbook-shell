@@ -305,7 +305,7 @@ function TeamPage() {
                   <TableHead className="w-[170px]">Division</TableHead>
 
                   <TableHead className="w-[150px]">Path</TableHead>
-                  <TableHead className="w-[150px]">Branch</TableHead>
+
                   <TableHead className="w-[190px]">Location</TableHead>
                 </>
               ) : (
