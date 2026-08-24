@@ -393,24 +393,8 @@ function TeamPage() {
                 <TableCell>
                   <CrossTrainingCell employee={e} />
                 </TableCell>
-                {isOwner ? (
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={e.can_manage_team}
-                        disabled={update.isPending || e.auth_tier !== "manager"}
-                        aria-label="General Manager"
-                        onCheckedChange={(checked) =>
-                          update.mutate({ id: e.id, patch: { can_manage_team: checked } })
-                        }
-                      />
-                      <span className="text-xs text-muted-foreground">
-                        {e.auth_tier === "manager" ? (e.can_manage_team ? "GM" : "—") : "n/a"}
-                      </span>
-                    </div>
-                  </TableCell>
-                ) : null}
                 <TableCell>
+
                   {!isOwner ? (
                     <span className="text-sm text-muted-foreground">
                       {e.department_scope ? divisionLabel(e.department_scope) : "—"}
