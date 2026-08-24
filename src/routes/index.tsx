@@ -184,15 +184,15 @@ function IndexPage() {
     return null;
   })();
 
-  // First-login flow: staff start on Hospitality, and only pick a path once it's done.
+  // First-login flow: staff start on Hospitality, and only pick a division once it's done.
   const isStaff = employee.auth_tier === "staff";
-  if (isStaff && !employee.path) {
+  if (isStaff && !employee.department_scope) {
     if (planQuery.isPending) {
       return <p className="text-sm text-muted-foreground">Loading your training…</p>;
     }
     const hospitality = modules[0];
     if (hospitality && allSteps.length > 0 && done === allSteps.length) {
-      return <PathChoice />;
+      return <DivisionChoice />;
     }
     if (hospitality) {
       return (
@@ -204,12 +204,17 @@ function IndexPage() {
       );
     }
   }
-  if (isStaff && employee.path === "market" && !employee.location_id) {
+  if (isStaff && employee.department_scope === "market" && !employee.location_id) {
     return <LocationChoice />;
   }
-  // Branch gate: only for divisions that actually split (2+ branch values), and
-  // once Day 1 is done — the branch pick is the first thing shown on Day 2.
-  if (isStaff && employee.path && !employee.path && (branchQuery.data ?? []).length >= 2) {
+  // Path gate: only for divisions that actually split (2+ path values), and
+  // once Day 1 is done — the path pick is the first thing shown on Day 2.
+  if (
+    isStaff &&
+    employee.department_scope &&
+    !employee.path &&
+    (branchQuery.data ?? []).length >= 2
+  ) {
     const earlySteps = modules
       .filter((m) => m.day_assignment === 1)
       .flatMap((m) => m.steps);
@@ -218,9 +223,10 @@ function IndexPage() {
       return status === "completed" || status === "signed_off";
     });
     if (!planQuery.isPending && earlySteps.length > 0 && earlyDone) {
-      return <SubPathChoice department={employee.department_scope} />;
+      return <PathChoice department={employee.department_scope} />;
     }
   }
+
 
   const isManagerTier = employee.auth_tier !== "staff";
   const ownOnboarding = onboardingQuery.data?.[employee.id];
