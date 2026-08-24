@@ -34,7 +34,7 @@ import {
   setManagerNoteDeleted,
   todayISODate,
   todaysManagerNotesQueryOptions,
-  huddleDepartmentForPath,
+  huddleDepartmentForDivision,
   updateHuddleCard,
   updateManagerNote,
   type HuddleCardRow,
@@ -524,7 +524,7 @@ function ManagerNotesTab() {
 /** Read view: today's notes for the manager's own division, with photos. */
 function TodayNotesTab() {
   const { employee, isOwner, isManagerOrOwner } = useAuth();
-  const department = huddleDepartmentForPath(employee?.path ?? null);
+  const department = huddleDepartmentForDivision(employee?.department_scope ?? null);
   const locationId = employee?.location_id ?? null;
   const notesQuery = useQuery(todaysManagerNotesQueryOptions(department, locationId));
   const notes = notesQuery.data ?? [];

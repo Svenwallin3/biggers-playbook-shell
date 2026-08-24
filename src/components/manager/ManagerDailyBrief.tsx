@@ -37,7 +37,7 @@ import { useAuth, type Employee } from "@/hooks/useAuth";
 import {
   createManagerNote,
   deleteManagerNote,
-  huddleDepartmentForPath,
+  huddleDepartmentForDivision,
   huddleRunsToday,
   todaysHuddleCardQueryOptions,
   todaysManagerNotesQueryOptions,
@@ -71,7 +71,7 @@ const DRIVE_IT_HOME = [
 
 export function StandardOfTheDay({ employee }: { employee: Employee }) {
   const { isManagerOrOwner } = useAuth();
-  const department = huddleDepartmentForPath(employee.path);
+  const department = huddleDepartmentForDivision(employee.department_scope);
   const huddleQuery = useQuery(todaysHuddleCardQueryOptions(department));
   const card = huddleQuery.data;
 
@@ -238,7 +238,7 @@ const gridTileClass =
 
 export function ManagerTileGrid({ employee }: { employee: Employee }) {
   const { isOwner } = useAuth();
-  const department = huddleDepartmentForPath(employee.path);
+  const department = huddleDepartmentForDivision(employee.department_scope);
   const locationId = employee.location_id ?? null;
 
   const queueQuery = useQuery(
