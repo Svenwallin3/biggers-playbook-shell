@@ -592,7 +592,10 @@ function Detail({
             </div>
           ) : null}
         </div>
+        </SortableContext>
+        </DndContext>
       )}
+
       </div>
     </>
   );
