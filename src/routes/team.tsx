@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,7 +38,7 @@ type AuthTier = Database["public"]["Enums"]["auth_tier"];
 type Department = Database["public"]["Enums"]["department"];
 type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
 
-const tiers: AuthTier[] = ["staff", "manager", "owner"];
+const ownerTierOptions = ["staff", "manager", "general_manager", "owner"] as const;
 const gmTiers: AuthTier[] = ["staff", "manager"];
 const statuses: { value: EmployeeStatus; label: string }[] = [
   { value: "active", label: "Active" },
@@ -302,8 +302,8 @@ function TeamPage() {
               <TableHead className="w-[210px]">Cross-training</TableHead>
               {isOwner ? (
                 <>
-                  <TableHead className="w-[150px]">General Manager</TableHead>
                   <TableHead className="w-[170px]">Division</TableHead>
+
                   <TableHead className="w-[150px]">Path</TableHead>
                   <TableHead className="w-[150px]">Branch</TableHead>
                   <TableHead className="w-[190px]">Location</TableHead>
@@ -323,24 +323,35 @@ function TeamPage() {
                 <TableCell className="text-muted-foreground">{e.email}</TableCell>
                 <TableCell>
                   <Select
-                    value={e.auth_tier}
+                    value={
+                      e.auth_tier === "manager" && e.can_manage_team
+                        ? "general_manager"
+                        : e.auth_tier
+                    }
                     disabled={update.isPending || (!isOwner && e.auth_tier === "owner")}
                     onValueChange={(v) =>
-                      update.mutate({ id: e.id, patch: { auth_tier: v as AuthTier } })
+                      update.mutate({
+                        id: e.id,
+                        patch:
+                          v === "general_manager"
+                            ? { auth_tier: "manager", can_manage_team: true }
+                            : { auth_tier: v as AuthTier, can_manage_team: false },
+                      })
                     }
                   >
                     <SelectTrigger className="h-8">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {(isOwner ? tiers : gmTiers).map((t) => (
+                      {(isOwner ? ownerTierOptions : gmTiers).map((t) => (
                         <SelectItem key={t} value={t}>
-                          {t}
+                          {t === "general_manager" ? "general manager" : t}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </TableCell>
+
                 <TableCell>
                   <Select
                     value={e.status}
@@ -382,24 +393,8 @@ function TeamPage() {
                 <TableCell>
                   <CrossTrainingCell employee={e} />
                 </TableCell>
-                {isOwner ? (
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={e.can_manage_team}
-                        disabled={update.isPending || e.auth_tier !== "manager"}
-                        aria-label="General Manager"
-                        onCheckedChange={(checked) =>
-                          update.mutate({ id: e.id, patch: { can_manage_team: checked } })
-                        }
-                      />
-                      <span className="text-xs text-muted-foreground">
-                        {e.auth_tier === "manager" ? (e.can_manage_team ? "GM" : "—") : "n/a"}
-                      </span>
-                    </div>
-                  </TableCell>
-                ) : null}
                 <TableCell>
+
                   {!isOwner ? (
                     <span className="text-sm text-muted-foreground">
                       {e.department_scope ? divisionLabel(e.department_scope) : "—"}
