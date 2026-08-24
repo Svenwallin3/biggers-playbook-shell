@@ -108,11 +108,11 @@ export function LocationChoice() {
 }
 
 /**
- * Full-page branch pick (e.g. Kitchen Production vs Service), shown once the
+ * Full-page path pick (e.g. Kitchen Production vs Service), shown once the
  * shared pre-branch content is done. Options are loaded live from
  * `branchOptionsQueryOptions`, never hardcoded — works for any division.
  */
-export function SubPathChoice({ department }: { department: Department | null }) {
+export function PathChoice({ department }: { department: Department | null }) {
   const { employee, refreshEmployee } = useAuth();
   const branchQuery = useQuery(branchOptionsQueryOptions(department));
 
