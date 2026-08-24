@@ -404,13 +404,37 @@ function Detail({
                       <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
                       <h2 className="font-display text-base font-semibold">{section.title}</h2>
                     </CollapsibleTrigger>
-                    {isManagerOrOwner ? (
-                      documentType === "checklist" ? (
-                        <LineItemEditor doc={doc} sectionIndex={i} />
-                      ) : (
-                        <SectionBodyEditor doc={doc} sectionIndex={i} />
-                      )
-                    ) : null}
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      {canReorderSections ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={i === 0 || reorderSections.isPending}
+                            onClick={() => reorderSections.mutate({ from: i, to: i - 1 })}
+                          >
+                            <ArrowUp className="size-4" />
+                            <span className="sr-only">Move section up</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={i === sections.length - 1 || reorderSections.isPending}
+                            onClick={() => reorderSections.mutate({ from: i, to: i + 1 })}
+                          >
+                            <ArrowDown className="size-4" />
+                            <span className="sr-only">Move section down</span>
+                          </Button>
+                        </>
+                      ) : null}
+                      {isManagerOrOwner ? (
+                        documentType === "checklist" ? (
+                          <LineItemEditor doc={doc} sectionIndex={i} />
+                        ) : (
+                          <SectionBodyEditor doc={doc} sectionIndex={i} />
+                        )
+                      ) : null}
+                    </div>
                   </div>
 
                   <CollapsibleContent className="space-y-4">
