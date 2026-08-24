@@ -8,9 +8,15 @@ export type ManagerNoteRow = Database["public"]["Tables"]["manager_notes"]["Row"
 
 export type HuddleDepartment = "market" | "kitchen";
 
-/** Manager's huddle department, derived the same way departmentsForPath does. */
-export function huddleDepartmentForPath(path: string | null | undefined): HuddleDepartment {
-  return (path ?? "").toLowerCase().startsWith("kitchen") ? "kitchen" : "market";
+/**
+ * Manager's huddle department, derived from their real division scope
+ * (`employees.department_scope`). Delivery/universal fall back to market
+ * because the huddle system has no delivery content yet.
+ */
+export function huddleDepartmentForDivision(
+  division: string | null | undefined,
+): HuddleDepartment {
+  return (division ?? "").toLowerCase() === "kitchen" ? "kitchen" : "market";
 }
 
 function todayISO() {
