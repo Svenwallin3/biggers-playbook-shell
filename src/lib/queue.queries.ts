@@ -20,12 +20,12 @@ import {
 async function fetchSecondaryByEmployee(): Promise<Record<string, SecondaryDivision[]>> {
   const { data, error } = await supabase
     .from("employee_secondary_divisions")
-    .select("id, employee_id, department, sub_path, created_at")
+    .select("id, employee_id, department, path, created_at")
     .eq("is_deleted", false);
   if (error) throw error;
   const out: Record<string, SecondaryDivision[]> = {};
   for (const row of (data ?? []) as SecondaryDivisionRow[]) {
-    (out[row.employee_id] ??= []).push({ department: row.department, sub_path: row.sub_path });
+    (out[row.employee_id] ??= []).push({ department: row.department, path: row.path });
   }
   return out;
 }
@@ -63,7 +63,7 @@ export function onboardingCompletionQueryOptions() {
         await Promise.all([
           supabase
             .from("employees")
-            .select("id, department_scope, sub_path")
+            .select("id, department_scope, path")
             .eq("is_deleted", false),
           supabase.from("tracks").select("*").eq("is_deleted", false),
           supabase
@@ -111,7 +111,7 @@ export function onboardingCompletionQueryOptions() {
               m,
               m.track!.department,
               employee.department_scope,
-              employee.sub_path,
+              employee.path,
               secondary,
             )
           )
@@ -243,7 +243,7 @@ export function trainingQueueQueryOptions(scope: {
               m,
               m.track!.department,
               employee.department_scope,
-              employee.sub_path,
+              employee.path,
               secondary,
             ),
         );

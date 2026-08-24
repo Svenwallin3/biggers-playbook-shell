@@ -280,7 +280,7 @@ export function ModuleEditPanel({
   const empty = {
     name: module.name,
     description: module.description ?? "",
-    sub_path: module.sub_path ?? "",
+    path: module.path ?? "",
     day_assignment: module.day_assignment === null ? "" : String(module.day_assignment),
     sequence_order: String(module.sequence_order),
     location_tag: module.location_tag ?? "",
@@ -291,7 +291,7 @@ export function ModuleEditPanel({
     setForm({
       name: module.name,
       description: module.description ?? "",
-      sub_path: module.sub_path ?? "",
+      path: module.path ?? "",
       day_assignment: module.day_assignment === null ? "" : String(module.day_assignment),
       sequence_order: String(module.sequence_order),
       location_tag: module.location_tag ?? "",
@@ -318,11 +318,11 @@ export function ModuleEditPanel({
   });
   const branchOptions = branchQuery.data ?? [];
   const branchChoices = Array.from(
-    new Set([...branchOptions, ...(module.sub_path ? [module.sub_path] : [])]),
+    new Set([...branchOptions, ...(module.path ? [module.path] : [])]),
   ).sort();
-  const [subPathIsCustom, setSubPathIsCustom] = useState(false);
+  const [pathIsCustom, setPathIsCustom] = useState(false);
   useEffect(() => {
-    setSubPathIsCustom(false);
+    setPathIsCustom(false);
   }, [module.id]);
   const { save, softDelete } = useEntityMutations("modules", module.id, employeeId, onSaved);
   const requestDelete = useMutation({
@@ -379,15 +379,15 @@ export function ModuleEditPanel({
                 <div className="space-y-2">
                   <Label htmlFor="mod-subpath">Branch (sub-path)</Label>
                   <Select
-                    value={subPathIsCustom ? "__custom__" : form.sub_path || "__none__"}
+                    value={pathIsCustom ? "__custom__" : form.path || "__none__"}
                     disabled={!canEdit}
                     onValueChange={(v) => {
                       if (v === "__custom__") {
-                        setSubPathIsCustom(true);
+                        setPathIsCustom(true);
                         return;
                       }
-                      setSubPathIsCustom(false);
-                      patch({ sub_path: v === "__none__" ? "" : v });
+                      setPathIsCustom(false);
+                      patch({ path: v === "__none__" ? "" : v });
                     }}
                   >
                     <SelectTrigger id="mod-subpath">
@@ -403,14 +403,14 @@ export function ModuleEditPanel({
                       <SelectItem value="__custom__">Custom…</SelectItem>
                     </SelectContent>
                   </Select>
-                  {subPathIsCustom ? (
+                  {pathIsCustom ? (
                     <Input
                       aria-label="Custom branch name"
                       placeholder="New branch name"
-                      value={form.sub_path}
+                      value={form.path}
                       maxLength={60}
                       disabled={!canEdit}
-                      onChange={(e) => patch({ sub_path: e.target.value })}
+                      onChange={(e) => patch({ path: e.target.value })}
                     />
                   ) : null}
                 </div>
@@ -512,7 +512,7 @@ export function ModuleEditPanel({
                   ...(standalone
                     ? {}
                     : {
-                        sub_path: form.sub_path.trim() || null,
+                        path: form.path.trim() || null,
                         day_assignment: form.day_assignment ? Number(form.day_assignment) : null,
                         sequence_order: Number(form.sequence_order) || module.sequence_order,
                       }),

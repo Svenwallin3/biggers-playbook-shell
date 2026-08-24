@@ -34,7 +34,7 @@ function TrainingLibraryPage() {
   const planQuery = useQuery({
     ...planQueryOptions(
       employee?.department_scope ?? null,
-      employee?.sub_path ?? null,
+      employee?.path ?? null,
       isManagerOrOwner,
       toSecondaryDivisions(secondaryQuery.data),
     ),
@@ -113,7 +113,7 @@ function TrainingLibraryPage() {
                       <span className="min-w-0 flex-1">
                         <span className="block font-display font-semibold">{mod.name}</span>
                         <span className="block text-xs text-muted-foreground">
-                          {mod.sub_path ? `${mod.sub_path} · ` : ""}
+                          {mod.path ? `${mod.path} · ` : ""}
                           {mod.day_assignment ? `Day ${mod.day_assignment} · ` : ""}
                           {mod.steps.length} step{mod.steps.length === 1 ? "" : "s"}
                         </span>

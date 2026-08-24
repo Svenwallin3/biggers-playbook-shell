@@ -3,7 +3,7 @@ import { renderFormattedText } from "@/lib/richText";
 
 type ModuleHeaderProps = {
   trackName: string | null | undefined;
-  subPath?: string | null;
+  path?: string | null;
   dayAssignment?: number | null;
   name: string;
   description?: string | null;
@@ -18,7 +18,7 @@ type ModuleHeaderProps = {
 /** Shared module header: context line, title, and description callout. */
 export function ModuleHeader({
   trackName,
-  subPath,
+  path,
   dayAssignment,
   name,
   description,
@@ -39,7 +39,7 @@ export function ModuleHeader({
         <div className="min-w-0">
           <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${theme.label}`}>
             {trackName}
-            {subPath ? ` · ${subPath}` : ""}
+            {path ? ` · ${path}` : ""}
             {dayAssignment ? ` · Day ${dayAssignment}` : ""}
           </p>
           <Heading className="font-display text-base font-semibold tracking-tight text-muted-foreground">
@@ -56,7 +56,7 @@ export function ModuleHeader({
         className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${theme.label}`}
       >
         {trackName}
-        {subPath ? ` · ${subPath}` : ""}
+        {path ? ` · ${path}` : ""}
         {dayAssignment ? ` · Day ${dayAssignment}` : ""}
       </p>
       <Heading className={titleClass}>{name}</Heading>

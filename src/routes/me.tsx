@@ -47,7 +47,7 @@ function MePage() {
   const planQuery = useQuery({
     ...planQueryOptions(
       employee?.department_scope ?? null,
-      employee?.sub_path ?? null,
+      employee?.path ?? null,
       false,
       toSecondaryDivisions(secondaryQuery.data),
     ),
@@ -136,8 +136,9 @@ function MePage() {
         </h1>
         <p className="text-sm text-muted-foreground">
           {tierLabel(employee.auth_tier, employee.can_manage_team)}
-          {employee.path ? ` · ${employee.path} path` : ""}
           {employee.department_scope ? ` · ${employee.department_scope}` : ""}
+          {employee.path ? ` · ${employee.path} path` : ""}
+
         </p>
         <div className="flex items-center gap-2 pt-1">
           <span className="text-sm text-muted-foreground">Onboarding:</span>

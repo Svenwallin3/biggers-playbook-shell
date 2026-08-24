@@ -72,7 +72,7 @@ export function bodyLines(step: Pick<StepRow, "content_body">) {
 }
 
 /** An extra division an employee is cross-trained into, with its own branch. */
-export type SecondaryDivision = { department: Department; sub_path: string | null };
+export type SecondaryDivision = { department: Department; path: string | null };
 
 /**
  * The departments an employee's plan should include: Universal, their own
@@ -93,47 +93,47 @@ export function departmentsForEmployee(
 }
 
 /**
- * Which branch (`sub_path`) applies in a given division for this employee:
- * their own `sub_path` in their home division, or the branch recorded on the
+ * Which branch (`path`) applies in a given division for this employee:
+ * their own `path` in their home division, or the branch recorded on the
  * cross-training row for a secondary division.
  */
-export function subPathForDepartment(
+export function pathForDepartment(
   trackDepartment: Department,
   homeDepartment: Department | null | undefined,
-  homeSubPath: string | null | undefined,
+  homePath: string | null | undefined,
   secondary: SecondaryDivision[] = [],
 ): string | null {
   const match = secondary.find((s) => s.department === trackDepartment);
-  if (match && trackDepartment !== homeDepartment) return match.sub_path;
-  return homeSubPath ?? null;
+  if (match && trackDepartment !== homeDepartment) return match.path;
+  return homePath ?? null;
 }
 
 /**
  * Whether a module is visible to an employee given their chosen branch.
- * `module.sub_path === null` means shared across every branch in its
- * division. A module with `sub_path` set is visible only to an employee
- * whose own `sub_path` matches exactly. Division-agnostic on purpose — no
+ * `module.path === null` means shared across every branch in its
+ * division. A module with `path` set is visible only to an employee
+ * whose own `path` matches exactly. Division-agnostic on purpose — no
  * hardcoded branch names — so any future division can add its own branch
  * split just by tagging modules, same pattern as `departmentsForEmployee`.
  */
-export function moduleVisibleForSubPath(
-  module: { sub_path: string | null },
-  employeeSubPath: string | null | undefined,
+export function moduleVisibleForPath(
+  module: { path: string | null },
+  employeePath: string | null | undefined,
 ): boolean {
-  return !module.sub_path || module.sub_path === employeeSubPath;
+  return !module.path || module.path === employeePath;
 }
 
 /** Branch-aware visibility across home + cross-trained divisions. */
 export function moduleVisibleForScope(
-  module: { sub_path: string | null; track?: { department: Department } | null },
+  module: { path: string | null; track?: { department: Department } | null },
   trackDepartment: Department,
   homeDepartment: Department | null | undefined,
-  homeSubPath: string | null | undefined,
+  homePath: string | null | undefined,
   secondary: SecondaryDivision[] = [],
 ): boolean {
-  return moduleVisibleForSubPath(
+  return moduleVisibleForPath(
     module,
-    subPathForDepartment(trackDepartment, homeDepartment, homeSubPath, secondary),
+    pathForDepartment(trackDepartment, homeDepartment, homePath, secondary),
   );
 }
 
@@ -156,13 +156,13 @@ export function branchOptionsQueryOptions(department: Department | null) {
 
       const { data: modules, error } = await supabase
         .from("modules")
-        .select("sub_path")
+        .select("path")
         .in("track_id", trackIds)
         .eq("is_deleted", false)
-        .not("sub_path", "is", null);
+        .not("path", "is", null);
       if (error) throw error;
 
-      return [...new Set((modules ?? []).map((m) => m.sub_path).filter(Boolean) as string[])].sort();
+      return [...new Set((modules ?? []).map((m) => m.path).filter(Boolean) as string[])].sort();
     },
   });
 }
@@ -245,19 +245,19 @@ export function getDayGroupedSteps<
  */
 export function planQueryOptions(
   department: Department | null,
-  subPath: string | null = null,
+  path: string | null = null,
   allDepartments = false,
   secondary: SecondaryDivision[] = [],
 ) {
   const secondaryKey = secondary
-    .map((s) => `${s.department}:${s.sub_path ?? ""}`)
+    .map((s) => `${s.department}:${s.path ?? ""}`)
     .sort()
     .join(",");
   return queryOptions({
     queryKey: [
       "training-plan",
       allDepartments ? "all" : (department ?? "none"),
-      allDepartments ? "all" : (subPath ?? "none"),
+      allDepartments ? "all" : (path ?? "none"),
       allDepartments ? "all" : secondaryKey,
     ],
     queryFn: async (): Promise<PlanModule[]> => {
@@ -303,7 +303,7 @@ export function planQueryOptions(
               m,
               trackById.get(m.track_id)!.department,
               department,
-              subPath,
+              path,
               secondary,
             ),
         )
@@ -396,7 +396,7 @@ export function searchQueryOptions(term: string) {
           .from("modules")
           .select("*, track:tracks(*)")
           .eq("is_deleted", false)
-          .or(`name.ilike.${like},description.ilike.${like},sub_path.ilike.${like}`)
+          .or(`name.ilike.${like},description.ilike.${like},path.ilike.${like}`)
           .limit(10),
         supabase
           .from("steps")

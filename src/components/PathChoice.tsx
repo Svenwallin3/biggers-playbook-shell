@@ -69,25 +69,26 @@ const locationOptions = [
   { label: "Carolina Beach Road", value: "carolina_beach_road", icon: MapPin },
 ] as const;
 
-/** Full-page department pick, shown once Hospitality is finished. */
-export function PathChoice() {
+/** Full-page division pick, shown once Hospitality is finished. */
+export function DivisionChoice() {
   const { employee, refreshEmployee } = useAuth();
   return (
     <ChoiceScreen
       heading="Please pick which location you are working at"
       blurb="This sets your training path. A manager can change it later."
       options={pathOptions}
-      onChoose={async (path) => {
+      onChoose={async (department_scope) => {
         if (!employee) return;
         await supabase
           .from("employees")
-          .update({ path, department_scope: path })
+          .update({ department_scope })
           .eq("id", employee.id);
         await refreshEmployee();
       }}
     />
   );
 }
+
 
 /** Full-page site pick — Market only, since Kitchen and Delivery are single-site. */
 export function LocationChoice() {
@@ -107,11 +108,11 @@ export function LocationChoice() {
 }
 
 /**
- * Full-page branch pick (e.g. Kitchen Production vs Service), shown once the
+ * Full-page path pick (e.g. Kitchen Production vs Service), shown once the
  * shared pre-branch content is done. Options are loaded live from
  * `branchOptionsQueryOptions`, never hardcoded — works for any division.
  */
-export function SubPathChoice({ department }: { department: Department | null }) {
+export function PathChoice({ department }: { department: Department | null }) {
   const { employee, refreshEmployee } = useAuth();
   const branchQuery = useQuery(branchOptionsQueryOptions(department));
 
@@ -130,9 +131,9 @@ export function SubPathChoice({ department }: { department: Department | null })
       heading="Which track are you training on?"
       blurb="This sets the rest of your training. A manager can change it later."
       options={options}
-      onChoose={async (sub_path) => {
+      onChoose={async (path) => {
         if (!employee) return;
-        await supabase.from("employees").update({ sub_path }).eq("id", employee.id);
+        await supabase.from("employees").update({ path }).eq("id", employee.id);
         await refreshEmployee();
       }}
     />

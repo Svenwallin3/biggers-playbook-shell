@@ -78,7 +78,9 @@ function EmployeePicker({
             <p className="text-sm font-medium">{selected.full_name ?? "No name on file"}</p>
             <p className="text-xs text-muted-foreground">{selected.email}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {selected.auth_tier} · {selected.path ?? "no path"} · {selected.status}
+              {selected.auth_tier} · {selected.department_scope ?? "no division"} ·{" "}
+              {selected.status}
+
             </p>
           </div>
           <Button

@@ -286,7 +286,7 @@ export type Database = {
           employee_id: string
           id: string
           is_deleted: boolean
-          sub_path: string | null
+          path: string | null
           updated_at: string
         }
         Insert: {
@@ -298,7 +298,7 @@ export type Database = {
           employee_id: string
           id?: string
           is_deleted?: boolean
-          sub_path?: string | null
+          path?: string | null
           updated_at?: string
         }
         Update: {
@@ -310,7 +310,7 @@ export type Database = {
           employee_id?: string
           id?: string
           is_deleted?: boolean
-          sub_path?: string | null
+          path?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -353,7 +353,6 @@ export type Database = {
           merged_into: string | null
           path: string | null
           status: Database["public"]["Enums"]["employee_status"]
-          sub_path: string | null
           updated_at: string
           user_id: string | null
         }
@@ -372,7 +371,6 @@ export type Database = {
           merged_into?: string | null
           path?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
-          sub_path?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -391,7 +389,6 @@ export type Database = {
           merged_into?: string | null
           path?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
-          sub_path?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -541,9 +538,9 @@ export type Database = {
           is_deleted: boolean
           location_tag: string | null
           name: string
+          path: string | null
           sequence_order: number
           slug: string
-          sub_path: string | null
           track_id: string
           updated_at: string
         }
@@ -559,9 +556,9 @@ export type Database = {
           is_deleted?: boolean
           location_tag?: string | null
           name: string
+          path?: string | null
           sequence_order?: number
           slug: string
-          sub_path?: string | null
           track_id: string
           updated_at?: string
         }
@@ -577,9 +574,9 @@ export type Database = {
           is_deleted?: boolean
           location_tag?: string | null
           name?: string
+          path?: string | null
           sequence_order?: number
           slug?: string
-          sub_path?: string | null
           track_id?: string
           updated_at?: string
         }
