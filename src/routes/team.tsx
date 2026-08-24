@@ -385,7 +385,7 @@ function TeamPage() {
                       <Badge variant="secondary">Complete</Badge>
                     ) : (
                       <Badge variant="outline">
-                        {p.completed}/{p.total}
+                        {p.completed}/{p.total} steps
                       </Badge>
                     );
                   })()}
