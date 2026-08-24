@@ -181,31 +181,60 @@ function Detail({
   const [requesting, setRequesting] = useState(false);
   // Manager Guides: checkboxes are a scratch pad, nothing is persisted or submitted.
   const [localChecks, setLocalChecks] = useState<Record<string, boolean>>({});
-  const sections = docSections(doc);
+  const persisted = docSections(doc);
+  // Optimistic order while the save is in flight, so a drag lands instantly.
+  const [draftOrder, setDraftOrder] = useState<ReferenceSection[] | null>(null);
+  const sections = draftOrder ?? persisted;
   const isChecklist = documentType === "checklist";
   const tracksInstance = isChecklist && !ephemeral;
   // Section reordering is Owner/GM only and writes directly (no suggestion queue).
   const canReorderSections = (isOwner || isGeneralManager) && sections.length > 1;
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
   const reorderSections = useMutation({
-    mutationFn: async (input: { from: number; to: number }) => {
-      const next = [...sections];
-      const moved = next[input.from];
-      if (!moved) return;
-      next.splice(input.from, 1);
-      next.splice(input.to, 0, moved);
+    mutationFn: async (next: ReferenceSection[]) => {
       await saveReferenceSections({
         documentId: doc.id,
         sections: next,
         updatedBy: employee?.id ?? null,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reference-documents"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["reference-documents"] });
+      setDraftOrder(null);
       toast.success("Section order updated.");
     },
-    onError: () => toast.error("Couldn't reorder sections."),
+    onError: () => {
+      setDraftOrder(null);
+      toast.error("Couldn't reorder sections.");
+    },
   });
+
+  const handleSectionDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = Number(active.id);
+    const to = Number(over.id);
+    if (Number.isNaN(from) || Number.isNaN(to)) return;
+    const next = [...sections];
+    const moved = next[from];
+    if (!moved) return;
+    next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setDraftOrder(next);
+    reorderSections.mutate(next);
+  };
+
+  // Drop any stale optimistic order once the refetched document arrives.
+  useEffect(() => {
+    if (!reorderSections.isPending) setDraftOrder(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc.updated_at]);
+
 
   // Shared instance for today (per location when the doc carries a location_tag).
   const instanceQuery = useQuery(
