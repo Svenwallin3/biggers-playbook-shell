@@ -38,7 +38,7 @@ type AuthTier = Database["public"]["Enums"]["auth_tier"];
 type Department = Database["public"]["Enums"]["department"];
 type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
 
-const tiers: AuthTier[] = ["staff", "manager", "owner"];
+const ownerTierOptions = ["staff", "manager", "general_manager", "owner"] as const;
 const gmTiers: AuthTier[] = ["staff", "manager"];
 const statuses: { value: EmployeeStatus; label: string }[] = [
   { value: "active", label: "Active" },
