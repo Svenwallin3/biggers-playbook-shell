@@ -367,7 +367,7 @@ function TeamPage() {
                 <TableCell>
                   {(() => {
                     const p = onboardingQuery.data?.[e.id];
-                    if (!e.path || !p || p.total === 0) {
+                    if (!e.department_scope || !p || p.total === 0) {
                       return <span className="text-sm text-muted-foreground">—</span>;
                     }
                     return p.completed >= p.total ? (
