@@ -444,9 +444,21 @@ function Detail({
           </CardContent>
         </Card>
       ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragEnd={handleSectionDragEnd}
+        >
+        <SortableContext
+          items={sections.map((_, i) => String(i))}
+          strategy={verticalListSortingStrategy}
+        >
         <div className="space-y-4">
           {sections.map((section, i) => (
-            <Card key={i}>
+            <SortableSection key={i} id={String(i)} enabled={canReorderSections}>
+              {(handle) => (
+            <Card>
               <Collapsible defaultOpen>
                 <CardContent className="space-y-4 py-4 sm:py-6">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -456,27 +468,18 @@ function Detail({
                     </CollapsibleTrigger>
                     <div className="flex shrink-0 items-center gap-0.5">
                       {canReorderSections ? (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={i === 0 || reorderSections.isPending}
-                            onClick={() => reorderSections.mutate({ from: i, to: i - 1 })}
-                          >
-                            <ArrowUp className="size-4" />
-                            <span className="sr-only">Move section up</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={i === sections.length - 1 || reorderSections.isPending}
-                            onClick={() => reorderSections.mutate({ from: i, to: i + 1 })}
-                          >
-                            <ArrowDown className="size-4" />
-                            <span className="sr-only">Move section down</span>
-                          </Button>
-                        </>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          aria-label="Drag to reorder section"
+                          {...handle}
+                        >
+                          <GripVertical className="size-4 text-muted-foreground" />
+                          <span className="sr-only">Drag to reorder section</span>
+                        </Button>
                       ) : null}
+
                       {isManagerOrOwner ? (
                         documentType === "checklist" ? (
                           <LineItemEditor doc={doc} sectionIndex={i} />
