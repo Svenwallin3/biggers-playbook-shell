@@ -69,25 +69,26 @@ const locationOptions = [
   { label: "Carolina Beach Road", value: "carolina_beach_road", icon: MapPin },
 ] as const;
 
-/** Full-page department pick, shown once Hospitality is finished. */
-export function PathChoice() {
+/** Full-page division pick, shown once Hospitality is finished. */
+export function DivisionChoice() {
   const { employee, refreshEmployee } = useAuth();
   return (
     <ChoiceScreen
       heading="Please pick which location you are working at"
       blurb="This sets your training path. A manager can change it later."
       options={pathOptions}
-      onChoose={async (path) => {
+      onChoose={async (department_scope) => {
         if (!employee) return;
         await supabase
           .from("employees")
-          .update({ path, department_scope: path })
+          .update({ department_scope })
           .eq("id", employee.id);
         await refreshEmployee();
       }}
     />
   );
 }
+
 
 /** Full-page site pick — Market only, since Kitchen and Delivery are single-site. */
 export function LocationChoice() {
