@@ -50,6 +50,7 @@ function MePage() {
       employee?.path ?? null,
       false,
       toSecondaryDivisions(secondaryQuery.data),
+      employee?.can_manage_team ?? false,
     ),
     enabled: !!employee?.department_scope && !secondaryQuery.isPending,
   });
