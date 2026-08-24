@@ -251,6 +251,7 @@ export function planQueryOptions(
   path: string | null = null,
   allDepartments = false,
   secondary: SecondaryDivision[] = [],
+  isGmOfHomeDivision = false,
 ) {
   const secondaryKey = secondary
     .map((s) => `${s.department}:${s.path ?? ""}`)
@@ -262,6 +263,7 @@ export function planQueryOptions(
       allDepartments ? "all" : (department ?? "none"),
       allDepartments ? "all" : (path ?? "none"),
       allDepartments ? "all" : secondaryKey,
+      allDepartments ? "all" : String(isGmOfHomeDivision),
     ],
     queryFn: async (): Promise<PlanModule[]> => {
       let trackQuery = supabase
