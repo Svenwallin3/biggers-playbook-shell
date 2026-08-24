@@ -310,6 +310,7 @@ export function planQueryOptions(
               department,
               path,
               secondary,
+              isGmOfHomeDivision,
             ),
         )
         .map((m) => ({
