@@ -130,7 +130,10 @@ export function moduleVisibleForScope(
   homeDepartment: Department | null | undefined,
   homePath: string | null | undefined,
   secondary: SecondaryDivision[] = [],
+  isGmOfHomeDivision = false,
 ): boolean {
+  // A GM manages the whole division, so every branch of their home division counts.
+  if (isGmOfHomeDivision && trackDepartment === homeDepartment) return true;
   return moduleVisibleForPath(
     module,
     pathForDepartment(trackDepartment, homeDepartment, homePath, secondary),
