@@ -141,7 +141,7 @@ function MePage() {
         </p>
         <div className="flex items-center gap-2 pt-1">
           <span className="text-sm text-muted-foreground">Onboarding:</span>
-          {!employee.path || !onboarding || onboarding.total === 0 ? (
+          {!employee.department_scope || !onboarding || onboarding.total === 0 ? (
             <span className="text-sm text-muted-foreground">—</span>
           ) : onboarding.completed >= onboarding.total ? (
             <>
@@ -156,7 +156,7 @@ function MePage() {
         </div>
       </div>
 
-      {!employee.path ? (
+      {!employee.department_scope ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
             Your training path hasn&apos;t been set yet — ask your manager.

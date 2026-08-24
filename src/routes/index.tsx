@@ -24,6 +24,7 @@ import {
   progressQueryOptions,
   branchOptionsQueryOptions,
 } from "@/lib/training.queries";
+import { onboardingCompletionQueryOptions } from "@/lib/queue.queries";
 
 const title = "Today's training — Biggers Training Platform";
 const description =
@@ -138,6 +139,10 @@ function IndexPage() {
   });
   const progressQuery = useQuery(progressQueryOptions(employee?.id));
   const branchQuery = useQuery(branchOptionsQueryOptions(employee?.department_scope ?? null));
+  const onboardingQuery = useQuery({
+    ...onboardingCompletionQueryOptions(),
+    enabled: !!employee,
+  });
 
   const progressByStep = new Map(
     (progressQuery.data ?? []).map((record) => [record.step_id, record]),
@@ -218,6 +223,10 @@ function IndexPage() {
   }
 
   const isManagerTier = employee.auth_tier !== "staff";
+  const ownOnboarding = onboardingQuery.data?.[employee.id];
+  const onboardingIncomplete =
+    !!ownOnboarding && ownOnboarding.total > 0 && ownOnboarding.completed < ownOnboarding.total;
+  const showHero = !!upNext && (!isManagerTier || onboardingIncomplete);
 
   return (
     <div className="space-y-5">
@@ -227,7 +236,7 @@ function IndexPage() {
 
       {isManagerTier ? <ManagerTileGrid employee={employee} /> : null}
 
-      {!isManagerTier && upNext ? (
+      {showHero && upNext ? (
         <section className="overflow-hidden rounded-2xl bg-linear-to-br from-hero to-hero-edge text-hero-foreground shadow-md">
           <div className="flex flex-wrap items-start justify-between gap-5 px-5 py-6 sm:gap-6 sm:px-8 sm:py-7">
             <div className="min-w-0 flex-1">
