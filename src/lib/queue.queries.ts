@@ -246,6 +246,7 @@ export function trainingQueueQueryOptions(scope: {
               employee.department_scope,
               employee.path,
               secondary,
+              employee.can_manage_team ?? false,
             ),
         );
 
