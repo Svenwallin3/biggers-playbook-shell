@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  AlignLeft,
   ArrowLeft,
   CheckCircle2,
   ChevronDown,
@@ -28,6 +29,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 
@@ -70,8 +72,12 @@ import {
   toggleChecklistLine,
 } from "@/lib/checklist-instances.queries";
 import {
+  convertSectionKind,
   docSections,
   saveReferenceSections,
+  sectionHasContent,
+  sectionKind,
+
   groupBy,
   divisionGroupLabel,
   locationLabel,
@@ -218,8 +224,10 @@ function Detail({
   const sections = draftOrder ?? persisted;
   const isChecklist = documentType === "checklist";
   const tracksInstance = isChecklist && !ephemeral;
-  // Section reordering is Owner/GM only and writes directly (no suggestion queue).
-  const canReorderSections = (isOwner || isGeneralManager) && sections.length > 1;
+  // Owner/GM only, and writes directly (no suggestion queue).
+  const canWriteDirect = isOwner || isGeneralManager;
+  const canReorderSections = canWriteDirect && sections.length > 1;
+
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -244,6 +252,28 @@ function Detail({
       toast.error("Couldn't reorder sections.");
     },
   });
+
+  // Reshape one section between checklist and paragraph without losing text.
+  const convertSection = useMutation({
+    mutationFn: async (index: number) => {
+      const target = sections[index];
+      if (!target) return;
+      const next = sections.map((s, i) => (i === index ? convertSectionKind(s) : s));
+      await saveReferenceSections({
+        documentId: doc.id,
+        sections: next,
+        updatedBy: employee?.id ?? null,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["reference-documents"] });
+      toast.success("Section converted.");
+    },
+    onError: (err: Error) =>
+      toast.error("Couldn't convert that section", { description: err.message }),
+  });
+
+
 
   const handleSectionDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -509,8 +539,33 @@ function Detail({
                         </Button>
                       ) : null}
 
+                      {canWriteDirect && sectionHasContent(section) ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={convertSection.isPending}
+                          aria-label={
+                            sectionKind(section) === "checklist"
+                              ? "Convert to paragraph"
+                              : "Convert to checklist"
+                          }
+                          title={
+                            sectionKind(section) === "checklist"
+                              ? "Convert to paragraph"
+                              : "Convert to checklist"
+                          }
+                          onClick={() => convertSection.mutate(i)}
+                        >
+                          {sectionKind(section) === "checklist" ? (
+                            <AlignLeft className="size-4 text-muted-foreground" />
+                          ) : (
+                            <ListChecks className="size-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      ) : null}
+
                       {isManagerOrOwner ? (
-                        documentType === "checklist" ? (
+                        sectionKind(section) === "checklist" ? (
                           <LineItemEditor doc={doc} sectionIndex={i} />
                         ) : (
                           <SectionBodyEditor doc={doc} sectionIndex={i} />
@@ -520,7 +575,8 @@ function Detail({
                   </div>
 
                   <CollapsibleContent className="space-y-4">
-                {isChecklist ? (
+                {sectionKind(section) === "checklist" ? (
+
                   <ol className="space-y-1">
                     {sectionLineItems(section).map((item, idx) => {
                       const lineOrder = item.order ?? idx;

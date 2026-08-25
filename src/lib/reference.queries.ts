@@ -11,6 +11,12 @@ export type ReferenceDocumentType = Database["public"]["Enums"]["reference_docum
 /** One ordered section of a reference document (stored in the `sections` jsonb array). */
 export type ReferenceSection = {
   title: string;
+  /**
+   * How this section's content renders/edits. Independent per section and freely
+   * mixable within one document — `document_type` only controls which library
+   * tab a document is filed under, never how a section renders.
+   */
+  content_kind?: "checklist" | "paragraph";
   /** Checklists only. */
   line_items?: { text: string; order: number }[];
   /** SOPs only. */
@@ -18,6 +24,14 @@ export type ReferenceSection = {
   reference_photo_url?: string | null;
   video_url?: string | null;
 };
+
+/** Resolve a section's shape, inferring it for older sections without `content_kind`. */
+export function sectionKind(section: ReferenceSection): "checklist" | "paragraph" {
+  if (section.content_kind) return section.content_kind;
+  if ((section.line_items?.length ?? 0) > 0) return "checklist";
+  if (section.body_text && section.body_text.trim()) return "paragraph";
+  return "checklist";
+}
 
 export function docSections(doc: Pick<ReferenceDocumentRow, "sections">): ReferenceSection[] {
   const raw = doc.sections;
@@ -30,6 +44,30 @@ export function docSections(doc: Pick<ReferenceDocumentRow, "sections">): Refere
 export function sectionLineItems(section: ReferenceSection) {
   return [...(section.line_items ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
+
+/** Non-destructive reshape between paragraph and checklist content. */
+export function convertSectionKind(section: ReferenceSection): ReferenceSection {
+  if (sectionKind(section) === "checklist") {
+    const body = sectionLineItems(section)
+      .map((i) => i.text)
+      .join("\n");
+    return { ...section, content_kind: "paragraph", body_text: body, line_items: [] };
+  }
+  const items = (section.body_text ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((text, idx) => ({ text, order: idx }));
+  return { ...section, content_kind: "checklist", line_items: items, body_text: null };
+}
+
+/** True when there is content worth reshaping (an empty section needs no convert action). */
+export function sectionHasContent(section: ReferenceSection) {
+  return (
+    (section.line_items?.length ?? 0) > 0 || Boolean(section.body_text && section.body_text.trim())
+  );
+}
+
 
 const divisionLabels: Record<string, string> = {
   universal: "Company-Wide",
