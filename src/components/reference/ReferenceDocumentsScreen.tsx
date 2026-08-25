@@ -509,8 +509,33 @@ function Detail({
                         </Button>
                       ) : null}
 
+                      {canWriteDirect && sectionHasContent(section) ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={convertSection.isPending}
+                          aria-label={
+                            sectionKind(section) === "checklist"
+                              ? "Convert to paragraph"
+                              : "Convert to checklist"
+                          }
+                          title={
+                            sectionKind(section) === "checklist"
+                              ? "Convert to paragraph"
+                              : "Convert to checklist"
+                          }
+                          onClick={() => convertSection.mutate(i)}
+                        >
+                          {sectionKind(section) === "checklist" ? (
+                            <AlignLeft className="size-4 text-muted-foreground" />
+                          ) : (
+                            <ListChecks className="size-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      ) : null}
+
                       {isManagerOrOwner ? (
-                        documentType === "checklist" ? (
+                        sectionKind(section) === "checklist" ? (
                           <LineItemEditor doc={doc} sectionIndex={i} />
                         ) : (
                           <SectionBodyEditor doc={doc} sectionIndex={i} />
@@ -520,7 +545,8 @@ function Detail({
                   </div>
 
                   <CollapsibleContent className="space-y-4">
-                {isChecklist ? (
+                {sectionKind(section) === "checklist" ? (
+
                   <ol className="space-y-1">
                     {sectionLineItems(section).map((item, idx) => {
                       const lineOrder = item.order ?? idx;
