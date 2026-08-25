@@ -820,7 +820,7 @@ export function StepBlocksEditor({
                 busy={mutate.isPending}
                 payload={drafts[block.id] ?? asPayload(block.payload)}
                 dirty={block.id in drafts}
-                onChange={(next) => setDrafts((prev) => ({ ...prev, [block.id]: next }))}
+                onChange={(next) => onDraftsChange({ ...drafts, [block.id]: next })}
 
                 onMove={(delta) => moveBlock(block, delta)}
                 onDuplicate={() => duplicateBlock(block)}
