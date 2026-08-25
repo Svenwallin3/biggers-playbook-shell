@@ -31,7 +31,7 @@ import {
 } from "@/lib/cross-training.queries";
 import { onboardingCompletionQueryOptions } from "@/lib/queue.queries";
 import { divisionLabel } from "@/lib/reference.queries";
-import { branchOptionsQueryOptions } from "@/lib/training.queries";
+import { allLocationsQueryOptions, branchOptionsQueryOptions } from "@/lib/training.queries";
 import type { Database } from "@/integrations/supabase/types";
 
 type AuthTier = Database["public"]["Enums"]["auth_tier"];
@@ -67,7 +67,7 @@ function BranchCell({
   }
   return (
     <Select
-      value={e.path ?? NONE}
+      value={e.path_id ?? NONE}
       disabled={disabled}
       onValueChange={(v) => onChange(v === NONE ? null : v)}
     >
@@ -77,8 +77,8 @@ function BranchCell({
       <SelectContent>
         <SelectItem value={NONE}>None</SelectItem>
         {options.map((o) => (
-          <SelectItem key={o} value={o}>
-            {o}
+          <SelectItem key={o.id} value={o.id}>
+            {o.name}
           </SelectItem>
         ))}
       </SelectContent>
@@ -99,6 +99,11 @@ function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
   const [path, setPath] = useState<string>(NONE);
   const branchQuery = useQuery(branchOptionsQueryOptions(department || null));
   const branchOptions = department ? (branchQuery.data ?? []) : [];
+  // Existing rows can point at a branch in a division other than the one being added.
+  const homeBranchQuery = useQuery(branchOptionsQueryOptions(e.department_scope));
+  const branchNameById = new Map(
+    [...(branchQuery.data ?? []), ...(homeBranchQuery.data ?? [])].map((p) => [p.id, p.name]),
+  );
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["secondary-divisions"] });
@@ -111,7 +116,7 @@ function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
       addSecondaryDivision({
         employeeId: e.id,
         department: department as Department,
-        path: path === NONE ? null : path,
+        pathId: path === NONE ? null : path,
         assignedBy: me?.id ?? null,
       }),
     onSuccess: () => {
@@ -145,7 +150,7 @@ function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
         <div key={row.id} className="flex items-center gap-1">
           <Badge variant="secondary">
             {divisionLabel(row.department)}
-            {row.path ? ` · ${row.path}` : ""}
+            {row.path_id ? ` · ${branchNameById.get(row.path_id) ?? "branch"}` : ""}
           </Badge>
           <Button
             variant="ghost"
@@ -186,8 +191,8 @@ function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
               <SelectContent>
                 <SelectItem value={NONE}>No branch</SelectItem>
                 {branchOptions.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -207,11 +212,7 @@ function CrossTrainingCell({ employee: e }: { employee: EmployeeRow }) {
   );
 }
 
-/** Market runs two sites; Kitchen and Delivery are single-site, so they stay null. */
-const locations: { value: string; label: string }[] = [
-  { value: "market_street", label: "Market Street" },
-  { value: "carolina_beach_road", label: "Carolina Beach Road" },
-];
+
 
 
 const title = "Team — Biggers Training Platform";
@@ -237,6 +238,7 @@ function TeamPage() {
   const employeesQuery = useQuery(employeesQueryOptions());
   const onboardingQuery = useQuery(onboardingCompletionQueryOptions());
 
+  const locations = useQuery(allLocationsQueryOptions()).data ?? [];
   const update = useMutation({
     mutationFn: async (input: { id: string; patch: Partial<EmployeeRow> }) => {
       const { error } = await supabase.from("employees").update(input.patch).eq("id", input.id);
@@ -430,14 +432,14 @@ function TeamPage() {
                     <BranchCell
                       employee={e}
                       disabled={update.isPending}
-                      onChange={(path) => update.mutate({ id: e.id, patch: { path } })}
+                      onChange={(path_id) => update.mutate({ id: e.id, patch: { path_id } })}
                     />
                   </TableCell>
                 ) : null}
                 <TableCell>
                   {!isOwner ? (
                     <span className="text-sm text-muted-foreground">
-                      {locations.find((l) => l.value === e.location_id)?.label ?? "—"}
+                      {locations.find((l) => l.id === e.location_id)?.name ?? "—"}
                     </span>
                   ) : (
                   <Select
@@ -453,8 +455,8 @@ function TeamPage() {
                     <SelectContent>
                       <SelectItem value={NONE}>None</SelectItem>
                       {locations.map((l) => (
-                        <SelectItem key={l.value} value={l.value}>
-                          {l.label}
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

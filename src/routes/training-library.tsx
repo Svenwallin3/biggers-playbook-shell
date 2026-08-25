@@ -34,7 +34,7 @@ function TrainingLibraryPage() {
   const planQuery = useQuery({
     ...planQueryOptions(
       employee?.department_scope ?? null,
-      employee?.path ?? null,
+      employee?.path_id ?? null,
       isManagerOrOwner,
       toSecondaryDivisions(secondaryQuery.data),
     ),

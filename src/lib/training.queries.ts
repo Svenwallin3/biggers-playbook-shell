@@ -72,7 +72,7 @@ export function bodyLines(step: Pick<StepRow, "content_body">) {
 }
 
 /** An extra division an employee is cross-trained into, with its own branch. */
-export type SecondaryDivision = { department: Department; path: string | null };
+export type SecondaryDivision = { department: Department; path_id: string | null };
 
 /**
  * The departments an employee's plan should include: Universal, their own
@@ -93,60 +93,63 @@ export function departmentsForEmployee(
 }
 
 /**
- * Which branch (`path`) applies in a given division for this employee:
- * their own `path` in their home division, or the branch recorded on the
+ * Which branch (`path_id`) applies in a given division for this employee:
+ * their own `path_id` in their home division, or the branch recorded on the
  * cross-training row for a secondary division.
  */
 export function pathForDepartment(
   trackDepartment: Department,
   homeDepartment: Department | null | undefined,
-  homePath: string | null | undefined,
+  homePathId: string | null | undefined,
   secondary: SecondaryDivision[] = [],
 ): string | null {
   const match = secondary.find((s) => s.department === trackDepartment);
-  if (match && trackDepartment !== homeDepartment) return match.path;
-  return homePath ?? null;
+  if (match && trackDepartment !== homeDepartment) return match.path_id;
+  return homePathId ?? null;
 }
 
 /**
  * Whether a module is visible to an employee given their chosen branch.
- * `module.path === null` means shared across every branch in its
- * division. A module with `path` set is visible only to an employee
- * whose own `path` matches exactly. Division-agnostic on purpose — no
- * hardcoded branch names — so any future division can add its own branch
- * split just by tagging modules, same pattern as `departmentsForEmployee`.
+ * `module.path_id === null` means shared across every branch in its
+ * division. A module with `path_id` set is visible only to an employee
+ * whose own `path_id` matches. Division-agnostic on purpose — branches are
+ * real `paths` rows, so any future division can add its own split without
+ * code changes, same pattern as `departmentsForEmployee`.
  */
 export function moduleVisibleForPath(
-  module: { path: string | null },
-  employeePath: string | null | undefined,
+  module: { path_id: string | null },
+  employeePathId: string | null | undefined,
 ): boolean {
-  return !module.path || module.path === employeePath;
+  return !module.path_id || module.path_id === employeePathId;
 }
 
 /** Branch-aware visibility across home + cross-trained divisions. */
 export function moduleVisibleForScope(
-  module: { path: string | null; track?: { department: Department } | null },
+  module: { path_id: string | null; track?: { department: Department } | null },
   trackDepartment: Department,
   homeDepartment: Department | null | undefined,
-  homePath: string | null | undefined,
+  homePathId: string | null | undefined,
   secondary: SecondaryDivision[] = [],
-  isGmOfHomeDivision = false,
+  /** Any manager-tier employee (GM or not) trains on every branch of their own division. */
+  isManagerOfHomeDivision = false,
 ): boolean {
-  // A GM manages the whole division, so every branch of their home division counts.
-  if (isGmOfHomeDivision && trackDepartment === homeDepartment) return true;
+  if (isManagerOfHomeDivision && trackDepartment === homeDepartment) return true;
   return moduleVisibleForPath(
     module,
-    pathForDepartment(trackDepartment, homeDepartment, homePath, secondary),
+    pathForDepartment(trackDepartment, homeDepartment, homePathId, secondary),
   );
 }
 
 
-/** Distinct branch values live on a division's modules, e.g. ["Production","Service"] for Kitchen. Empty array = this division has no branch split. */
+/** A branch inside a division, from the `paths` reference table. */
+export type PathOption = { id: string; name: string };
+
+/** Active branches for a division's tracks. Empty array = no branch split. */
 export function branchOptionsQueryOptions(department: Department | null) {
   return queryOptions({
     queryKey: ["branch-options", department ?? "none"],
     enabled: !!department,
-    queryFn: async (): Promise<string[]> => {
+    queryFn: async (): Promise<PathOption[]> => {
       const { data: tracks, error: trackError } = await supabase
         .from("tracks")
         .select("id")
@@ -157,18 +160,62 @@ export function branchOptionsQueryOptions(department: Department | null) {
       const trackIds = (tracks ?? []).map((t) => t.id);
       if (!trackIds.length) return [];
 
-      const { data: modules, error } = await supabase
-        .from("modules")
-        .select("path")
+      const { data, error } = await supabase
+        .from("paths")
+        .select("id, name")
         .in("track_id", trackIds)
+        .eq("is_active", true)
         .eq("is_deleted", false)
-        .not("path", "is", null);
+        .order("sequence_order");
       if (error) throw error;
 
-      return [...new Set((modules ?? []).map((m) => m.path).filter(Boolean) as string[])].sort();
+      return (data ?? []) as PathOption[];
     },
   });
 }
+
+/** A site inside a division, from the `locations` reference table. */
+export type LocationOption = { id: string; name: string };
+
+/**
+ * Active locations for a division. Empty array = this division is single-site
+ * today (Kitchen, Delivery), so no location pick is asked for.
+ */
+export function locationOptionsQueryOptions(department: Department | null) {
+  return queryOptions({
+    queryKey: ["location-options", department ?? "none"],
+    enabled: !!department,
+    queryFn: async (): Promise<LocationOption[]> => {
+      const { data, error } = await supabase
+        .from("locations")
+        .select("id, name")
+        .eq("division", department!)
+        .eq("is_active", true)
+        .eq("is_deleted", false)
+        .order("sequence_order");
+      if (error) throw error;
+      return (data ?? []) as LocationOption[];
+    },
+  });
+}
+
+/** Every active location, for admin pickers that span divisions. */
+export function allLocationsQueryOptions() {
+  return queryOptions({
+    queryKey: ["location-options", "all"],
+    queryFn: async (): Promise<Array<LocationOption & { division: Department }>> => {
+      const { data, error } = await supabase
+        .from("locations")
+        .select("id, name, division")
+        .eq("is_active", true)
+        .eq("is_deleted", false)
+        .order("sequence_order");
+      if (error) throw error;
+      return (data ?? []) as Array<LocationOption & { division: Department }>;
+    },
+  });
+}
+
 
 /**
  * Onboarding day decides first; Universal wins same-day ties (Clock-in /
@@ -248,22 +295,22 @@ export function getDayGroupedSteps<
  */
 export function planQueryOptions(
   department: Department | null,
-  path: string | null = null,
+  pathId: string | null = null,
   allDepartments = false,
   secondary: SecondaryDivision[] = [],
-  isGmOfHomeDivision = false,
+  isManagerOfHomeDivision = false,
 ) {
   const secondaryKey = secondary
-    .map((s) => `${s.department}:${s.path ?? ""}`)
+    .map((s) => `${s.department}:${s.path_id ?? ""}`)
     .sort()
     .join(",");
   return queryOptions({
     queryKey: [
       "training-plan",
       allDepartments ? "all" : (department ?? "none"),
-      allDepartments ? "all" : (path ?? "none"),
+      allDepartments ? "all" : (pathId ?? "none"),
       allDepartments ? "all" : secondaryKey,
-      allDepartments ? "all" : String(isGmOfHomeDivision),
+      allDepartments ? "all" : String(isManagerOfHomeDivision),
     ],
     queryFn: async (): Promise<PlanModule[]> => {
       let trackQuery = supabase
@@ -308,9 +355,9 @@ export function planQueryOptions(
               m,
               trackById.get(m.track_id)!.department,
               department,
-              path,
+              pathId,
               secondary,
-              isGmOfHomeDivision,
+              isManagerOfHomeDivision,
             ),
         )
         .map((m) => ({

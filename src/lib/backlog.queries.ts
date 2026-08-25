@@ -100,7 +100,7 @@ export function signoffBacklogQueryOptions() {
         const depts = departmentsForEmployee(employee.department_scope);
         const mods = orderedModules.filter(
           (m) =>
-            depts.includes(m.track!.department) && moduleVisibleForPath(m, employee.path),
+            depts.includes(m.track!.department) && moduleVisibleForPath(m, employee.path_id),
         );
 
         let lastCompletedAt: string | null = null;

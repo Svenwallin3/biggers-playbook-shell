@@ -118,9 +118,9 @@ function PreviewPage() {
   // A branching track always previews as one specific branch — never unfiltered.
   const effectiveBranch =
     branchOptions.length > 1
-      ? branch && branchOptions.includes(branch)
+      ? branch && branchOptions.some((b) => b.id === branch)
         ? branch
-        : branchOptions[0]
+        : branchOptions[0]!.id
       : undefined;
   // Keep the URL honest about which branch is being previewed.
   useEffect(() => {
@@ -306,16 +306,16 @@ function PreviewPage() {
           </span>
           {branchOptions.map((b) => (
             <Link
-              key={b}
+              key={b.id}
               to="/preview"
-              search={{ track: activeTrack.id, module: undefined, step: undefined, branch: b }}
+              search={{ track: activeTrack.id, module: undefined, step: undefined, branch: b.id }}
               className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                effectiveBranch === b
+                effectiveBranch === b.id
                   ? "border-primary bg-primary/10 font-semibold text-foreground"
                   : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
               }`}
             >
-              {b}
+              {b.name}
             </Link>
           ))}
         </div>

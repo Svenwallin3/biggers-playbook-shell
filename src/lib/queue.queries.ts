@@ -20,12 +20,12 @@ import {
 async function fetchSecondaryByEmployee(): Promise<Record<string, SecondaryDivision[]>> {
   const { data, error } = await supabase
     .from("employee_secondary_divisions")
-    .select("id, employee_id, department, path, created_at")
+    .select("id, employee_id, department, path_id, created_at")
     .eq("is_deleted", false);
   if (error) throw error;
   const out: Record<string, SecondaryDivision[]> = {};
   for (const row of (data ?? []) as SecondaryDivisionRow[]) {
-    (out[row.employee_id] ??= []).push({ department: row.department, path: row.path });
+    (out[row.employee_id] ??= []).push({ department: row.department, path_id: row.path_id });
   }
   return out;
 }
@@ -63,7 +63,7 @@ export function onboardingCompletionQueryOptions() {
         await Promise.all([
           supabase
             .from("employees")
-            .select("id, department_scope, path, can_manage_team")
+            .select("id, department_scope, path_id, auth_tier")
             .eq("is_deleted", false),
           supabase.from("tracks").select("*").eq("is_deleted", false),
           supabase
@@ -111,9 +111,9 @@ export function onboardingCompletionQueryOptions() {
               m,
               m.track!.department,
               employee.department_scope,
-              employee.path,
+              employee.path_id,
               secondary,
-              employee.can_manage_team ?? false,
+              employee.auth_tier !== "staff",
             )
           )
             continue;
@@ -244,9 +244,9 @@ export function trainingQueueQueryOptions(scope: {
               m,
               m.track!.department,
               employee.department_scope,
-              employee.path,
+              employee.path_id,
               secondary,
-              employee.can_manage_team ?? false,
+              employee.auth_tier !== "staff",
             ),
         );
 

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Check, ChevronRight, GraduationCap } from "lucide-react";
@@ -14,6 +15,7 @@ import {
   StandardOfTheDay,
 } from "@/components/manager/ManagerDailyBrief";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import type { PlanModule, ProgressRow } from "@/lib/training.queries";
 import {
   employeeSecondaryDivisionsQueryOptions,
@@ -23,6 +25,7 @@ import {
   planQueryOptions,
   progressQueryOptions,
   branchOptionsQueryOptions,
+  locationOptionsQueryOptions,
 } from "@/lib/training.queries";
 import { onboardingCompletionQueryOptions } from "@/lib/queue.queries";
 
@@ -125,21 +128,33 @@ function HospitalityWelcome({
 }
 
 function IndexPage() {
-  const { employee, loading, session } = useAuth();
+  const { employee, loading, session, refreshEmployee } = useAuth();
 
   const secondaryQuery = useQuery(employeeSecondaryDivisionsQueryOptions(employee?.id));
   const planQuery = useQuery({
     ...planQueryOptions(
       employee?.department_scope ?? null,
-      employee?.path ?? null,
+      employee?.path_id ?? null,
       false,
       toSecondaryDivisions(secondaryQuery.data),
-      employee?.can_manage_team ?? false,
+      employee?.auth_tier !== "staff",
     ),
     enabled: !!employee && !secondaryQuery.isPending,
   });
   const progressQuery = useQuery(progressQueryOptions(employee?.id));
   const branchQuery = useQuery(branchOptionsQueryOptions(employee?.department_scope ?? null));
+  const locationsQuery = useQuery(locationOptionsQueryOptions(employee?.department_scope ?? null));
+  // Single-site division: assign it silently rather than showing a one-button pick.
+  const soleLocation =
+    (locationsQuery.data ?? []).length === 1 ? locationsQuery.data![0]!.id : null;
+  useEffect(() => {
+    if (!employee || employee.location_id || !soleLocation) return;
+    void supabase
+      .from("employees")
+      .update({ location_id: soleLocation })
+      .eq("id", employee.id)
+      .then(() => refreshEmployee());
+  }, [employee?.id, employee?.location_id, soleLocation]);
   const onboardingQuery = useQuery({
     ...onboardingCompletionQueryOptions(),
     enabled: !!employee,
@@ -205,15 +220,19 @@ function IndexPage() {
       );
     }
   }
-  if (isStaff && employee.department_scope === "market" && !employee.location_id) {
-    return <LocationChoice />;
+  // Location gate: division-agnostic. One active location auto-assigns silently,
+  // two or more ask, none (Kitchen, Delivery today) skip entirely.
+  if (isStaff && employee.department_scope && !employee.location_id) {
+    if ((locationsQuery.data ?? []).length > 1) {
+      return <LocationChoice department={employee.department_scope} />;
+    }
   }
   // Path gate: only for divisions that actually split (2+ path values), and
   // once Day 1 is done — the path pick is the first thing shown on Day 2.
   if (
     isStaff &&
     employee.department_scope &&
-    !employee.path &&
+    !employee.path_id &&
     (branchQuery.data ?? []).length >= 2
   ) {
     const earlySteps = modules

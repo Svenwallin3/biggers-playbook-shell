@@ -102,14 +102,14 @@ function ModulePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
-        .select("department_scope, path, can_manage_team")
+        .select("department_scope, path_id, auth_tier")
         .eq("id", subjectId!)
         .maybeSingle();
       if (error) throw error;
       return {
         department_scope: data?.department_scope ?? null,
-        path: data?.path ?? null,
-        can_manage_team: data?.can_manage_team ?? false,
+        path_id: data?.path_id ?? null,
+        is_manager: data?.auth_tier !== "staff",
       };
     },
   });
@@ -118,11 +118,11 @@ function ModulePage() {
       ? (traineeQuery.data?.department_scope ?? null)
       : (employee?.department_scope ?? null);
   const subjectPath =
-    isAdmin && trainee ? (traineeQuery.data?.path ?? null) : (employee?.path ?? null);
+    isAdmin && trainee ? (traineeQuery.data?.path_id ?? null) : (employee?.path_id ?? null);
   const subjectIsGm =
     isAdmin && trainee
-      ? (traineeQuery.data?.can_manage_team ?? false)
-      : (employee?.can_manage_team ?? false);
+      ? (traineeQuery.data?.is_manager ?? false)
+      : employee?.auth_tier !== "staff";
   const secondaryQuery = useQuery(employeeSecondaryDivisionsQueryOptions(subjectId));
   const planQuery = useQuery({
     ...planQueryOptions(

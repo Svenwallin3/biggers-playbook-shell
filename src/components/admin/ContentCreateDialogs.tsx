@@ -257,7 +257,7 @@ export function NewModuleDialog({
     slug: "",
     slugTouched: false,
     description: "",
-    path: "",
+    path_id: "",
     day_assignment: "",
     sequence_order: String(nextSequence),
     is_assignable: defaultIsAssignable,
@@ -266,13 +266,12 @@ export function NewModuleDialog({
   };
   const [form, setForm] = useState(empty);
   const patch = (p: Partial<typeof empty>) => setForm((f) => ({ ...f, ...p }));
-  const [pathIsCustom, setPathIsCustom] = useState(false);
   const [categoryIsCustom, setCategoryIsCustom] = useState(false);
   const branchQuery = useQuery({
     ...branchOptionsQueryOptions(department ?? null),
     enabled: !!department,
   });
-  const branchChoices = Array.from(new Set(branchQuery.data ?? [])).sort();
+  const branchChoices = branchQuery.data ?? [];
   const categoryQuery = useQuery({
     ...moduleCategoryOptionsQueryOptions(department ?? null),
     enabled: !!department,
@@ -296,7 +295,7 @@ export function NewModuleDialog({
       }
       reset={() => {
         setForm({ ...empty, sequence_order: String(nextSequence) });
-        setPathIsCustom(false);
+        
         setCategoryIsCustom(false);
       }}
       onCreated={onCreated}
@@ -308,7 +307,8 @@ export function NewModuleDialog({
             name: form.name.trim(),
             slug: form.slug.trim() || slugify(form.name),
             description: form.description.trim() || null,
-            path: form.path.trim() || null,
+            path_id: form.path_id || null,
+            path: branchChoices.find((b) => b.id === form.path_id)?.name ?? null,
             day_assignment: form.day_assignment ? Number(form.day_assignment) : null,
             sequence_order: Number(form.sequence_order) || nextSequence,
             is_assignable: form.is_assignable,
@@ -356,17 +356,10 @@ export function NewModuleDialog({
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="module-subpath">Sub-path</Label>
+          <Label htmlFor="module-subpath">Branch (path)</Label>
           <Select
-            value={pathIsCustom ? "__custom__" : form.path || "__none__"}
-            onValueChange={(v) => {
-              if (v === "__custom__") {
-                setPathIsCustom(true);
-                return;
-              }
-              setPathIsCustom(false);
-              patch({ path: v === "__none__" ? "" : v });
-            }}
+            value={form.path_id || "__none__"}
+            onValueChange={(v) => patch({ path_id: v === "__none__" ? "" : v })}
           >
             <SelectTrigger id="module-subpath">
               <SelectValue placeholder="None" />
@@ -374,22 +367,12 @@ export function NewModuleDialog({
             <SelectContent>
               <SelectItem value="__none__">None</SelectItem>
               {branchChoices.map((b) => (
-                <SelectItem key={b} value={b}>
-                  {b}
+                <SelectItem key={b.id} value={b.id}>
+                  {b.name}
                 </SelectItem>
               ))}
-              <SelectItem value="__custom__">Custom…</SelectItem>
             </SelectContent>
           </Select>
-          {pathIsCustom ? (
-            <Input
-              aria-label="Custom branch name"
-              placeholder="New branch name"
-              value={form.path}
-              maxLength={60}
-              onChange={(e) => patch({ path: e.target.value })}
-            />
-          ) : null}
         </div>
         <div className="space-y-2">
           <Label htmlFor="module-day">Day assignment</Label>
