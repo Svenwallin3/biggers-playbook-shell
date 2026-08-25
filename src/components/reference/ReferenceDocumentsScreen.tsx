@@ -253,6 +253,28 @@ function Detail({
     },
   });
 
+  // Reshape one section between checklist and paragraph without losing text.
+  const convertSection = useMutation({
+    mutationFn: async (index: number) => {
+      const target = sections[index];
+      if (!target) return;
+      const next = sections.map((s, i) => (i === index ? convertSectionKind(s) : s));
+      await saveReferenceSections({
+        documentId: doc.id,
+        sections: next,
+        updatedBy: employee?.id ?? null,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["reference-documents"] });
+      toast.success("Section converted.");
+    },
+    onError: (err: Error) =>
+      toast.error("Couldn't convert that section", { description: err.message }),
+  });
+
+
+
   const handleSectionDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
