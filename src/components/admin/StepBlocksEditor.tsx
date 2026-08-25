@@ -506,6 +506,8 @@ function BlockCard({
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{blockTypeLabels[type]}</Badge>
           {block.is_deleted ? <Badge variant="outline">Hidden</Badge> : null}
+          {dirty ? <Badge variant="outline">Unsaved</Badge> : null}
+
         </div>
         <div className="flex items-center">
           <Button
