@@ -104,8 +104,11 @@ export function StandaloneStepEditor({
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<Draft>(() => draftFromStep(step));
   const [suggestionWhy, setSuggestionWhy] = useState("");
+  // Pending block payload edits, saved together with the step fields by this editor's Save.
+  const [blockDrafts, setBlockDrafts] = useState<Record<string, BlockPayload>>({});
   useEffect(() => {
     setDraft(draftFromStep(step));
+    setBlockDrafts({});
   }, [step.id, step.updated_at]);
   const patch = (p: Partial<Draft>) => setDraft((d) => ({ ...d, ...p }));
 
