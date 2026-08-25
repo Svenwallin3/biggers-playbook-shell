@@ -593,6 +593,14 @@ export function StepBlocksEditor({
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
   const [newType, setNewType] = useState<BlockType>("paragraph");
+  // One shared dirty map for every block's payload edits — saved in a single action.
+  const [drafts, setDrafts] = useState<Record<string, Payload>>({});
+
+  // Switching steps drops any pending payload edits (same risk profile as before).
+  useEffect(() => {
+    setDrafts({});
+  }, [stepId]);
+
 
   const blocksQuery = useQuery({
     queryKey: ["step-blocks", stepId, "admin"],
