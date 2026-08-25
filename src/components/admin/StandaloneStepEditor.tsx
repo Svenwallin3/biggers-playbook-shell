@@ -38,7 +38,11 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoUpload } from "@/components/PhotoUpload";
-import { StepBlocksEditor, hasLegacyContent } from "@/components/admin/StepBlocksEditor";
+import {
+  StepBlocksEditor,
+  hasLegacyContent,
+  type BlockPayload,
+} from "@/components/admin/StepBlocksEditor";
 import { StepHistoryCard } from "@/components/admin/EntityEditPanels";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
 import { submitStepSuggestion } from "@/lib/admin.queries";
@@ -324,6 +328,8 @@ export function StandaloneStepEditor({
             media_url: step.media_url,
             video_url: step.video_url,
           }}
+          drafts={blockDrafts}
+          onDraftsChange={setBlockDrafts}
         />
       ) : null}
 
