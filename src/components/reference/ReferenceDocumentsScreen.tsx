@@ -224,8 +224,10 @@ function Detail({
   const sections = draftOrder ?? persisted;
   const isChecklist = documentType === "checklist";
   const tracksInstance = isChecklist && !ephemeral;
-  // Section reordering is Owner/GM only and writes directly (no suggestion queue).
-  const canReorderSections = (isOwner || isGeneralManager) && sections.length > 1;
+  // Owner/GM only, and writes directly (no suggestion queue).
+  const canWriteDirect = isOwner || isGeneralManager;
+  const canReorderSections = canWriteDirect && sections.length > 1;
+
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
