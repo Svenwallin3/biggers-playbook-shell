@@ -770,7 +770,7 @@ export function StepBlocksEditor({
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">Content blocks</CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Label htmlFor="blocks-show-hidden" className="text-xs text-muted-foreground">
               Show hidden
             </Label>
@@ -779,7 +779,21 @@ export function StepBlocksEditor({
               checked={showHidden}
               onCheckedChange={setShowHidden}
             />
+            {dirtyCount > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={mutate.isPending}
+                onClick={discardDrafts}
+              >
+                Discard changes
+              </Button>
+            ) : null}
+            <Button size="sm" disabled={mutate.isPending || dirtyCount === 0} onClick={saveDrafts}>
+              Save changes
+            </Button>
           </div>
+
         </div>
         <CardDescription>
           Structured content for this step. Blocks render in this order and replace the plain
