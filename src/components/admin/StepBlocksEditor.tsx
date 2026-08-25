@@ -657,23 +657,8 @@ export function StepBlocksEditor({
       toast.success(`${blockTypeLabels[newType]} block added.`);
     });
 
-  const dirtyCount = Object.keys(drafts).length;
 
-  const saveDrafts = () =>
-    run(async () => {
-      const entries = Object.entries(drafts);
-      for (const [id, payload] of entries) {
-        const { error } = await supabase
-          .from("step_blocks")
-          .update({ payload: payload as Json })
-          .eq("id", id);
-        if (error) throw error;
-      }
-      setDrafts({});
-      toast.success(`${entries.length} ${entries.length === 1 ? "block" : "blocks"} saved.`);
-    });
 
-  const discardDrafts = () => setDrafts({});
 
 
   const moveBlock = (block: BlockRow, delta: number) =>
