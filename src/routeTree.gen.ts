@@ -28,6 +28,7 @@ import { Route as TrainingLibraryRouteImport } from './routes/training-library'
 import { Route as TrainingQueueRouteImport } from './routes/training-queue'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as AdminGapsRouteImport } from './routes/admin.gaps'
+import { Route as AdminLocationsPathsRouteImport } from './routes/admin.locations-paths'
 import { Route as ModulesModuleIdRouteImport } from './routes/modules.$moduleId'
 import { Route as ReferenceIndexRouteImport } from './routes/reference.index'
 import { Route as ReferenceChecklistsRouteImport } from './routes/reference.checklists'
@@ -131,6 +132,11 @@ const AdminGapsRoute = AdminGapsRouteImport.update({
   path: '/admin/gaps',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminLocationsPathsRoute = AdminLocationsPathsRouteImport.update({
+  id: '/admin/locations-paths',
+  path: '/admin/locations-paths',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ModulesModuleIdRoute = ModulesModuleIdRouteImport.update({
   id: '/modules/$moduleId',
   path: '/modules/$moduleId',
@@ -187,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/training-queue': typeof TrainingQueueRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
+  '/admin/locations-paths': typeof AdminLocationsPathsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
   '/reference/checklists': typeof ReferenceChecklistsRoute
   '/reference/manager-guides': typeof ReferenceManagerGuidesRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/training-queue': typeof TrainingQueueRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
+  '/admin/locations-paths': typeof AdminLocationsPathsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
   '/reference/checklists': typeof ReferenceChecklistsRoute
   '/reference/manager-guides': typeof ReferenceManagerGuidesRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/training-queue': typeof TrainingQueueRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/gaps': typeof AdminGapsRoute
+  '/admin/locations-paths': typeof AdminLocationsPathsRoute
   '/modules/$moduleId': typeof ModulesModuleIdRoute
   '/reference/checklists': typeof ReferenceChecklistsRoute
   '/reference/manager-guides': typeof ReferenceManagerGuidesRoute
@@ -273,6 +282,7 @@ export interface FileRouteTypes {
     | '/training-queue'
     | '/admin/content'
     | '/admin/gaps'
+    | '/admin/locations-paths'
     | '/modules/$moduleId'
     | '/reference/checklists'
     | '/reference/manager-guides'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/training-queue'
     | '/admin/content'
     | '/admin/gaps'
+    | '/admin/locations-paths'
     | '/modules/$moduleId'
     | '/reference/checklists'
     | '/reference/manager-guides'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/training-queue'
     | '/admin/content'
     | '/admin/gaps'
+    | '/admin/locations-paths'
     | '/modules/$moduleId'
     | '/reference/checklists'
     | '/reference/manager-guides'
@@ -357,6 +369,7 @@ export interface RootRouteChildren {
   TrainingQueueRoute: typeof TrainingQueueRoute
   AdminContentRoute: typeof AdminContentRoute
   AdminGapsRoute: typeof AdminGapsRoute
+  AdminLocationsPathsRoute: typeof AdminLocationsPathsRoute
   ModulesModuleIdRoute: typeof ModulesModuleIdRoute
 }
 
@@ -495,6 +508,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminGapsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/locations-paths': {
+      id: '/admin/locations-paths'
+      path: '/admin/locations-paths'
+      fullPath: '/admin/locations-paths'
+      preLoaderRoute: typeof AdminLocationsPathsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/modules/$moduleId': {
       id: '/modules/$moduleId'
       path: '/modules/$moduleId'
@@ -589,6 +609,7 @@ const rootRouteChildren: RootRouteChildren = {
   TrainingQueueRoute: TrainingQueueRoute,
   AdminContentRoute: AdminContentRoute,
   AdminGapsRoute: AdminGapsRoute,
+  AdminLocationsPathsRoute: AdminLocationsPathsRoute,
   ModulesModuleIdRoute: ModulesModuleIdRoute,
 }
 export const routeTree = rootRouteImport

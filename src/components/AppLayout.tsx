@@ -62,7 +62,9 @@ export function AppLayout() {
         { label: "Delivery Issues", to: "/delivery-issues" },
         { label: "Compliance", to: "/compliance" },
         { label: "Assign Training", to: "/assign-training" },
+        { label: "Locations & Paths", to: "/admin/locations-paths" },
         { label: "Merge", to: "/merge-tool" },
+
       ]
     : isGeneralManager
       ? [
