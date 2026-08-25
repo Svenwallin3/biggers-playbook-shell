@@ -584,22 +584,21 @@ export function StepBlocksEditor({
   stepId,
   employeeId,
   legacy,
+  drafts,
+  onDraftsChange,
 }: {
   stepId: string;
   employeeId: string | undefined;
   /** The step's untouched legacy fields, used only by "Convert to blocks". */
   legacy?: LegacyStepContent | undefined;
+  /** Pending payload edits, owned by StepEditPanel's single save bar. */
+  drafts: Record<string, BlockPayload>;
+  onDraftsChange: (next: Record<string, BlockPayload>) => void;
 }) {
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
   const [newType, setNewType] = useState<BlockType>("paragraph");
-  // One shared dirty map for every block's payload edits — saved in a single action.
-  const [drafts, setDrafts] = useState<Record<string, Payload>>({});
 
-  // Switching steps drops any pending payload edits (same risk profile as before).
-  useEffect(() => {
-    setDrafts({});
-  }, [stepId]);
 
 
   const blocksQuery = useQuery({
