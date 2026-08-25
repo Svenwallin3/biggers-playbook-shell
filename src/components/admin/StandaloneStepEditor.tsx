@@ -38,7 +38,11 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoUpload } from "@/components/PhotoUpload";
-import { StepBlocksEditor, hasLegacyContent } from "@/components/admin/StepBlocksEditor";
+import {
+  StepBlocksEditor,
+  hasLegacyContent,
+  type BlockPayload,
+} from "@/components/admin/StepBlocksEditor";
 import { StepHistoryCard } from "@/components/admin/EntityEditPanels";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
 import { submitStepSuggestion } from "@/lib/admin.queries";
@@ -104,8 +108,11 @@ export function StandaloneStepEditor({
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<Draft>(() => draftFromStep(step));
   const [suggestionWhy, setSuggestionWhy] = useState("");
+  // Pending block payload edits, saved together with the step fields by this editor's Save.
+  const [blockDrafts, setBlockDrafts] = useState<Record<string, BlockPayload>>({});
   useEffect(() => {
     setDraft(draftFromStep(step));
+    setBlockDrafts({});
   }, [step.id, step.updated_at]);
   const patch = (p: Partial<Draft>) => setDraft((d) => ({ ...d, ...p }));
 
@@ -156,13 +163,31 @@ export function StandaloneStepEditor({
         })
         .eq("id", step.id);
       if (error) throw error;
+
+      const blockEntries = Object.entries(blockDrafts);
+      for (const [id, payload] of blockEntries) {
+        const { error: blockError } = await supabase
+          .from("step_blocks")
+          .update({ payload: payload as never })
+          .eq("id", id);
+        if (blockError) throw blockError;
+      }
+      return blockEntries.length;
     },
-    onSuccess: () => {
+    onSuccess: (blockCount) => {
       refresh();
-      toast.success("Saved — previous version logged to history.");
+      void queryClient.invalidateQueries({ queryKey: ["step-blocks", step.id] });
+      setBlockDrafts({});
+      toast.success(
+        blockCount === 0
+          ? "Saved"
+          : `Saved — ${blockCount} ${blockCount === 1 ? "block" : "blocks"} updated`,
+      );
     },
     onError: (error: Error) => toast.error("Couldn't save", { description: error.message }),
   });
+
+
 
   const softDelete = useMutation({
     mutationFn: async (hidden: boolean) => {
@@ -303,6 +328,8 @@ export function StandaloneStepEditor({
             media_url: step.media_url,
             video_url: step.video_url,
           }}
+          drafts={blockDrafts}
+          onDraftsChange={setBlockDrafts}
         />
       ) : null}
 

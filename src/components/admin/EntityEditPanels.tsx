@@ -39,7 +39,11 @@ import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { SignoffChecklistEditor, serializeChecklist } from "@/components/admin/SignoffChecklistEditor";
-import { StepBlocksEditor, hasLegacyContent } from "@/components/admin/StepBlocksEditor";
+import {
+  StepBlocksEditor,
+  hasLegacyContent,
+  type BlockPayload,
+} from "@/components/admin/StepBlocksEditor";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
 import {
@@ -720,8 +724,11 @@ export function StepEditPanel({
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<StepDraft>(() => draftFromStep(step));
   const [suggestionWhy, setSuggestionWhy] = useState("");
+  // Pending block payload edits — saved together with the step fields by one button.
+  const [blockDrafts, setBlockDrafts] = useState<Record<string, BlockPayload>>({});
   useEffect(() => {
     setDraft(draftFromStep(step));
+    setBlockDrafts({});
   }, [step.id, step.updated_at]);
   const patch = (p: Partial<StepDraft>) => setDraft((d) => ({ ...d, ...p }));
 
@@ -775,14 +782,32 @@ export function StepEditPanel({
         })
         .eq("id", step.id);
       if (error) throw error;
+
+      // Same request-per-block loop the blocks editor used, now under one user action.
+      const blockEntries = Object.entries(blockDrafts);
+      for (const [id, payload] of blockEntries) {
+        const { error: blockError } = await supabase
+          .from("step_blocks")
+          .update({ payload: payload as never })
+          .eq("id", id);
+        if (blockError) throw blockError;
+      }
+      return blockEntries.length;
     },
-    onSuccess: () => {
+    onSuccess: (blockCount) => {
       refresh();
-      toast.success("Saved — previous version logged to history.");
+      void queryClient.invalidateQueries({ queryKey: ["step-blocks", step.id] });
+      setBlockDrafts({});
+      toast.success(
+        blockCount === 0
+          ? "Saved"
+          : `Saved — ${blockCount} ${blockCount === 1 ? "block" : "blocks"} updated`,
+      );
       onSaved?.();
     },
     onError: (error: Error) => toast.error("Couldn't save", { description: error.message }),
   });
+
 
   const softDelete = useMutation({
     mutationFn: async (hidden: boolean) => {
@@ -1068,17 +1093,12 @@ export function StepEditPanel({
           <Separator />
 
           <div className="flex flex-wrap gap-2">
-            {canSuggest ? (
-              blockFirst ? null : (
+            {canSuggest && !blockFirst ? (
               <Button disabled={suggest.isPending || !employeeId} onClick={() => suggest.mutate()}>
                 {suggest.isPending ? "Submitting…" : "Submit for approval"}
               </Button>
-              )
-            ) : (
-              <Button disabled={!canEditDirect || save.isPending} onClick={() => save.mutate()}>
-                {save.isPending ? "Saving…" : "Save changes"}
-              </Button>
-            )}
+            ) : null}
+
             {step.is_deleted ? (
               <Button
                 variant="outline"
@@ -1124,14 +1144,28 @@ export function StepEditPanel({
             media_url: step.media_url,
             video_url: step.video_url,
           }}
+          drafts={blockDrafts}
+          onDraftsChange={setBlockDrafts}
         />
       ) : null}
 
       <StepHistoryCard step={step} canEditDirect={canEditDirect} />
 
-
+      {canEditDirect ? (
+        <div className="sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-background px-4 py-3">
+          {Object.keys(blockDrafts).length > 0 ? (
+            <Button variant="ghost" disabled={save.isPending} onClick={() => setBlockDrafts({})}>
+              Discard block changes
+            </Button>
+          ) : null}
+          <Button disabled={save.isPending} onClick={() => save.mutate()}>
+            {save.isPending ? "Saving…" : "Save changes"}
+          </Button>
+        </div>
+      ) : null}
     </>
   );
+
 }
 
 /**

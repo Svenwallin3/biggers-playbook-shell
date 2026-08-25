@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Copy, EyeOff, Plus, RotateCcw, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
@@ -67,6 +67,8 @@ type BlockRow = {
 };
 
 type Payload = Record<string, unknown>;
+/** Payload shape shared with StepEditPanel's single save bar. */
+export type BlockPayload = Payload;
 
 function emptyPayload(type: BlockType): Payload {
   switch (type) {
@@ -584,22 +586,21 @@ export function StepBlocksEditor({
   stepId,
   employeeId,
   legacy,
+  drafts,
+  onDraftsChange,
 }: {
   stepId: string;
   employeeId: string | undefined;
   /** The step's untouched legacy fields, used only by "Convert to blocks". */
   legacy?: LegacyStepContent | undefined;
+  /** Pending payload edits, owned by StepEditPanel's single save bar. */
+  drafts: Record<string, BlockPayload>;
+  onDraftsChange: (next: Record<string, BlockPayload>) => void;
 }) {
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
   const [newType, setNewType] = useState<BlockType>("paragraph");
-  // One shared dirty map for every block's payload edits — saved in a single action.
-  const [drafts, setDrafts] = useState<Record<string, Payload>>({});
 
-  // Switching steps drops any pending payload edits (same risk profile as before).
-  useEffect(() => {
-    setDrafts({});
-  }, [stepId]);
 
 
   const blocksQuery = useQuery({
@@ -658,23 +659,8 @@ export function StepBlocksEditor({
       toast.success(`${blockTypeLabels[newType]} block added.`);
     });
 
-  const dirtyCount = Object.keys(drafts).length;
 
-  const saveDrafts = () =>
-    run(async () => {
-      const entries = Object.entries(drafts);
-      for (const [id, payload] of entries) {
-        const { error } = await supabase
-          .from("step_blocks")
-          .update({ payload: payload as Json })
-          .eq("id", id);
-        if (error) throw error;
-      }
-      setDrafts({});
-      toast.success(`${entries.length} ${entries.length === 1 ? "block" : "blocks"} saved.`);
-    });
 
-  const discardDrafts = () => setDrafts({});
 
 
   const moveBlock = (block: BlockRow, delta: number) =>
@@ -779,20 +765,8 @@ export function StepBlocksEditor({
               checked={showHidden}
               onCheckedChange={setShowHidden}
             />
-            {dirtyCount > 0 ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={mutate.isPending}
-                onClick={discardDrafts}
-              >
-                Discard changes
-              </Button>
-            ) : null}
-            <Button size="sm" disabled={mutate.isPending || dirtyCount === 0} onClick={saveDrafts}>
-              Save changes
-            </Button>
           </div>
+
 
         </div>
         <CardDescription>
@@ -846,7 +820,7 @@ export function StepBlocksEditor({
                 busy={mutate.isPending}
                 payload={drafts[block.id] ?? asPayload(block.payload)}
                 dirty={block.id in drafts}
-                onChange={(next) => setDrafts((prev) => ({ ...prev, [block.id]: next }))}
+                onChange={(next) => onDraftsChange({ ...drafts, [block.id]: next })}
 
                 onMove={(delta) => moveBlock(block, delta)}
                 onDuplicate={() => duplicateBlock(block)}
