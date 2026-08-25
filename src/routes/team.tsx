@@ -454,11 +454,13 @@ function TeamPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={NONE}>None</SelectItem>
-                      {locations.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>
-                          {l.name}
-                        </SelectItem>
-                      ))}
+                      {locations
+                        .filter((l) => e.department_scope && l.division === e.department_scope)
+                        .map((l) => (
+                          <SelectItem key={l.id} value={l.id}>
+                            {l.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   )}
