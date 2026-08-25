@@ -47,8 +47,9 @@ export function AddSectionButton({ doc }: { doc: ReferenceDocumentRow }) {
           sections: [
             ...sections,
             doc.document_type === "checklist"
-              ? { title: title.trim(), line_items: [] }
-              : { title: title.trim(), body_text: null },
+              ? { title: title.trim(), content_kind: "checklist" as const, line_items: [] }
+              : { title: title.trim(), content_kind: "paragraph" as const, body_text: null },
+
           ],
           updatedBy: employee.id,
         });
