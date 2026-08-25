@@ -765,20 +765,8 @@ export function StepBlocksEditor({
               checked={showHidden}
               onCheckedChange={setShowHidden}
             />
-            {dirtyCount > 0 ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={mutate.isPending}
-                onClick={discardDrafts}
-              >
-                Discard changes
-              </Button>
-            ) : null}
-            <Button size="sm" disabled={mutate.isPending || dirtyCount === 0} onClick={saveDrafts}>
-              Save changes
-            </Button>
           </div>
+
 
         </div>
         <CardDescription>
