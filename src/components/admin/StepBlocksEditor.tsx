@@ -472,7 +472,9 @@ function BlockCard({
   index,
   total,
   busy,
-  onSave,
+  payload,
+  dirty,
+  onChange,
   onMove,
   onDuplicate,
   onHide,
@@ -483,23 +485,20 @@ function BlockCard({
   index: number;
   total: number;
   busy: boolean;
-  onSave: (payload: Payload) => void;
+  /** Pending draft payload when edited, otherwise the last-saved payload. */
+  payload: Payload;
+  dirty: boolean;
+  onChange: (next: Payload) => void;
   onMove: (delta: number) => void;
   onDuplicate: () => void;
   onHide: () => void;
   onRestore: () => void;
   onDelete: () => void;
 }) {
-  const [draft, setDraft] = useState<Payload>(() => asPayload(block.payload));
-  const [dirty, setDirty] = useState(false);
-  useEffect(() => {
-    setDraft(asPayload(block.payload));
-    setDirty(false);
-  }, [block.id, JSON.stringify(block.payload)]);
-
   const type = (blockTypes as readonly string[]).includes(block.block_type)
     ? (block.block_type as BlockType)
     : "paragraph";
+
 
   return (
     <div className="rounded-lg border border-border bg-surface/40 p-3">
