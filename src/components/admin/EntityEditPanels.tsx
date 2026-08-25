@@ -724,8 +724,11 @@ export function StepEditPanel({
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<StepDraft>(() => draftFromStep(step));
   const [suggestionWhy, setSuggestionWhy] = useState("");
+  // Pending block payload edits — saved together with the step fields by one button.
+  const [blockDrafts, setBlockDrafts] = useState<Record<string, BlockPayload>>({});
   useEffect(() => {
     setDraft(draftFromStep(step));
+    setBlockDrafts({});
   }, [step.id, step.updated_at]);
   const patch = (p: Partial<StepDraft>) => setDraft((d) => ({ ...d, ...p }));
 
