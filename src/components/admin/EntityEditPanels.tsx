@@ -1093,17 +1093,12 @@ export function StepEditPanel({
           <Separator />
 
           <div className="flex flex-wrap gap-2">
-            {canSuggest ? (
-              blockFirst ? null : (
+            {canSuggest && !blockFirst ? (
               <Button disabled={suggest.isPending || !employeeId} onClick={() => suggest.mutate()}>
                 {suggest.isPending ? "Submitting…" : "Submit for approval"}
               </Button>
-              )
-            ) : (
-              <Button disabled={!canEditDirect || save.isPending} onClick={() => save.mutate()}>
-                {save.isPending ? "Saving…" : "Save changes"}
-              </Button>
-            )}
+            ) : null}
+
             {step.is_deleted ? (
               <Button
                 variant="outline"
