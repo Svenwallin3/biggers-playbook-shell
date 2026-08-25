@@ -39,7 +39,11 @@ import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { SignoffChecklistEditor, serializeChecklist } from "@/components/admin/SignoffChecklistEditor";
-import { StepBlocksEditor, hasLegacyContent } from "@/components/admin/StepBlocksEditor";
+import {
+  StepBlocksEditor,
+  hasLegacyContent,
+  type BlockPayload,
+} from "@/components/admin/StepBlocksEditor";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { contentStatusOptions, stepTypeOptions } from "@/components/admin/ContentCreateDialogs";
 import {
