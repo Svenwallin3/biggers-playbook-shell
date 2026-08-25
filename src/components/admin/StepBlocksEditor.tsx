@@ -570,23 +570,8 @@ function BlockCard({
         </div>
       </div>
 
-      <BlockPayloadEditor
-        type={type}
-        payload={draft}
-        onChange={(next) => {
-          setDraft(next);
-          setDirty(true);
-        }}
-      />
+      <BlockPayloadEditor type={type} payload={payload} onChange={onChange} />
 
-      {type !== "danger_zone" ? (
-        <div className="mt-2 flex items-center gap-2">
-          <Button size="sm" disabled={busy || !dirty} onClick={() => onSave(draft)}>
-            Save block
-          </Button>
-          {dirty ? <span className="text-xs text-muted-foreground">Unsaved changes</span> : null}
-        </div>
-      ) : null}
     </div>
   );
 }
