@@ -72,8 +72,12 @@ import {
   toggleChecklistLine,
 } from "@/lib/checklist-instances.queries";
 import {
+  convertSectionKind,
   docSections,
   saveReferenceSections,
+  sectionHasContent,
+  sectionKind,
+
   groupBy,
   divisionGroupLabel,
   locationLabel,
