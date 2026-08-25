@@ -844,7 +844,10 @@ export function StepBlocksEditor({
                 index={block.is_deleted ? -1 : index}
                 total={visible.length}
                 busy={mutate.isPending}
-                onSave={(payload) => saveBlock(block, payload)}
+                payload={drafts[block.id] ?? asPayload(block.payload)}
+                dirty={block.id in drafts}
+                onChange={(next) => setDrafts((prev) => ({ ...prev, [block.id]: next }))}
+
                 onMove={(delta) => moveBlock(block, delta)}
                 onDuplicate={() => duplicateBlock(block)}
                 onHide={() => hideBlock(block)}
