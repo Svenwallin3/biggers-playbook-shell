@@ -472,7 +472,9 @@ function BlockCard({
   index,
   total,
   busy,
-  onSave,
+  payload,
+  dirty,
+  onChange,
   onMove,
   onDuplicate,
   onHide,
@@ -483,23 +485,20 @@ function BlockCard({
   index: number;
   total: number;
   busy: boolean;
-  onSave: (payload: Payload) => void;
+  /** Pending draft payload when edited, otherwise the last-saved payload. */
+  payload: Payload;
+  dirty: boolean;
+  onChange: (next: Payload) => void;
   onMove: (delta: number) => void;
   onDuplicate: () => void;
   onHide: () => void;
   onRestore: () => void;
   onDelete: () => void;
 }) {
-  const [draft, setDraft] = useState<Payload>(() => asPayload(block.payload));
-  const [dirty, setDirty] = useState(false);
-  useEffect(() => {
-    setDraft(asPayload(block.payload));
-    setDirty(false);
-  }, [block.id, JSON.stringify(block.payload)]);
-
   const type = (blockTypes as readonly string[]).includes(block.block_type)
     ? (block.block_type as BlockType)
     : "paragraph";
+
 
   return (
     <div className="rounded-lg border border-border bg-surface/40 p-3">
@@ -507,6 +506,8 @@ function BlockCard({
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{blockTypeLabels[type]}</Badge>
           {block.is_deleted ? <Badge variant="outline">Hidden</Badge> : null}
+          {dirty ? <Badge variant="outline">Unsaved</Badge> : null}
+
         </div>
         <div className="flex items-center">
           <Button
@@ -569,23 +570,8 @@ function BlockCard({
         </div>
       </div>
 
-      <BlockPayloadEditor
-        type={type}
-        payload={draft}
-        onChange={(next) => {
-          setDraft(next);
-          setDirty(true);
-        }}
-      />
+      <BlockPayloadEditor type={type} payload={payload} onChange={onChange} />
 
-      {type !== "danger_zone" ? (
-        <div className="mt-2 flex items-center gap-2">
-          <Button size="sm" disabled={busy || !dirty} onClick={() => onSave(draft)}>
-            Save block
-          </Button>
-          {dirty ? <span className="text-xs text-muted-foreground">Unsaved changes</span> : null}
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -607,6 +593,14 @@ export function StepBlocksEditor({
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
   const [newType, setNewType] = useState<BlockType>("paragraph");
+  // One shared dirty map for every block's payload edits — saved in a single action.
+  const [drafts, setDrafts] = useState<Record<string, Payload>>({});
+
+  // Switching steps drops any pending payload edits (same risk profile as before).
+  useEffect(() => {
+    setDrafts({});
+  }, [stepId]);
+
 
   const blocksQuery = useQuery({
     queryKey: ["step-blocks", stepId, "admin"],
@@ -664,15 +658,24 @@ export function StepBlocksEditor({
       toast.success(`${blockTypeLabels[newType]} block added.`);
     });
 
-  const saveBlock = (block: BlockRow, payload: Payload) =>
+  const dirtyCount = Object.keys(drafts).length;
+
+  const saveDrafts = () =>
     run(async () => {
-      const { error } = await supabase
-        .from("step_blocks")
-        .update({ payload: payload as Json })
-        .eq("id", block.id);
-      if (error) throw error;
-      toast.success("Block saved.");
+      const entries = Object.entries(drafts);
+      for (const [id, payload] of entries) {
+        const { error } = await supabase
+          .from("step_blocks")
+          .update({ payload: payload as Json })
+          .eq("id", id);
+        if (error) throw error;
+      }
+      setDrafts({});
+      toast.success(`${entries.length} ${entries.length === 1 ? "block" : "blocks"} saved.`);
     });
+
+  const discardDrafts = () => setDrafts({});
+
 
   const moveBlock = (block: BlockRow, delta: number) =>
     run(async () => {
@@ -767,7 +770,7 @@ export function StepBlocksEditor({
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">Content blocks</CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Label htmlFor="blocks-show-hidden" className="text-xs text-muted-foreground">
               Show hidden
             </Label>
@@ -776,7 +779,21 @@ export function StepBlocksEditor({
               checked={showHidden}
               onCheckedChange={setShowHidden}
             />
+            {dirtyCount > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={mutate.isPending}
+                onClick={discardDrafts}
+              >
+                Discard changes
+              </Button>
+            ) : null}
+            <Button size="sm" disabled={mutate.isPending || dirtyCount === 0} onClick={saveDrafts}>
+              Save changes
+            </Button>
           </div>
+
         </div>
         <CardDescription>
           Structured content for this step. Blocks render in this order and replace the plain
@@ -827,7 +844,10 @@ export function StepBlocksEditor({
                 index={block.is_deleted ? -1 : index}
                 total={visible.length}
                 busy={mutate.isPending}
-                onSave={(payload) => saveBlock(block, payload)}
+                payload={drafts[block.id] ?? asPayload(block.payload)}
+                dirty={block.id in drafts}
+                onChange={(next) => setDrafts((prev) => ({ ...prev, [block.id]: next }))}
+
                 onMove={(delta) => moveBlock(block, delta)}
                 onDuplicate={() => duplicateBlock(block)}
                 onHide={() => hideBlock(block)}
