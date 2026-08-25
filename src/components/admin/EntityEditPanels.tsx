@@ -280,7 +280,7 @@ export function ModuleEditPanel({
   const empty = {
     name: module.name,
     description: module.description ?? "",
-    path: module.path ?? "",
+    path_id: module.path_id ?? "",
     day_assignment: module.day_assignment === null ? "" : String(module.day_assignment),
     sequence_order: String(module.sequence_order),
     location_tag: module.location_tag ?? "",
@@ -291,7 +291,7 @@ export function ModuleEditPanel({
     setForm({
       name: module.name,
       description: module.description ?? "",
-      path: module.path ?? "",
+      path_id: module.path_id ?? "",
       day_assignment: module.day_assignment === null ? "" : String(module.day_assignment),
       sequence_order: String(module.sequence_order),
       location_tag: module.location_tag ?? "",
@@ -316,14 +316,7 @@ export function ModuleEditPanel({
     ...branchOptionsQueryOptions(department ?? null),
     enabled: !!department,
   });
-  const branchOptions = branchQuery.data ?? [];
-  const branchChoices = Array.from(
-    new Set([...branchOptions, ...(module.path ? [module.path] : [])]),
-  ).sort();
-  const [pathIsCustom, setPathIsCustom] = useState(false);
-  useEffect(() => {
-    setPathIsCustom(false);
-  }, [module.id]);
+  const branchChoices = branchQuery.data ?? [];
   const { save, softDelete } = useEntityMutations("modules", module.id, employeeId, onSaved);
   const requestDelete = useMutation({
     mutationFn: () =>
@@ -377,18 +370,11 @@ export function ModuleEditPanel({
             {standalone ? null : (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="mod-subpath">Branch (sub-path)</Label>
+                  <Label htmlFor="mod-subpath">Branch (path)</Label>
                   <Select
-                    value={pathIsCustom ? "__custom__" : form.path || "__none__"}
+                    value={form.path_id || "__none__"}
                     disabled={!canEdit}
-                    onValueChange={(v) => {
-                      if (v === "__custom__") {
-                        setPathIsCustom(true);
-                        return;
-                      }
-                      setPathIsCustom(false);
-                      patch({ path: v === "__none__" ? "" : v });
-                    }}
+                    onValueChange={(v) => patch({ path_id: v === "__none__" ? "" : v })}
                   >
                     <SelectTrigger id="mod-subpath">
                       <SelectValue placeholder="None" />
@@ -396,23 +382,12 @@ export function ModuleEditPanel({
                     <SelectContent>
                       <SelectItem value="__none__">None</SelectItem>
                       {branchChoices.map((b) => (
-                        <SelectItem key={b} value={b}>
-                          {b}
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.name}
                         </SelectItem>
                       ))}
-                      <SelectItem value="__custom__">Custom…</SelectItem>
                     </SelectContent>
                   </Select>
-                  {pathIsCustom ? (
-                    <Input
-                      aria-label="Custom branch name"
-                      placeholder="New branch name"
-                      value={form.path}
-                      maxLength={60}
-                      disabled={!canEdit}
-                      onChange={(e) => patch({ path: e.target.value })}
-                    />
-                  ) : null}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="mod-day">Day assignment</Label>
@@ -512,7 +487,9 @@ export function ModuleEditPanel({
                   ...(standalone
                     ? {}
                     : {
-                        path: form.path.trim() || null,
+                        path_id: form.path_id || null,
+                        path:
+                          branchChoices.find((b) => b.id === form.path_id)?.name ?? null,
                         day_assignment: form.day_assignment ? Number(form.day_assignment) : null,
                         sequence_order: Number(form.sequence_order) || module.sequence_order,
                       }),

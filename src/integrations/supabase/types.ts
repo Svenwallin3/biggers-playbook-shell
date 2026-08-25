@@ -287,6 +287,7 @@ export type Database = {
           id: string
           is_deleted: boolean
           path: string | null
+          path_id: string | null
           updated_at: string
         }
         Insert: {
@@ -299,6 +300,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           path?: string | null
+          path_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -311,6 +313,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           path?: string | null
+          path_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -335,6 +338,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_secondary_divisions_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "paths"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employees: {
@@ -352,6 +362,7 @@ export type Database = {
           location_id: string | null
           merged_into: string | null
           path: string | null
+          path_id: string | null
           status: Database["public"]["Enums"]["employee_status"]
           updated_at: string
           user_id: string | null
@@ -370,6 +381,7 @@ export type Database = {
           location_id?: string | null
           merged_into?: string | null
           path?: string | null
+          path_id?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
           updated_at?: string
           user_id?: string | null
@@ -388,16 +400,31 @@ export type Database = {
           location_id?: string | null
           merged_into?: string | null
           path?: string | null
+          path_id?: string | null
           status?: Database["public"]["Enums"]["employee_status"]
           updated_at?: string
           user_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "employees_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "employees_merged_into_fkey"
             columns: ["merged_into"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "paths"
             referencedColumns: ["id"]
           },
         ]
@@ -464,6 +491,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      locations: {
+        Row: {
+          created_at: string
+          division: Database["public"]["Enums"]["department"]
+          id: string
+          is_active: boolean
+          is_deleted: boolean
+          name: string
+          sequence_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          division: Database["public"]["Enums"]["department"]
+          id?: string
+          is_active?: boolean
+          is_deleted?: boolean
+          name: string
+          sequence_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          division?: Database["public"]["Enums"]["department"]
+          id?: string
+          is_active?: boolean
+          is_deleted?: boolean
+          name?: string
+          sequence_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       manager_notes: {
         Row: {
@@ -539,6 +599,7 @@ export type Database = {
           location_tag: string | null
           name: string
           path: string | null
+          path_id: string | null
           sequence_order: number
           slug: string
           track_id: string
@@ -557,6 +618,7 @@ export type Database = {
           location_tag?: string | null
           name: string
           path?: string | null
+          path_id?: string | null
           sequence_order?: number
           slug: string
           track_id: string
@@ -575,6 +637,7 @@ export type Database = {
           location_tag?: string | null
           name?: string
           path?: string | null
+          path_id?: string | null
           sequence_order?: number
           slug?: string
           track_id?: string
@@ -589,7 +652,55 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "modules_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "paths"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "modules_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paths: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_deleted: boolean
+          name: string
+          sequence_order: number
+          track_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_deleted?: boolean
+          name: string
+          sequence_order?: number
+          track_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_deleted?: boolean
+          name?: string
+          sequence_order?: number
+          track_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paths_track_id_fkey"
             columns: ["track_id"]
             isOneToOne: false
             referencedRelation: "tracks"

@@ -10,7 +10,11 @@ import { MascotImage } from "@/components/brand/MascotImage";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { onboardingCompletionQueryOptions } from "@/lib/queue.queries";
-import { planQueryOptions, type PlanModule } from "@/lib/training.queries";
+import {
+  branchOptionsQueryOptions,
+  planQueryOptions,
+  type PlanModule,
+} from "@/lib/training.queries";
 import {
   employeeSecondaryDivisionsQueryOptions,
   toSecondaryDivisions,
@@ -47,10 +51,10 @@ function MePage() {
   const planQuery = useQuery({
     ...planQueryOptions(
       employee?.department_scope ?? null,
-      employee?.path ?? null,
+      employee?.path_id ?? null,
       false,
       toSecondaryDivisions(secondaryQuery.data),
-      employee?.can_manage_team ?? false,
+      employee?.auth_tier !== "staff",
     ),
     enabled: !!employee?.department_scope && !secondaryQuery.isPending,
   });
@@ -58,6 +62,9 @@ function MePage() {
     ...onboardingCompletionQueryOptions(),
     enabled: !!employee,
   });
+  const branchQuery = useQuery(branchOptionsQueryOptions(employee?.department_scope ?? null));
+  const pathName =
+    (branchQuery.data ?? []).find((p) => p.id === employee?.path_id)?.name ?? null;
   const progressQuery = useQuery({
     queryKey: ["my-progress", employee?.id],
     enabled: !!employee,
@@ -138,7 +145,7 @@ function MePage() {
         <p className="text-sm text-muted-foreground">
           {tierLabel(employee.auth_tier, employee.can_manage_team)}
           {employee.department_scope ? ` · ${employee.department_scope}` : ""}
-          {employee.path ? ` · ${employee.path} path` : ""}
+          {pathName ? ` · ${pathName} path` : ""}
 
         </p>
         <div className="flex items-center gap-2 pt-1">

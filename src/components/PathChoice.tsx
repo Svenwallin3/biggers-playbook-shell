@@ -1,10 +1,14 @@
 import { useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, MapPin, ShoppingBasket, Truck, UtensilsCrossed } from "lucide-react";
+import { Building2, ShoppingBasket, Truck, UtensilsCrossed } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { branchOptionsQueryOptions, type Department } from "@/lib/training.queries";
+import {
+  branchOptionsQueryOptions,
+  locationOptionsQueryOptions,
+  type Department,
+} from "@/lib/training.queries";
 
 type Option<T extends string> = {
   label: string;
@@ -64,11 +68,6 @@ const pathOptions = [
   { label: "Delivery", value: "delivery", icon: Truck },
 ] as const;
 
-const locationOptions = [
-  { label: "Market Street", value: "market_street", icon: Building2 },
-  { label: "Carolina Beach Road", value: "carolina_beach_road", icon: MapPin },
-] as const;
-
 /** Full-page division pick, shown once Hospitality is finished. */
 export function DivisionChoice() {
   const { employee, refreshEmployee } = useAuth();
@@ -90,14 +89,29 @@ export function DivisionChoice() {
 }
 
 
-/** Full-page site pick — Market only, since Kitchen and Delivery are single-site. */
-export function LocationChoice() {
+/**
+ * Full-page site pick, driven by the `locations` table — division-agnostic, so
+ * the moment any division gains a second site this screen starts asking for it.
+ */
+export function LocationChoice({ department }: { department: Department | null }) {
   const { employee, refreshEmployee } = useAuth();
+  const locationsQuery = useQuery(locationOptionsQueryOptions(department));
+
+  if (locationsQuery.isPending) {
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  }
+
+  const options: Option<string>[] = (locationsQuery.data ?? []).map((l) => ({
+    label: l.name,
+    value: l.id,
+    icon: Building2,
+  }));
+
   return (
     <ChoiceScreen
       heading="Which location do you work at?"
       blurb="Your manager and sign-offs are based at this store."
-      options={locationOptions}
+      options={options}
       onChoose={async (location_id) => {
         if (!employee) return;
         await supabase.from("employees").update({ location_id }).eq("id", employee.id);
@@ -120,9 +134,9 @@ export function PathChoice({ department }: { department: Department | null }) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
 
-  const options: Option<string>[] = (branchQuery.data ?? []).map((value) => ({
-    label: value,
-    value,
+  const options: Option<string>[] = (branchQuery.data ?? []).map((p) => ({
+    label: p.name,
+    value: p.id,
     icon: Building2,
   }));
 
@@ -131,9 +145,9 @@ export function PathChoice({ department }: { department: Department | null }) {
       heading="Which track are you training on?"
       blurb="This sets the rest of your training. A manager can change it later."
       options={options}
-      onChoose={async (path) => {
+      onChoose={async (path_id) => {
         if (!employee) return;
-        await supabase.from("employees").update({ path }).eq("id", employee.id);
+        await supabase.from("employees").update({ path_id }).eq("id", employee.id);
         await refreshEmployee();
       }}
     />
