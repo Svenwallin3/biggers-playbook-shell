@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  AlignLeft,
   ArrowLeft,
   CheckCircle2,
   ChevronDown,
@@ -28,6 +29,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 
