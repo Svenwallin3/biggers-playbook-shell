@@ -1144,14 +1144,28 @@ export function StepEditPanel({
             media_url: step.media_url,
             video_url: step.video_url,
           }}
+          drafts={blockDrafts}
+          onDraftsChange={setBlockDrafts}
         />
       ) : null}
 
       <StepHistoryCard step={step} canEditDirect={canEditDirect} />
 
-
+      {canEditDirect ? (
+        <div className="sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-background px-4 py-3">
+          {Object.keys(blockDrafts).length > 0 ? (
+            <Button variant="ghost" disabled={save.isPending} onClick={() => setBlockDrafts({})}>
+              Discard block changes
+            </Button>
+          ) : null}
+          <Button disabled={save.isPending} onClick={() => save.mutate()}>
+            {save.isPending ? "Saving…" : "Save changes"}
+          </Button>
+        </div>
+      ) : null}
     </>
   );
+
 }
 
 /**
