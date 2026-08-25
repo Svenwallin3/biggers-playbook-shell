@@ -159,13 +159,31 @@ export function StandaloneStepEditor({
         })
         .eq("id", step.id);
       if (error) throw error;
+
+      const blockEntries = Object.entries(blockDrafts);
+      for (const [id, payload] of blockEntries) {
+        const { error: blockError } = await supabase
+          .from("step_blocks")
+          .update({ payload: payload as never })
+          .eq("id", id);
+        if (blockError) throw blockError;
+      }
+      return blockEntries.length;
     },
-    onSuccess: () => {
+    onSuccess: (blockCount) => {
       refresh();
-      toast.success("Saved — previous version logged to history.");
+      void queryClient.invalidateQueries({ queryKey: ["step-blocks", step.id] });
+      setBlockDrafts({});
+      toast.success(
+        blockCount === 0
+          ? "Saved"
+          : `Saved — ${blockCount} ${blockCount === 1 ? "block" : "blocks"} updated`,
+      );
     },
     onError: (error: Error) => toast.error("Couldn't save", { description: error.message }),
   });
+
+
 
   const softDelete = useMutation({
     mutationFn: async (hidden: boolean) => {
