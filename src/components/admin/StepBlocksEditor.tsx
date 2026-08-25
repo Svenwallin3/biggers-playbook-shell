@@ -67,6 +67,8 @@ type BlockRow = {
 };
 
 type Payload = Record<string, unknown>;
+/** Payload shape shared with StepEditPanel's single save bar. */
+export type BlockPayload = Payload;
 
 function emptyPayload(type: BlockType): Payload {
   switch (type) {
