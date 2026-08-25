@@ -444,13 +444,29 @@ export function searchQueryOptions(term: string) {
     queryFn: async (): Promise<SearchResults> => {
       const like = `%${trimmed.replace(/[%_]/g, "")}%`;
 
+      // Match modules by path through the live `paths` table, so renaming a
+      // Path keeps search accurate without re-saving every tagged module.
+      const { data: pathMatches, error: pathError } = await supabase
+        .from("paths")
+        .select("id")
+        .eq("is_deleted", false)
+        .ilike("name", like);
+      if (pathError) throw pathError;
+      const pathIds = (pathMatches ?? []).map((p) => p.id);
+      const moduleOr = [
+        `name.ilike.${like}`,
+        `description.ilike.${like}`,
+        ...(pathIds.length ? [`path_id.in.(${pathIds.join(",")})`] : []),
+      ].join(",");
+
       const [moduleRes, stepRes, sourcingRes, referenceRes, presentationRes] = await Promise.all([
         supabase
           .from("modules")
           .select("*, track:tracks(*)")
           .eq("is_deleted", false)
-          .or(`name.ilike.${like},description.ilike.${like},path.ilike.${like}`)
+          .or(moduleOr)
           .limit(10),
+
         supabase
           .from("steps")
           .select("*, module:modules(*)")
