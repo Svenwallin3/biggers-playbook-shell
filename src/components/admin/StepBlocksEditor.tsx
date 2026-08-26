@@ -298,23 +298,27 @@ function BlockPayloadEditor({
           </SelectContent>
         </Select>
         {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-1.5">
-            <span className="w-5 shrink-0 text-right text-xs text-muted-foreground">{i + 1}</span>
-            <Input
+          <div key={i} className="flex items-start gap-1.5">
+            <span className="mt-2 w-5 shrink-0 text-right text-xs text-muted-foreground">
+              {i + 1}
+            </span>
+            <AutoGrowItemInput
               value={item}
-              placeholder="List item — **bold**, *italic*, __underline__"
-              onChange={(e) =>
-                set({ items: items.map((v, idx) => (idx === i ? e.target.value : v)) })
+              onChange={(value) =>
+                set({ items: items.map((v, idx) => (idx === i ? value : v)) })
               }
             />
-            <RowControls
-              index={i}
-              length={items.length}
-              onMove={(d) => set({ items: moveIn(items, i, d) })}
-              onRemove={() => set({ items: items.filter((_, idx) => idx !== i) })}
-            />
+            <div className="mt-0.5 shrink-0">
+              <RowControls
+                index={i}
+                length={items.length}
+                onMove={(d) => set({ items: moveIn(items, i, d) })}
+                onRemove={() => set({ items: items.filter((_, idx) => idx !== i) })}
+              />
+            </div>
           </div>
         ))}
+
         <Button variant="outline" size="sm" onClick={() => set({ items: [...items, ""] })}>
           <Plus className="size-4" />
           Add item
