@@ -923,7 +923,7 @@ export function StepBlocksEditor({
         })
         .eq("id", block.id);
       if (error) throw error;
-      toast.success("Block restored at the end — use the arrows to move it.");
+      toast.success("Block restored at the end — drag it to move it.");
     });
 
   const deleteBlock = (block: BlockRow) =>
