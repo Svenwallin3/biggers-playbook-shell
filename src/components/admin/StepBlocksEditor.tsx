@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Copy, EyeOff, Plus, RotateCcw, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
@@ -28,6 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormattingTextarea } from "@/components/ui/formatting-textarea";
+import { Textarea } from "@/components/ui/textarea";
+
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { youTubeId } from "@/components/VideoEmbed";
 import { supabase } from "@/integrations/supabase/client";
@@ -233,6 +235,40 @@ function moveIn<T>(list: T[], index: number, delta: number): T[] {
   return next;
 }
 
+/** Single-line-looking textarea that grows in height as the item text wraps. */
+function AutoGrowItemInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const resize = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+  useLayoutEffect(resize, [value]);
+  useEffect(() => {
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+  return (
+    <Textarea
+      ref={ref}
+      rows={1}
+      value={value}
+      placeholder="List item — **bold**, *italic*, __underline__"
+      className="min-h-0 w-full resize-none overflow-hidden"
+      onInput={resize}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+}
+
+
 function BlockPayloadEditor({
   type,
   payload,
@@ -298,23 +334,27 @@ function BlockPayloadEditor({
           </SelectContent>
         </Select>
         {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-1.5">
-            <span className="w-5 shrink-0 text-right text-xs text-muted-foreground">{i + 1}</span>
-            <Input
+          <div key={i} className="flex items-start gap-1.5">
+            <span className="mt-2 w-5 shrink-0 text-right text-xs text-muted-foreground">
+              {i + 1}
+            </span>
+            <AutoGrowItemInput
               value={item}
-              placeholder="List item — **bold**, *italic*, __underline__"
-              onChange={(e) =>
-                set({ items: items.map((v, idx) => (idx === i ? e.target.value : v)) })
+              onChange={(value) =>
+                set({ items: items.map((v, idx) => (idx === i ? value : v)) })
               }
             />
-            <RowControls
-              index={i}
-              length={items.length}
-              onMove={(d) => set({ items: moveIn(items, i, d) })}
-              onRemove={() => set({ items: items.filter((_, idx) => idx !== i) })}
-            />
+            <div className="mt-0.5 shrink-0">
+              <RowControls
+                index={i}
+                length={items.length}
+                onMove={(d) => set({ items: moveIn(items, i, d) })}
+                onRemove={() => set({ items: items.filter((_, idx) => idx !== i) })}
+              />
+            </div>
           </div>
         ))}
+
         <Button variant="outline" size="sm" onClick={() => set({ items: [...items, ""] })}>
           <Plus className="size-4" />
           Add item
