@@ -855,13 +855,21 @@ export function StepBlocksEditor({
 
 
 
-  const moveBlock = (block: BlockRow, delta: number) =>
+  const onBlockDragEnd = (event: DragEndEvent) => {
+    setActiveBlockId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = visible.map((b) => `b-${b.id}`);
+    const from = ids.indexOf(String(active.id));
+    const to = ids.indexOf(String(over.id));
+    const next = reorder(visible, from, to);
+    if (next === visible) return;
+    // Same renumber-and-persist path the move buttons used.
     run(async () => {
-      const index = visible.findIndex((b) => b.id === block.id);
-      const next = moveIn(visible, index, delta);
-      if (next === visible) return;
       await renumber(next);
     });
+  };
+
 
   const duplicateBlock = (block: BlockRow) =>
     run(async () => {
