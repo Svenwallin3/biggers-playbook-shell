@@ -678,7 +678,16 @@ function BlockPayloadEditor({
     );
   }
 
+  if (type === "stock_rotation") {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Renders the fixed stock-rotation graphic (oldest to the front). Nothing to configure.
+      </p>
+    );
+  }
+
   return (
+
     <p className="text-sm text-muted-foreground">
       Renders the fixed temperature danger-zone graphic (41°F – 135°F). Nothing to configure.
     </p>
