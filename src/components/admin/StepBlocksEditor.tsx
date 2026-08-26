@@ -265,6 +265,93 @@ function moveIn<T>(list: T[], index: number, delta: number): T[] {
   return next;
 }
 
+/** Persistently visible grab handle — matches SortableContentTree's Handle. */
+function DragHandle({
+  enabled,
+  attributes,
+  listeners,
+  label,
+}: {
+  enabled: boolean;
+  attributes?: Record<string, unknown>;
+  listeners?: Record<string, unknown>;
+  label: string;
+}) {
+  if (!enabled) {
+    return (
+      <span
+        aria-hidden="true"
+        className="flex size-6 shrink-0 cursor-not-allowed items-center justify-center opacity-30"
+      >
+        <GripVertical className="size-4 text-muted-foreground" />
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      className="flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
+      {...(attributes as object)}
+      {...(listeners as object)}
+    >
+      <GripVertical className="size-4" />
+    </button>
+  );
+}
+
+/** Sortable wrapper that hands its drag handle to the child render function. */
+function Sortable({
+  id,
+  enabled,
+  handleLabel,
+  children,
+}: {
+  id: string;
+  enabled: boolean;
+  handleLabel: string;
+  children: (handle: ReactNode) => ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled: !enabled,
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={isDragging ? "opacity-40" : undefined}
+    >
+      {children(
+        <DragHandle
+          enabled={enabled}
+          attributes={attributes as unknown as Record<string, unknown>}
+          listeners={listeners as unknown as Record<string, unknown>}
+          label={handleLabel}
+        />,
+      )}
+    </div>
+  );
+}
+
+/** Shared sensor setup: 8px pointer activation plus keyboard reordering. */
+function useSortSensors() {
+  return useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+}
+
+/** Move the entry at `from` to sit at `to`. */
+function reorder<T>(list: T[], from: number, to: number): T[] {
+  if (from < 0 || to < 0 || from === to) return list;
+  const next = [...list];
+  next.splice(to, 0, next.splice(from, 1)[0]!);
+  return next;
+}
+
+
+
 /** Single-line-looking textarea that grows in height as the item text wraps. */
 function AutoGrowItemInput({
   value,
