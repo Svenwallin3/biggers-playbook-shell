@@ -1,7 +1,37 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Copy, EyeOff, Plus, RotateCcw, Trash2, Wand2 } from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  ArrowDown,
+  ArrowUp,
+  Copy,
+  EyeOff,
+  GripVertical,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Wand2,
+} from "lucide-react";
+
 import { toast } from "sonner";
+
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -235,6 +265,93 @@ function moveIn<T>(list: T[], index: number, delta: number): T[] {
   return next;
 }
 
+/** Persistently visible grab handle — matches SortableContentTree's Handle. */
+function DragHandle({
+  enabled,
+  attributes,
+  listeners,
+  label,
+}: {
+  enabled: boolean;
+  attributes?: Record<string, unknown>;
+  listeners?: Record<string, unknown>;
+  label: string;
+}) {
+  if (!enabled) {
+    return (
+      <span
+        aria-hidden="true"
+        className="flex size-6 shrink-0 cursor-not-allowed items-center justify-center opacity-30"
+      >
+        <GripVertical className="size-4 text-muted-foreground" />
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      className="flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
+      {...(attributes as object)}
+      {...(listeners as object)}
+    >
+      <GripVertical className="size-4" />
+    </button>
+  );
+}
+
+/** Sortable wrapper that hands its drag handle to the child render function. */
+function Sortable({
+  id,
+  enabled,
+  handleLabel,
+  children,
+}: {
+  id: string;
+  enabled: boolean;
+  handleLabel: string;
+  children: (handle: ReactNode) => ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled: !enabled,
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={isDragging ? "opacity-40" : undefined}
+    >
+      {children(
+        <DragHandle
+          enabled={enabled}
+          attributes={attributes as unknown as Record<string, unknown>}
+          listeners={listeners as unknown as Record<string, unknown>}
+          label={handleLabel}
+        />,
+      )}
+    </div>
+  );
+}
+
+/** Shared sensor setup: 8px pointer activation plus keyboard reordering. */
+function useSortSensors() {
+  return useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+}
+
+/** Move the entry at `from` to sit at `to`. */
+function reorder<T>(list: T[], from: number, to: number): T[] {
+  if (from < 0 || to < 0 || from === to) return list;
+  const next = [...list];
+  next.splice(to, 0, next.splice(from, 1)[0]!);
+  return next;
+}
+
+
+
 /** Single-line-looking textarea that grows in height as the item text wraps. */
 function AutoGrowItemInput({
   value,
@@ -269,7 +386,80 @@ function AutoGrowItemInput({
 }
 
 
+/** Draggable list items for a "list" block. Draft state only — saved by the save bar. */
+function ListItemsEditor({
+  items,
+  onChange,
+}: {
+  items: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const sensors = useSortSensors();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const ids = items.map((_, i) => `item-${i}`);
+
+  const onDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = ids.indexOf(String(active.id));
+    const to = ids.indexOf(String(over.id));
+    const next = reorder(items, from, to);
+    if (next !== items) onChange(next);
+  };
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={(e: DragStartEvent) => setActiveId(String(e.active.id))}
+      onDragEnd={onDragEnd}
+      onDragCancel={() => setActiveId(null)}
+    >
+      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        <div className="space-y-2">
+          {items.map((item, i) => (
+            <Sortable key={`item-${i}`} id={`item-${i}`} enabled handleLabel={`Reorder item ${i + 1}`}>
+              {(handle) => (
+                <div className="flex items-start gap-1.5">
+                  <div className="mt-1.5">{handle}</div>
+                  <span className="mt-2 w-5 shrink-0 text-right text-xs text-muted-foreground">
+                    {i + 1}
+                  </span>
+                  <AutoGrowItemInput
+                    value={item}
+                    onChange={(value) => onChange(items.map((v, idx) => (idx === i ? value : v)))}
+                  />
+                  <div className="mt-0.5 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onChange(items.filter((_, idx) => idx !== i))}
+                    >
+                      <Trash2 className="size-4 text-destructive" />
+                      <span className="sr-only">Remove</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Sortable>
+          ))}
+        </div>
+      </SortableContext>
+      <DragOverlay>
+        {activeId ? (
+          <div className="flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-sm shadow-lg">
+            <GripVertical className="size-4 text-muted-foreground" />
+            <span className="truncate">{items[ids.indexOf(activeId)] || "List item"}</span>
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
 function BlockPayloadEditor({
+
   type,
   payload,
   onChange,
@@ -333,27 +523,8 @@ function BlockPayloadEditor({
             <SelectItem value="bulleted">Bulleted</SelectItem>
           </SelectContent>
         </Select>
-        {items.map((item, i) => (
-          <div key={i} className="flex items-start gap-1.5">
-            <span className="mt-2 w-5 shrink-0 text-right text-xs text-muted-foreground">
-              {i + 1}
-            </span>
-            <AutoGrowItemInput
-              value={item}
-              onChange={(value) =>
-                set({ items: items.map((v, idx) => (idx === i ? value : v)) })
-              }
-            />
-            <div className="mt-0.5 shrink-0">
-              <RowControls
-                index={i}
-                length={items.length}
-                onMove={(d) => set({ items: moveIn(items, i, d) })}
-                onRemove={() => set({ items: items.filter((_, idx) => idx !== i) })}
-              />
-            </div>
-          </div>
-        ))}
+        <ListItemsEditor items={items} onChange={(next) => set({ items: next })} />
+
 
         <Button variant="outline" size="sm" onClick={() => set({ items: [...items, ""] })}>
           <Plus className="size-4" />
@@ -511,27 +682,24 @@ function BlockPayloadEditor({
 
 function BlockCard({
   block,
-  index,
-  total,
   busy,
   payload,
   dirty,
+  dragHandle,
   onChange,
-  onMove,
   onDuplicate,
   onHide,
   onRestore,
   onDelete,
 }: {
   block: BlockRow;
-  index: number;
-  total: number;
   busy: boolean;
   /** Pending draft payload when edited, otherwise the last-saved payload. */
   payload: Payload;
   dirty: boolean;
+  /** Grab handle supplied by the sortable wrapper. */
+  dragHandle: ReactNode;
   onChange: (next: Payload) => void;
-  onMove: (delta: number) => void;
   onDuplicate: () => void;
   onHide: () => void;
   onRestore: () => void;
@@ -546,30 +714,14 @@ function BlockCard({
     <div className="rounded-lg border border-border bg-surface/40 p-3">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
+          {dragHandle}
           <Badge variant="secondary">{blockTypeLabels[type]}</Badge>
           {block.is_deleted ? <Badge variant="outline">Hidden</Badge> : null}
           {dirty ? <Badge variant="outline">Unsaved</Badge> : null}
 
         </div>
         <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            disabled={busy || block.is_deleted || index <= 0}
-            onClick={() => onMove(-1)}
-          >
-            <ArrowUp className="size-4" />
-            <span className="sr-only">Move block up</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            disabled={busy || block.is_deleted || index === total - 1}
-            onClick={() => onMove(1)}
-          >
-            <ArrowDown className="size-4" />
-            <span className="sr-only">Move block down</span>
-          </Button>
+
           <Button variant="ghost" size="icon" disabled={busy} onClick={onDuplicate}>
             <Copy className="size-4" />
             <span className="sr-only">Duplicate block</span>
@@ -640,6 +792,9 @@ export function StepBlocksEditor({
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
   const [newType, setNewType] = useState<BlockType>("paragraph");
+  const blockSensors = useSortSensors();
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+
 
 
 
@@ -703,13 +858,21 @@ export function StepBlocksEditor({
 
 
 
-  const moveBlock = (block: BlockRow, delta: number) =>
+  const onBlockDragEnd = (event: DragEndEvent) => {
+    setActiveBlockId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = visible.map((b) => `b-${b.id}`);
+    const from = ids.indexOf(String(active.id));
+    const to = ids.indexOf(String(over.id));
+    const next = reorder(visible, from, to);
+    if (next === visible) return;
+    // Same renumber-and-persist path the move buttons used.
     run(async () => {
-      const index = visible.findIndex((b) => b.id === block.id);
-      const next = moveIn(visible, index, delta);
-      if (next === visible) return;
       await renumber(next);
     });
+  };
+
 
   const duplicateBlock = (block: BlockRow) =>
     run(async () => {
@@ -760,7 +923,7 @@ export function StepBlocksEditor({
         })
         .eq("id", block.id);
       if (error) throw error;
-      toast.success("Block restored at the end — use the arrows to move it.");
+      toast.success("Block restored at the end — drag it to move it.");
     });
 
   const deleteBlock = (block: BlockRow) =>
@@ -849,28 +1012,68 @@ export function StepBlocksEditor({
             </p>
           </div>
         ) : (
-          shown.map((block) => {
-            const index = visible.findIndex((b) => b.id === block.id);
-            return (
-              <BlockCard
-                key={block.id}
-                block={block}
-                index={block.is_deleted ? -1 : index}
-                total={visible.length}
-                busy={mutate.isPending}
-                payload={drafts[block.id] ?? asPayload(block.payload)}
-                dirty={block.id in drafts}
-                onChange={(next) => onDraftsChange({ ...drafts, [block.id]: next })}
-
-                onMove={(delta) => moveBlock(block, delta)}
-                onDuplicate={() => duplicateBlock(block)}
-                onHide={() => hideBlock(block)}
-                onRestore={() => restoreBlock(block)}
-                onDelete={() => deleteBlock(block)}
-              />
-            );
-          })
+          <DndContext
+            sensors={blockSensors}
+            collisionDetection={closestCenter}
+            onDragStart={(e: DragStartEvent) => setActiveBlockId(String(e.active.id))}
+            onDragEnd={onBlockDragEnd}
+            onDragCancel={() => setActiveBlockId(null)}
+          >
+            <SortableContext
+              items={visible.map((b) => `b-${b.id}`)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-3">
+                {shown.map((block) => (
+                  <Sortable
+                    key={block.id}
+                    id={`b-${block.id}`}
+                    enabled={!block.is_deleted && !mutate.isPending}
+                    handleLabel={`Reorder ${blockTypeLabels[
+                      (blockTypes as readonly string[]).includes(block.block_type)
+                        ? (block.block_type as BlockType)
+                        : "paragraph"
+                    ]} block`}
+                  >
+                    {(handle) => (
+                      <BlockCard
+                        block={block}
+                        busy={mutate.isPending}
+                        payload={drafts[block.id] ?? asPayload(block.payload)}
+                        dirty={block.id in drafts}
+                        dragHandle={handle}
+                        onChange={(next) => onDraftsChange({ ...drafts, [block.id]: next })}
+                        onDuplicate={() => duplicateBlock(block)}
+                        onHide={() => hideBlock(block)}
+                        onRestore={() => restoreBlock(block)}
+                        onDelete={() => deleteBlock(block)}
+                      />
+                    )}
+                  </Sortable>
+                ))}
+              </div>
+            </SortableContext>
+            <DragOverlay>
+              {activeBlockId ? (
+                <div className="flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-sm font-medium shadow-lg">
+                  <GripVertical className="size-4 text-muted-foreground" />
+                  <span className="truncate">
+                    {blockTypeLabels[
+                      (blockTypes as readonly string[]).includes(
+                        visible.find((b) => `b-${b.id}` === activeBlockId)?.block_type ?? "",
+                      )
+                        ? (visible.find((b) => `b-${b.id}` === activeBlockId)!
+                            .block_type as BlockType)
+                        : "paragraph"
+                    ]}{" "}
+                    block
+                  </span>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
+
 
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
           <Select value={newType} onValueChange={(v) => setNewType(v as BlockType)}>
