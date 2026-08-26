@@ -28,6 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormattingTextarea } from "@/components/ui/formatting-textarea";
+import { Textarea } from "@/components/ui/textarea";
+
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { youTubeId } from "@/components/VideoEmbed";
 import { supabase } from "@/integrations/supabase/client";
