@@ -1001,28 +1001,68 @@ export function StepBlocksEditor({
             </p>
           </div>
         ) : (
-          shown.map((block) => {
-            const index = visible.findIndex((b) => b.id === block.id);
-            return (
-              <BlockCard
-                key={block.id}
-                block={block}
-                index={block.is_deleted ? -1 : index}
-                total={visible.length}
-                busy={mutate.isPending}
-                payload={drafts[block.id] ?? asPayload(block.payload)}
-                dirty={block.id in drafts}
-                onChange={(next) => onDraftsChange({ ...drafts, [block.id]: next })}
-
-                onMove={(delta) => moveBlock(block, delta)}
-                onDuplicate={() => duplicateBlock(block)}
-                onHide={() => hideBlock(block)}
-                onRestore={() => restoreBlock(block)}
-                onDelete={() => deleteBlock(block)}
-              />
-            );
-          })
+          <DndContext
+            sensors={blockSensors}
+            collisionDetection={closestCenter}
+            onDragStart={(e: DragStartEvent) => setActiveBlockId(String(e.active.id))}
+            onDragEnd={onBlockDragEnd}
+            onDragCancel={() => setActiveBlockId(null)}
+          >
+            <SortableContext
+              items={visible.map((b) => `b-${b.id}`)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-3">
+                {shown.map((block) => (
+                  <Sortable
+                    key={block.id}
+                    id={`b-${block.id}`}
+                    enabled={!block.is_deleted && !mutate.isPending}
+                    handleLabel={`Reorder ${blockTypeLabels[
+                      (blockTypes as readonly string[]).includes(block.block_type)
+                        ? (block.block_type as BlockType)
+                        : "paragraph"
+                    ]} block`}
+                  >
+                    {(handle) => (
+                      <BlockCard
+                        block={block}
+                        busy={mutate.isPending}
+                        payload={drafts[block.id] ?? asPayload(block.payload)}
+                        dirty={block.id in drafts}
+                        dragHandle={handle}
+                        onChange={(next) => onDraftsChange({ ...drafts, [block.id]: next })}
+                        onDuplicate={() => duplicateBlock(block)}
+                        onHide={() => hideBlock(block)}
+                        onRestore={() => restoreBlock(block)}
+                        onDelete={() => deleteBlock(block)}
+                      />
+                    )}
+                  </Sortable>
+                ))}
+              </div>
+            </SortableContext>
+            <DragOverlay>
+              {activeBlockId ? (
+                <div className="flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-sm font-medium shadow-lg">
+                  <GripVertical className="size-4 text-muted-foreground" />
+                  <span className="truncate">
+                    {blockTypeLabels[
+                      (blockTypes as readonly string[]).includes(
+                        visible.find((b) => `b-${b.id}` === activeBlockId)?.block_type ?? "",
+                      )
+                        ? (visible.find((b) => `b-${b.id}` === activeBlockId)!
+                            .block_type as BlockType)
+                        : "paragraph"
+                    ]}{" "}
+                    block
+                  </span>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
+
 
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
           <Select value={newType} onValueChange={(v) => setNewType(v as BlockType)}>
