@@ -450,27 +450,8 @@ function BlockPayloadEditor({
             <SelectItem value="bulleted">Bulleted</SelectItem>
           </SelectContent>
         </Select>
-        {items.map((item, i) => (
-          <div key={i} className="flex items-start gap-1.5">
-            <span className="mt-2 w-5 shrink-0 text-right text-xs text-muted-foreground">
-              {i + 1}
-            </span>
-            <AutoGrowItemInput
-              value={item}
-              onChange={(value) =>
-                set({ items: items.map((v, idx) => (idx === i ? value : v)) })
-              }
-            />
-            <div className="mt-0.5 shrink-0">
-              <RowControls
-                index={i}
-                length={items.length}
-                onMove={(d) => set({ items: moveIn(items, i, d) })}
-                onRemove={() => set({ items: items.filter((_, idx) => idx !== i) })}
-              />
-            </div>
-          </div>
-        ))}
+        <ListItemsEditor items={items} onChange={(next) => set({ items: next })} />
+
 
         <Button variant="outline" size="sm" onClick={() => set({ items: [...items, ""] })}>
           <Plus className="size-4" />
