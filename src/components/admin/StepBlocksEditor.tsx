@@ -792,6 +792,9 @@ export function StepBlocksEditor({
   const queryClient = useQueryClient();
   const [showHidden, setShowHidden] = useState(false);
   const [newType, setNewType] = useState<BlockType>("paragraph");
+  const blockSensors = useSortSensors();
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+
 
 
 
