@@ -386,7 +386,80 @@ function AutoGrowItemInput({
 }
 
 
+/** Draggable list items for a "list" block. Draft state only — saved by the save bar. */
+function ListItemsEditor({
+  items,
+  onChange,
+}: {
+  items: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const sensors = useSortSensors();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const ids = items.map((_, i) => `item-${i}`);
+
+  const onDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = ids.indexOf(String(active.id));
+    const to = ids.indexOf(String(over.id));
+    const next = reorder(items, from, to);
+    if (next !== items) onChange(next);
+  };
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={(e: DragStartEvent) => setActiveId(String(e.active.id))}
+      onDragEnd={onDragEnd}
+      onDragCancel={() => setActiveId(null)}
+    >
+      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        <div className="space-y-2">
+          {items.map((item, i) => (
+            <Sortable key={`item-${i}`} id={`item-${i}`} enabled handleLabel={`Reorder item ${i + 1}`}>
+              {(handle) => (
+                <div className="flex items-start gap-1.5">
+                  <div className="mt-1.5">{handle}</div>
+                  <span className="mt-2 w-5 shrink-0 text-right text-xs text-muted-foreground">
+                    {i + 1}
+                  </span>
+                  <AutoGrowItemInput
+                    value={item}
+                    onChange={(value) => onChange(items.map((v, idx) => (idx === i ? value : v)))}
+                  />
+                  <div className="mt-0.5 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onChange(items.filter((_, idx) => idx !== i))}
+                    >
+                      <Trash2 className="size-4 text-destructive" />
+                      <span className="sr-only">Remove</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Sortable>
+          ))}
+        </div>
+      </SortableContext>
+      <DragOverlay>
+        {activeId ? (
+          <div className="flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-sm shadow-lg">
+            <GripVertical className="size-4 text-muted-foreground" />
+            <span className="truncate">{items[ids.indexOf(activeId)] || "List item"}</span>
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
 function BlockPayloadEditor({
+
   type,
   payload,
   onChange,
