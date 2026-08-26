@@ -682,27 +682,24 @@ function BlockPayloadEditor({
 
 function BlockCard({
   block,
-  index,
-  total,
   busy,
   payload,
   dirty,
+  dragHandle,
   onChange,
-  onMove,
   onDuplicate,
   onHide,
   onRestore,
   onDelete,
 }: {
   block: BlockRow;
-  index: number;
-  total: number;
   busy: boolean;
   /** Pending draft payload when edited, otherwise the last-saved payload. */
   payload: Payload;
   dirty: boolean;
+  /** Grab handle supplied by the sortable wrapper. */
+  dragHandle: ReactNode;
   onChange: (next: Payload) => void;
-  onMove: (delta: number) => void;
   onDuplicate: () => void;
   onHide: () => void;
   onRestore: () => void;
@@ -717,30 +714,14 @@ function BlockCard({
     <div className="rounded-lg border border-border bg-surface/40 p-3">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
+          {dragHandle}
           <Badge variant="secondary">{blockTypeLabels[type]}</Badge>
           {block.is_deleted ? <Badge variant="outline">Hidden</Badge> : null}
           {dirty ? <Badge variant="outline">Unsaved</Badge> : null}
 
         </div>
         <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            disabled={busy || block.is_deleted || index <= 0}
-            onClick={() => onMove(-1)}
-          >
-            <ArrowUp className="size-4" />
-            <span className="sr-only">Move block up</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            disabled={busy || block.is_deleted || index === total - 1}
-            onClick={() => onMove(1)}
-          >
-            <ArrowDown className="size-4" />
-            <span className="sr-only">Move block down</span>
-          </Button>
+
           <Button variant="ghost" size="icon" disabled={busy} onClick={onDuplicate}>
             <Copy className="size-4" />
             <span className="sr-only">Duplicate block</span>
