@@ -235,6 +235,40 @@ function moveIn<T>(list: T[], index: number, delta: number): T[] {
   return next;
 }
 
+/** Single-line-looking textarea that grows in height as the item text wraps. */
+function AutoGrowItemInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const resize = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+  useLayoutEffect(resize, [value]);
+  useEffect(() => {
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+  return (
+    <Textarea
+      ref={ref}
+      rows={1}
+      value={value}
+      placeholder="List item — **bold**, *italic*, __underline__"
+      className="min-h-0 w-full resize-none overflow-hidden"
+      onInput={resize}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+}
+
+
 function BlockPayloadEditor({
   type,
   payload,
