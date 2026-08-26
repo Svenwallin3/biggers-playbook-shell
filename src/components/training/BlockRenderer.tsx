@@ -17,7 +17,7 @@ import { StoredPhoto } from "@/components/PhotoUpload";
 import { VideoEmbed, youTubeId } from "@/components/VideoEmbed";
 import { renderFormattedText } from "@/lib/richText";
 import { DangerZoneGraphic } from "./DangerZoneGraphic";
-import { RotationGraphic } from "./RotationGraphic";
+
 
 
 /** Decorative label-keyword → icon map for card-grid content. */
@@ -228,8 +228,7 @@ function renderBlock(block: StepBlockRow) {
     }
     case "danger_zone":
       return <DangerZoneGraphic />;
-    case "stock_rotation":
-      return <RotationGraphic />;
+
 
     default:
       return null;
