@@ -18,7 +18,18 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Copy, EyeOff, GripVertical, Plus, RotateCcw, Trash2, Wand2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Copy,
+  EyeOff,
+  GripVertical,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Wand2,
+} from "lucide-react";
+
 import { toast } from "sonner";
 
 
