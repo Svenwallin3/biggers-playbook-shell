@@ -74,6 +74,7 @@ export const blockTypes = [
   "video",
   "label_value",
   "danger_zone",
+  "stock_rotation",
 ] as const;
 
 export type BlockType = (typeof blockTypes)[number];
@@ -87,6 +88,8 @@ export const blockTypeLabels: Record<BlockType, string> = {
   video: "Video",
   label_value: "Label / value pairs",
   danger_zone: "Danger-zone graphic",
+  stock_rotation: "Stock rotation graphic",
+
 };
 
 type BlockRow = {
@@ -119,9 +122,11 @@ function emptyPayload(type: BlockType): Payload {
     case "label_value":
       return { pairs: [{ label: "", value: "" }] };
     case "danger_zone":
+    case "stock_rotation":
     default:
       return {};
   }
+
 }
 
 function asPayload(value: unknown): Payload {
