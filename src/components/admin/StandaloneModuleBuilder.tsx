@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryOptions } from "@tanstack/react-query";
-import { Eye, GripVertical } from "lucide-react";
+import { ChevronRight, Eye, GripVertical } from "lucide-react";
 import {
   DndContext,
   KeyboardSensor,
@@ -128,6 +128,12 @@ export function StandaloneModuleBuilder({
     ? (order.map((id) => fetchedSteps.find((s) => s.id === id)).filter(Boolean) as StepRow[])
     : fetchedSteps;
 
+  // Steps start collapsed — the list reads as a simple outline until one is opened.
+  const [openIds, setOpenIds] = useState<string[]>([]);
+  const toggleOpen = (id: string) =>
+    setOpenIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const allOpen = steps.length > 0 && openIds.length === steps.length;
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -205,11 +211,22 @@ export function StandaloneModuleBuilder({
         </Card>
       ) : (
         <>
-          {canEditDirect ? (
-            <p className="text-xs text-muted-foreground">
-              Drag a step by its handle to change the order.
-            </p>
-          ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {canEditDirect ? (
+              <p className="text-xs text-muted-foreground">
+                Drag a step by its handle to change the order. Click a step to open it.
+              </p>
+            ) : (
+              <span />
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setOpenIds(allOpen ? [] : steps.map((s) => s.id))}
+            >
+              {allOpen ? "Collapse all" : "Expand all"}
+            </Button>
+          </div>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -219,7 +236,7 @@ export function StandaloneModuleBuilder({
               items={steps.map((s) => s.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {steps.map((s, i) => (
                   <SortableStepCard
                     key={s.id}
@@ -231,23 +248,38 @@ export function StandaloneModuleBuilder({
                         <CardHeader>
                           <CardTitle className="flex flex-wrap items-center gap-2 text-base">
                             {handle}
-                            <span className="text-muted-foreground">Step {i + 1}</span>
-                            <span className={s.is_deleted ? "line-through" : undefined}>
-                              {s.title}
-                            </span>
-                            {s.is_deleted ? <Badge variant="outline">Hidden</Badge> : null}
+                            <button
+                              type="button"
+                              onClick={() => toggleOpen(s.id)}
+                              aria-expanded={openIds.includes(s.id)}
+                              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                            >
+                              <ChevronRight
+                                className={`size-4 shrink-0 text-muted-foreground transition-transform ${
+                                  openIds.includes(s.id) ? "rotate-90" : ""
+                                }`}
+                                aria-hidden="true"
+                              />
+                              <span className="text-muted-foreground">Step {i + 1}</span>
+                              <span className={s.is_deleted ? "truncate line-through" : "truncate"}>
+                                {s.title}
+                              </span>
+                              {s.is_deleted ? <Badge variant="outline">Hidden</Badge> : null}
+                            </button>
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                          <StandaloneStepEditor
-                            step={s}
-                            canEditDirect={canEditDirect}
-                            canSuggest={canSuggest}
-                            employeeId={employeeId}
-                          />
+                        {openIds.includes(s.id) ? (
+                          <CardContent className="space-y-6">
+                            <StandaloneStepEditor
+                              step={s}
+                              canEditDirect={canEditDirect}
+                              canSuggest={canSuggest}
+                              employeeId={employeeId}
+                            />
 
-                          {s.step_type === "quiz" ? <QuizQuestionsPanel stepId={s.id} /> : null}
-                        </CardContent>
+                            {s.step_type === "quiz" ? <QuizQuestionsPanel stepId={s.id} /> : null}
+                          </CardContent>
+                        ) : null}
                       </Card>
                     )}
                   </SortableStepCard>
