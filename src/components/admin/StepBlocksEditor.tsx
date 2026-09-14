@@ -58,6 +58,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormattingTextarea } from "@/components/ui/formatting-textarea";
+import { formatShortcutHandler } from "@/lib/inline-format";
 import { Textarea } from "@/components/ui/textarea";
 
 import { PhotoUpload } from "@/components/PhotoUpload";
@@ -385,6 +386,7 @@ function AutoGrowItemInput({
       placeholder="List item — **bold**, *italic*, __underline__"
       className="min-h-0 w-full resize-none overflow-hidden"
       onInput={resize}
+      onKeyDown={formatShortcutHandler(onChange)}
       onChange={(e) => onChange(e.target.value)}
     />
   );
@@ -483,7 +485,8 @@ function BlockPayloadEditor({
         <Input
           value={str(payload["text"])}
           maxLength={200}
-          placeholder="Heading text"
+          placeholder="Heading text — **bold**, *italic*, __underline__"
+          onKeyDown={formatShortcutHandler((text) => set({ text }))}
           onChange={(e) => set({ text: e.target.value })}
         />
         <Select
@@ -579,6 +582,7 @@ function BlockPayloadEditor({
           value={str(payload["caption"])}
           maxLength={200}
           placeholder="Caption (optional)"
+          onKeyDown={formatShortcutHandler((caption) => set({ caption }))}
           onChange={(e) => set({ caption: e.target.value })}
         />
       </div>
@@ -619,6 +623,9 @@ function BlockPayloadEditor({
               value={photo.caption}
               maxLength={200}
               placeholder="Caption (optional)"
+              onKeyDown={formatShortcutHandler((caption) =>
+                setPhotos(photos.map((p, idx) => (idx === i ? { ...p, caption } : p))),
+              )}
               onChange={(e) =>
                 setPhotos(photos.map((p, idx) => (idx === i ? { ...p, caption: e.target.value } : p)))
               }
@@ -650,6 +657,7 @@ function BlockPayloadEditor({
           value={str(payload["caption"])}
           maxLength={200}
           placeholder="Caption (optional)"
+          onKeyDown={formatShortcutHandler((caption) => set({ caption }))}
           onChange={(e) => set({ caption: e.target.value })}
         />
       </div>
@@ -671,6 +679,9 @@ function BlockPayloadEditor({
               value={pair.label}
               maxLength={120}
               placeholder="Label"
+              onKeyDown={formatShortcutHandler((label) =>
+                setPairs(pairs.map((p, idx) => (idx === i ? { ...p, label } : p))),
+              )}
               onChange={(e) =>
                 setPairs(pairs.map((p, idx) => (idx === i ? { ...p, label: e.target.value } : p)))
               }
@@ -679,6 +690,9 @@ function BlockPayloadEditor({
               value={pair.value}
               maxLength={400}
               placeholder="Value"
+              onKeyDown={formatShortcutHandler((value) =>
+                setPairs(pairs.map((p, idx) => (idx === i ? { ...p, value } : p))),
+              )}
               onChange={(e) =>
                 setPairs(pairs.map((p, idx) => (idx === i ? { ...p, value: e.target.value } : p)))
               }
