@@ -195,10 +195,12 @@ function renderBlock(block: StepBlockRow) {
         ? (payload["items"] as unknown[]).map(asString).filter(Boolean)
         : [];
       if (!items.length) return null;
+      const rawStart = Number(payload["start"]);
+      const start = Number.isFinite(rawStart) && rawStart >= 1 ? Math.floor(rawStart) : 1;
       return payload["style"] === "bulleted" ? (
         <BulletedList items={items} />
       ) : (
-        <NumberedList items={items} />
+        <NumberedList items={items} start={start} />
       );
     }
     case "photo":
