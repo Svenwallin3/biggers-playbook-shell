@@ -1,7 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryOptions } from "@tanstack/react-query";
-import { Eye } from "lucide-react";
+import { Eye, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +50,51 @@ export function allStepsQueryOptions(moduleId: string) {
   });
 }
 
+/** One draggable step card. Hidden (soft-deleted) steps are not draggable. */
+function SortableStepCard({
+  id,
+  enabled,
+  children,
+}: {
+  id: string;
+  enabled: boolean;
+  children: (handle: React.ReactNode) => React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+    disabled: !enabled,
+  });
+
+  const handle = enabled ? (
+    <button
+      type="button"
+      aria-label="Reorder step"
+      className="flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
+      {...attributes}
+      {...listeners}
+    >
+      <GripVertical className="size-4" />
+    </button>
+  ) : (
+    <span
+      aria-hidden="true"
+      className="flex size-6 shrink-0 cursor-not-allowed items-center justify-center opacity-30"
+    >
+      <GripVertical className="size-4 text-muted-foreground" />
+    </span>
+  );
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={isDragging ? "opacity-40" : undefined}
+    >
+      {children(handle)}
+    </div>
+  );
+}
+
 export function StandaloneModuleBuilder({
   module: mod,
   canEditDirect,
@@ -52,8 +114,48 @@ export function StandaloneModuleBuilder({
 }) {
   const queryClient = useQueryClient();
   const stepsQuery = useQuery(allStepsQueryOptions(mod.id));
-  const steps = stepsQuery.data ?? [];
+  const fetchedSteps = stepsQuery.data ?? [];
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Local ordering so a drop feels instant; re-synced whenever the query refetches.
+  const [order, setOrder] = useState<string[]>([]);
+  useEffect(() => {
+    setOrder(fetchedSteps.map((s) => s.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchedSteps.map((s) => s.id).join(",")]);
+
+  const steps = order.length
+    ? (order.map((id) => fetchedSteps.find((s) => s.id === id)).filter(Boolean) as StepRow[])
+    : fetchedSteps;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const list = steps.map((s) => s.id);
+    const from = list.indexOf(String(active.id));
+    const to = list.indexOf(String(over.id));
+    if (from < 0 || to < 0) return;
+    list.splice(to, 0, list.splice(from, 1)[0]!);
+    setOrder(list);
+
+    const results = await Promise.all(
+      list.map((id, i) =>
+        supabase.from("steps").update({ sequence_order: i + 1 }).eq("id", id),
+      ),
+    );
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      toast.error("Couldn't save the new order", { description: failed.error.message });
+    } else {
+      toast.success("Step order saved");
+    }
+    void queryClient.invalidateQueries({ queryKey: ["module", mod.id] });
+  }
 
   return (
     <div className="space-y-6">
@@ -102,27 +204,58 @@ export function StandaloneModuleBuilder({
           </CardContent>
         </Card>
       ) : (
-        steps.map((s, i) => (
-          <Card key={s.id}>
-            <CardHeader>
-              <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-                <span className="text-muted-foreground">Step {i + 1}</span>
-                <span className={s.is_deleted ? "line-through" : undefined}>{s.title}</span>
-                {s.is_deleted ? <Badge variant="outline">Hidden</Badge> : null}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <StandaloneStepEditor
-                step={s}
-                canEditDirect={canEditDirect}
-                canSuggest={canSuggest}
-                employeeId={employeeId}
-              />
+        <>
+          {canEditDirect ? (
+            <p className="text-xs text-muted-foreground">
+              Drag a step by its handle to change the order.
+            </p>
+          ) : null}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={steps.map((s) => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-6">
+                {steps.map((s, i) => (
+                  <SortableStepCard
+                    key={s.id}
+                    id={s.id}
+                    enabled={canEditDirect && !s.is_deleted}
+                  >
+                    {(handle) => (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                            {handle}
+                            <span className="text-muted-foreground">Step {i + 1}</span>
+                            <span className={s.is_deleted ? "line-through" : undefined}>
+                              {s.title}
+                            </span>
+                            {s.is_deleted ? <Badge variant="outline">Hidden</Badge> : null}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          <StandaloneStepEditor
+                            step={s}
+                            canEditDirect={canEditDirect}
+                            canSuggest={canSuggest}
+                            employeeId={employeeId}
+                          />
 
-              {s.step_type === "quiz" ? <QuizQuestionsPanel stepId={s.id} /> : null}
-            </CardContent>
-          </Card>
-        ))
+                          {s.step_type === "quiz" ? <QuizQuestionsPanel stepId={s.id} /> : null}
+                        </CardContent>
+                      </Card>
+                    )}
+                  </SortableStepCard>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </>
       )}
 
       <div className="flex justify-center">
