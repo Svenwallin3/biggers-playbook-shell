@@ -97,13 +97,13 @@ export function BulletedList({ items }: { items: string[] }) {
   );
 }
 
-export function NumberedList({ items }: { items: string[] }) {
+export function NumberedList({ items, start = 1 }: { items: string[]; start?: number }) {
   return (
-    <ol className="space-y-3">
+    <ol className="space-y-3" start={start}>
       {items.map((item, i) => (
         <li key={i} className="flex gap-3 text-sm leading-relaxed">
           <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/12 text-[11px] font-semibold text-primary">
-            {i + 1}
+            {start + i}
           </span>
           <span>{renderFormattedText(item)}</span>
         </li>
@@ -195,10 +195,12 @@ function renderBlock(block: StepBlockRow) {
         ? (payload["items"] as unknown[]).map(asString).filter(Boolean)
         : [];
       if (!items.length) return null;
+      const rawStart = Number(payload["start"]);
+      const start = Number.isFinite(rawStart) && rawStart >= 1 ? Math.floor(rawStart) : 1;
       return payload["style"] === "bulleted" ? (
         <BulletedList items={items} />
       ) : (
-        <NumberedList items={items} />
+        <NumberedList items={items} start={start} />
       );
     }
     case "photo":
