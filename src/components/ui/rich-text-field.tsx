@@ -83,7 +83,7 @@ export function RichTextField({
   toolbar?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const lastEmitted = useRef<string>(value);
+  const lastEmitted = useRef<string | null>(null);
   const [focused, setFocused] = useState(false);
 
   useEffect(() => {
