@@ -514,21 +514,46 @@ function BlockPayloadEditor({
 
   if (type === "list") {
     const items = strList(payload["items"]);
+    const numbered = payload["style"] !== "bulleted";
+    const startRaw = Number(payload["start"]);
+    const start = Number.isFinite(startRaw) && startRaw >= 1 ? Math.floor(startRaw) : 1;
     return (
       <div className="space-y-2">
-        <Select
-          value={payload["style"] === "bulleted" ? "bulleted" : "numbered"}
-          onValueChange={(v) => set({ style: v })}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="numbered">Numbered</SelectItem>
-            <SelectItem value="bulleted">Bulleted</SelectItem>
-          </SelectContent>
-        </Select>
-        <ListItemsEditor items={items} onChange={(next) => set({ items: next })} />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <Select
+            value={numbered ? "numbered" : "bulleted"}
+            onValueChange={(v) => set({ style: v })}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="numbered">Numbered</SelectItem>
+              <SelectItem value="bulleted">Bulleted</SelectItem>
+            </SelectContent>
+          </Select>
+          {numbered ? (
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground" htmlFor="list-start">
+                Start numbering at
+              </label>
+              <Input
+                id="list-start"
+                type="number"
+                min={1}
+                value={start}
+                className="w-20"
+                onChange={(e) => set({ start: Math.max(1, Number(e.target.value) || 1) })}
+              />
+            </div>
+          ) : null}
+        </div>
+        {numbered && start > 1 ? (
+          <p className="text-xs text-muted-foreground">
+            This list continues from an earlier list, so it starts at {start} instead of 1.
+          </p>
+        ) : null}
+        <ListItemsEditor items={items} start={start} onChange={(next) => set({ items: next })} />
 
 
         <Button variant="outline" size="sm" onClick={() => set({ items: [...items, ""] })}>
