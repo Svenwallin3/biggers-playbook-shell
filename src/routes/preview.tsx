@@ -143,6 +143,14 @@ function PreviewPage() {
       ? buildModules((m) => universalTrackIds.includes(m.track_id), true)
       : [];
 
+  // Assignable (standalone) modules never enter the new-hire walk, so surface them
+  // separately here — this page is where admins go to find and edit content.
+  const assignableModules = activeTrack
+    ? allModules
+        .filter((m) => m.track_id === activeTrack.id && m.is_assignable && !m.is_deleted)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : [];
+
   const trackModules = [...sharedModules, ...ownModules].sort(
     (a, b) =>
       (a.day_assignment ?? 99) - (b.day_assignment ?? 99) ||
@@ -320,6 +328,41 @@ function PreviewPage() {
           ))}
         </div>
       ) : null}
+
+      {assignableModules.length ? (
+        <details className="rounded-lg border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold">
+            Assignable modules in {activeTrack.name}
+            <span className="ml-2 font-normal text-muted-foreground">
+              ({assignableModules.length}) — not part of the new-hire walk
+            </span>
+          </summary>
+          <ul className="divide-y border-t">
+            {assignableModules.map((m) => (
+              <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">{m.name}</span>
+                  {m.category ? (
+                    <span className="block text-xs text-muted-foreground">{m.category}</span>
+                  ) : null}
+                </span>
+                <Button asChild size="sm" variant="outline" className="shrink-0">
+                  <Link
+                    to="/modules/$moduleId"
+                    params={{ moduleId: m.id }}
+                    search={{ preview: true }}
+                  >
+                    <Pencil className="size-4" aria-hidden />
+                    Open
+                  </Link>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+
+
 
       <div className="flex flex-wrap items-center gap-2">
         {days.length > 1 ? (
