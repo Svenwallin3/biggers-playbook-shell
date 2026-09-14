@@ -143,6 +143,14 @@ function PreviewPage() {
       ? buildModules((m) => universalTrackIds.includes(m.track_id), true)
       : [];
 
+  // Assignable (standalone) modules never enter the new-hire walk, so surface them
+  // separately here — this page is where admins go to find and edit content.
+  const assignableModules = activeTrack
+    ? allModules
+        .filter((m) => m.track_id === activeTrack.id && m.is_assignable && !m.is_deleted)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    : [];
+
   const trackModules = [...sharedModules, ...ownModules].sort(
     (a, b) =>
       (a.day_assignment ?? 99) - (b.day_assignment ?? 99) ||
