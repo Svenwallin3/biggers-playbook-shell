@@ -121,7 +121,7 @@ export function LabelValueList({ pairs }: { pairs: Pair[] }) {
           <li key={i} className="min-w-0 px-3.5 py-3">
             <p className="flex items-center gap-1.5 font-display text-sm font-semibold leading-snug">
               {Icon ? <Icon className="size-4 shrink-0 text-primary" aria-hidden="true" /> : null}
-              {pair.label}
+              {renderFormattedText(pair.label)}
             </p>
             <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
               {renderFormattedText(pair.value)}
