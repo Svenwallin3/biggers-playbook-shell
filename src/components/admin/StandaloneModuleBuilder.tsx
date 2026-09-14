@@ -128,6 +128,12 @@ export function StandaloneModuleBuilder({
     ? (order.map((id) => fetchedSteps.find((s) => s.id === id)).filter(Boolean) as StepRow[])
     : fetchedSteps;
 
+  // Steps start collapsed — the list reads as a simple outline until one is opened.
+  const [openIds, setOpenIds] = useState<string[]>([]);
+  const toggleOpen = (id: string) =>
+    setOpenIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const allOpen = steps.length > 0 && openIds.length === steps.length;
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
