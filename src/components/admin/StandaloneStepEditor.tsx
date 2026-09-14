@@ -454,7 +454,7 @@ export function StandaloneStepEditor({
 
       <Separator />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/80">
         {canSuggest ? (
           blockFirst ? null : (
             <Button disabled={suggest.isPending || !employeeId} onClick={() => suggest.mutate()}>
