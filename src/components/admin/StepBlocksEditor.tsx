@@ -57,9 +57,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FormattingTextarea } from "@/components/ui/formatting-textarea";
-import { formatShortcutHandler } from "@/lib/inline-format";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextField } from "@/components/ui/rich-text-field";
 
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { youTubeId } from "@/components/VideoEmbed";
@@ -358,41 +356,6 @@ function reorder<T>(list: T[], from: number, to: number): T[] {
 
 
 
-/** Single-line-looking textarea that grows in height as the item text wraps. */
-function AutoGrowItemInput({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  const resize = () => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  };
-  useLayoutEffect(resize, [value]);
-  useEffect(() => {
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, []);
-  return (
-    <Textarea
-      ref={ref}
-      rows={1}
-      value={value}
-      placeholder="List item — **bold**, *italic*, __underline__"
-      className="min-h-0 w-full resize-none overflow-hidden"
-      onInput={resize}
-      onKeyDown={formatShortcutHandler(onChange)}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  );
-}
-
-
 /** Draggable list items for a "list" block. Draft state only — saved by the save bar. */
 function ListItemsEditor({
   items,
@@ -435,8 +398,9 @@ function ListItemsEditor({
                   <span className="mt-2 w-6 shrink-0 text-right text-xs text-muted-foreground">
                     {start + i}
                   </span>
-                  <AutoGrowItemInput
+                  <RichTextField
                     value={item}
+                    placeholder="List item"
                     onChange={(value) => onChange(items.map((v, idx) => (idx === i ? value : v)))}
                   />
                   <div className="mt-0.5 shrink-0">
@@ -482,12 +446,10 @@ function BlockPayloadEditor({
   if (type === "heading") {
     return (
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Input
+        <RichTextField
           value={str(payload["text"])}
-          maxLength={200}
-          placeholder="Heading text — **bold**, *italic*, __underline__"
-          onKeyDown={formatShortcutHandler((text) => set({ text }))}
-          onChange={(e) => set({ text: e.target.value })}
+          placeholder="Heading text"
+          onChange={(text) => set({ text })}
         />
         <Select
           value={payload["level"] === "h3" ? "h3" : "h2"}
@@ -507,12 +469,12 @@ function BlockPayloadEditor({
 
   if (type === "paragraph") {
     return (
-      <FormattingTextarea
-        rows={4}
-        maxLength={4000}
+      <RichTextField
+        multiline
+        className="[&_[role=textbox]]:min-h-24"
         value={str(payload["text"])}
         placeholder="Paragraph text"
-        onChange={(e) => set({ text: e.target.value })}
+        onChange={(text) => set({ text })}
       />
     );
   }
@@ -578,12 +540,10 @@ function BlockPayloadEditor({
           folder="steps"
           label="Photo"
         />
-        <Input
+        <RichTextField
           value={str(payload["caption"])}
-          maxLength={200}
           placeholder="Caption (optional)"
-          onKeyDown={formatShortcutHandler((caption) => set({ caption }))}
-          onChange={(e) => set({ caption: e.target.value })}
+          onChange={(caption) => set({ caption })}
         />
       </div>
     );
@@ -618,16 +578,12 @@ function BlockPayloadEditor({
               folder="steps"
               label="Photo"
             />
-            <Input
+            <RichTextField
               className="mt-2"
               value={photo.caption}
-              maxLength={200}
               placeholder="Caption (optional)"
-              onKeyDown={formatShortcutHandler((caption) =>
-                setPhotos(photos.map((p, idx) => (idx === i ? { ...p, caption } : p))),
-              )}
-              onChange={(e) =>
-                setPhotos(photos.map((p, idx) => (idx === i ? { ...p, caption: e.target.value } : p)))
+              onChange={(caption) =>
+                setPhotos(photos.map((p, idx) => (idx === i ? { ...p, caption } : p)))
               }
             />
           </div>
@@ -653,12 +609,10 @@ function BlockPayloadEditor({
           placeholder="https://www.youtube.com/watch?v=…"
           onChange={(e) => set({ url: e.target.value })}
         />
-        <Input
+        <RichTextField
           value={str(payload["caption"])}
-          maxLength={200}
           placeholder="Caption (optional)"
-          onKeyDown={formatShortcutHandler((caption) => set({ caption }))}
-          onChange={(e) => set({ caption: e.target.value })}
+          onChange={(caption) => set({ caption })}
         />
       </div>
     );
@@ -674,27 +628,19 @@ function BlockPayloadEditor({
       <div className="space-y-2">
         {pairs.map((pair, i) => (
           <div key={i} className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
-            <Input
+            <RichTextField
               className="sm:w-44"
               value={pair.label}
-              maxLength={120}
               placeholder="Label"
-              onKeyDown={formatShortcutHandler((label) =>
-                setPairs(pairs.map((p, idx) => (idx === i ? { ...p, label } : p))),
-              )}
-              onChange={(e) =>
-                setPairs(pairs.map((p, idx) => (idx === i ? { ...p, label: e.target.value } : p)))
+              onChange={(label) =>
+                setPairs(pairs.map((p, idx) => (idx === i ? { ...p, label } : p)))
               }
             />
-            <Input
+            <RichTextField
               value={pair.value}
-              maxLength={400}
               placeholder="Value"
-              onKeyDown={formatShortcutHandler((value) =>
-                setPairs(pairs.map((p, idx) => (idx === i ? { ...p, value } : p))),
-              )}
-              onChange={(e) =>
-                setPairs(pairs.map((p, idx) => (idx === i ? { ...p, value: e.target.value } : p)))
+              onChange={(value) =>
+                setPairs(pairs.map((p, idx) => (idx === i ? { ...p, value } : p)))
               }
             />
             <div className="flex items-center">
