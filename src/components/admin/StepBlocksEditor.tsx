@@ -395,9 +395,11 @@ function AutoGrowItemInput({
 function ListItemsEditor({
   items,
   onChange,
+  start = 1,
 }: {
   items: string[];
   onChange: (next: string[]) => void;
+  start?: number;
 }) {
   const sensors = useSortSensors();
   const [activeId, setActiveId] = useState<string | null>(null);
