@@ -430,8 +430,8 @@ function ListItemsEditor({
               {(handle) => (
                 <div className="flex items-start gap-1.5">
                   <div className="mt-1.5">{handle}</div>
-                  <span className="mt-2 w-5 shrink-0 text-right text-xs text-muted-foreground">
-                    {i + 1}
+                  <span className="mt-2 w-6 shrink-0 text-right text-xs text-muted-foreground">
+                    {start + i}
                   </span>
                   <AutoGrowItemInput
                     value={item}
