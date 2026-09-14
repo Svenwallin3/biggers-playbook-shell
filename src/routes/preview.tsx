@@ -329,14 +329,14 @@ function PreviewPage() {
         </div>
       ) : null}
 
-      {assignableModules.length ? (
-        <details className="rounded-lg border border-border bg-card">
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold">
-            Assignable modules in {activeTrack.name}
-            <span className="ml-2 font-normal text-muted-foreground">
-              ({assignableModules.length}) — not part of the new-hire walk
-            </span>
-          </summary>
+      <details open className="rounded-lg border border-border bg-card">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold">
+          Assignable modules in {activeTrack.name}
+          <span className="ml-2 font-normal text-muted-foreground">
+            ({assignableModules.length}) — not part of the new-hire walk
+          </span>
+        </summary>
+        {assignableModules.length ? (
           <ul className="divide-y border-t">
             {assignableModules.map((m) => (
               <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
@@ -359,8 +359,13 @@ function PreviewPage() {
               </li>
             ))}
           </ul>
-        </details>
-      ) : null}
+        ) : (
+          <p className="border-t px-4 py-3 text-sm text-muted-foreground">
+            None in this division yet.
+          </p>
+        )}
+      </details>
+
 
 
 
