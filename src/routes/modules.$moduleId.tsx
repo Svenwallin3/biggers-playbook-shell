@@ -321,13 +321,13 @@ function ModulePage() {
         </Button>
       ) : null}
       {previewMode ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3">
-          <Eye className="size-4 text-warning" aria-hidden="true" />
-          <p className="text-sm font-semibold text-warning">
-            Previewing as a new hire — nothing here is being saved
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-md border border-warning/40 bg-warning-soft px-3 py-1.5">
+          <Eye className="size-3.5 text-warning" aria-hidden="true" />
+          <p className="text-xs font-semibold text-warning">
+            Preview mode — trainee progress isn&apos;t recorded
           </p>
           <p className="text-xs text-warning/90">
-            No progress, sign-offs, or completions are recorded in this mode.
+            Edits you make with the pencil are saved for real.
           </p>
         </div>
       ) : null}
