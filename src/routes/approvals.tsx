@@ -1,20 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
-import { bodyLines } from "@/lib/training.queries";
-import { suggestionsQueryOptions, type SuggestionWithContext } from "@/lib/admin.queries";
+import { type SuggestionWithContext } from "@/lib/admin.queries";
+import { bucketFor, useApprovalsData } from "@/lib/approvals";
 import type { ReferenceSection, SuggestionPayload } from "@/lib/reference.queries";
 import {
   decideSourcingDeleteRequest,
-  pendingSourcingDeleteRequestsQueryOptions,
   SOURCING_DELETE_REQUESTS_KEY,
 } from "@/lib/sourcing-delete.queries";
 
@@ -39,30 +39,20 @@ export const Route = createFileRoute("/approvals")({
   component: ApprovalsPage,
 });
 
-/** The approved body a suggestion becomes when it goes live. */
-function suggestedBody(s: SuggestionWithContext) {
-  const parts = [s.field_how?.trim() || s.field_what.trim()];
-  if (s.field_how_you_know?.trim()) {
-    parts.push(`Done right when: ${s.field_how_you_know.trim()}`);
-  }
-  return parts.filter(Boolean).join("\n");
+function displayWhat(text: string) {
+  return text.replace(/^FLAG:\s*/, "");
 }
 
 function ApprovalsPage() {
-  const { employee, loading, isGeneralManager } = useAuth();
+  const { employee, loading, isOwner } = useAuth();
   const queryClient = useQueryClient();
-  const isOwner = employee?.auth_tier === "owner";
-  const canSeeRemovals = isOwner || isGeneralManager;
-  const pendingQuery = useQuery({ ...suggestionsQueryOptions("pending"), enabled: isOwner });
-  const removalQuery = useQuery({
-    ...pendingSourcingDeleteRequestsQueryOptions(),
-    enabled: canSeeRemovals,
-  });
-  const removals = removalQuery.data ?? [];
+  const { canView, suggestions, removals: removalQuery, feedback, reference, ownerOnly, removalRows: removals } =
+    useApprovalsData();
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const requesterIds = [...new Set(removals.map((r) => r.requested_by))];
   const requestersQuery = useQuery({
     queryKey: ["employees-by-id", requesterIds],
-    enabled: canSeeRemovals && requesterIds.length > 0,
+    enabled: canView && requesterIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
@@ -84,31 +74,41 @@ function ApprovalsPage() {
       void queryClient.invalidateQueries({ queryKey: ["sourcing-board"] });
       toast.success(
         vars.decision === "approved"
-          ? "Approved — the entry is off the Sourcing Board."
-          : "Rejected — the entry stays on the board.",
+          ? "Approved. The entry is off the Sourcing Board."
+          : "Rejected. The entry stays on the board.",
       );
     },
     onError: (error: Error) => toast.error("Couldn't record that", { description: error.message }),
   });
 
+  /** Suggestions/flags: status only. Never touches training content. */
+  const resolveFeedback = useMutation({
+    mutationFn: async (input: { s: SuggestionWithContext; decision: "approved" | "rejected" }) => {
+      const note = notes[input.s.id]?.trim();
+      const { error } = await supabase
+        .from("suggestion_queue")
+        .update({
+          status: input.decision,
+          reviewed_by: employee!.id,
+          reviewed_at: new Date().toISOString(),
+          decision_notes: note ? note : null,
+        })
+        .eq("id", input.s.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ["suggestions"] });
+      toast.success(vars.decision === "approved" ? "Marked done" : "Dismissed");
+    },
+    onError: (error: Error) => toast.error("Couldn't record that", { description: error.message }),
+  });
+
+  /** Reference document changes and Owner-only requests (existing apply logic). */
   const decide = useMutation({
     mutationFn: async (input: { s: SuggestionWithContext; decision: "approved" | "rejected" }) => {
       const { s, decision } = input;
-      if (decision === "approved" && s.step) {
-        // Applying the edit fires the steps version trigger, so the prior
-        // content is captured in version_history automatically.
-        const { error: stepError } = await supabase
-          .from("steps")
-          .update({
-            title: s.field_what.trim() || s.step.title,
-            content_body: suggestedBody(s),
-            content_status: "ready",
-          })
-          .eq("id", s.step.id);
-        if (stepError) throw stepError;
-      }
-
-      if (decision === "approved" && !s.step) {
+      const bucket = bucketFor(s);
+      if (decision === "approved" && (bucket === "reference" || bucket === "owner")) {
         const payload = s.payload as SuggestionPayload | null;
 
         if (
@@ -207,8 +207,8 @@ function ApprovalsPage() {
       void queryClient.invalidateQueries({ queryKey: ["reference-documents"] });
       toast.success(
         vars.decision === "approved"
-          ? "Approved — the change is live and the previous version is logged."
-          : "Rejected — content untouched, the suggestion is kept on record.",
+          ? "Approved and applied."
+          : "Rejected. Nothing was changed.",
       );
     },
     onError: (error: Error) => toast.error("Couldn't record that", { description: error.message }),
@@ -216,7 +216,7 @@ function ApprovalsPage() {
 
   if (loading) return null;
 
-  if (!canSeeRemovals) {
+  if (!canView) {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
@@ -226,161 +226,179 @@ function ApprovalsPage() {
     );
   }
 
-  const pending = pendingQuery.data ?? [];
+  const busy = decide.isPending || resolveFeedback.isPending;
+  const who = (s: SuggestionWithContext) =>
+    s.submitter?.full_name ?? s.submitter?.email ?? "unknown";
+
+  const decisionCard = (s: SuggestionWithContext, approveLabel: string) => {
+    const payload = s.payload as SuggestionPayload | null;
+    const isDelete =
+      payload?.type === "delete_document" ||
+      payload?.type === "delete_module" ||
+      payload?.type === "delete_track";
+    const target =
+      payload?.type === "delete_module"
+        ? (s.module?.name ?? "module")
+        : payload?.type === "delete_track"
+          ? s.field_what.replace(/^Delete section "(.*)"$/, "$1")
+          : payload?.type === "new_document"
+            ? payload.title
+            : (s.reference_document?.title ?? s.field_what);
+    const kind =
+      payload?.type === "delete_module"
+        ? "Delete module"
+        : payload?.type === "delete_track"
+          ? "Delete section"
+          : payload?.type === "delete_document"
+            ? "Delete document"
+            : payload?.type === "new_document"
+              ? "New document"
+              : "Reference Library";
+    return (
+      <Card key={s.id}>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="text-base">{target}</CardTitle>
+            <Badge variant="outline">{kind}</Badge>
+          </div>
+          <CardDescription>
+            Sent by {who(s)} on {new Date(s.created_at).toLocaleDateString()}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {isDelete ? (
+            <p className="text-sm text-muted-foreground">
+              Approving hides “{target}” from everyone. Nothing is permanently erased; it can be
+              restored later.
+            </p>
+          ) : s.field_how ? (
+            <p className="whitespace-pre-wrap text-sm">{s.field_how}</p>
+          ) : null}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              disabled={busy}
+              onClick={() => decide.mutate({ s, decision: "approved" })}
+            >
+              {approveLabel}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => decide.mutate({ s, decision: "rejected" })}
+            >
+              Reject
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Approval queue</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {isOwner
-            ? "Owner-only. Regular managers editing their own division route through here — General Managers and Owners edit directly."
-            : "Sourcing Board removal requests from your managers come here for your approval."}
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">Approvals</h1>
       </div>
 
-      {isOwner && pendingQuery.isPending ? (
-        <p className="text-sm text-muted-foreground">Loading suggestions…</p>
-      ) : null}
-      {isOwner && pendingQuery.isError ? (
+      {suggestions.isError ? (
         <p className="text-sm text-destructive">Couldn&apos;t load the queue.</p>
       ) : null}
 
-      {isOwner && !pendingQuery.isPending && pending.length === 0 ? (
-        <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Nothing pending. Queue is clear.
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <div className="space-y-5">
-        {(isOwner ? pending : []).map((s) => {
-          const current = bodyLines({ content_body: s.step?.content_body ?? null });
-          const isFlag = s.field_what.startsWith("FLAG:");
-          const payload = s.payload as SuggestionPayload | null;
-          const isDeleteRequest =
-            payload?.type === "delete_document" ||
-            payload?.type === "delete_module" ||
-            payload?.type === "delete_track";
-          const deleteTarget =
-            payload?.type === "delete_module"
-              ? (s.module?.name ?? "module")
-              : payload?.type === "delete_track"
-              ? s.field_what.replace(/^Delete section "(.*)"$/, "$1")
-              : (s.reference_document?.title ?? "document");
-          return (
-            <Card key={s.id}>
-              <CardHeader>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle className="text-base">
-                    {isDeleteRequest
-                      ? `Delete request · ${deleteTarget}`
-                      : (s.step?.title ?? s.reference_document?.title ?? s.field_what)}
-                  </CardTitle>
-                  <Badge variant={isFlag || isDeleteRequest ? "outline" : "secondary"}>
-                    {isFlag ? "Staff flag" : isDeleteRequest ? "Deletion request" : "Pending"}
-                  </Badge>
-                </div>
-                <CardDescription>
-                  {isDeleteRequest
-                    ? payload?.type === "delete_module"
-                      ? "Training content · Module"
-                      : payload?.type === "delete_track"
-                      ? "Training content · Section"
-                      : `Reference Library · ${s.reference_document?.document_type === "sop" ? "SOP" : "Checklist"}`
-                    : s.step
-                    ? `${s.step.module?.track?.name} · ${s.step.module?.name}`
-                    : s.reference_document
-                      ? `Reference Library · ${s.reference_document.document_type === "checklist" ? "Checklist" : "SOP"}`
-                      : "New document"}{" "}
-                  — submitted by{" "}
-                  {s.submitter?.full_name ?? s.submitter?.email ?? "unknown"} (
-                  {s.submitter?.auth_tier}) on {new Date(s.created_at).toLocaleDateString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isDeleteRequest ? (
-                  <p className="text-sm text-muted-foreground">
-                    Approving hides “{deleteTarget}” from everyone. Nothing is permanently erased —
-                    the record and its history are kept and can be restored later.
-                  </p>
-                ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-md border border-border p-3">
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Current
-                    </p>
-                    {current.length ? (
-                      <ul className="space-y-1 text-sm">
-                        {current.map((line, i) => (
-                          <li key={i} className="text-muted-foreground">
-                            {i + 1}. {line}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No content on this step yet.</p>
-                    )}
-                  </div>
-                  <div className="rounded-md border border-primary/40 bg-primary/5 p-3">
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Suggested
-                    </p>
-                    <dl className="space-y-2 text-sm">
-                      <div>
-                        <dt className="text-xs text-muted-foreground">What&apos;s the step</dt>
-                        <dd>{s.field_what}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs text-muted-foreground">How it&apos;s done</dt>
-                        <dd>{s.field_how ?? "—"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs text-muted-foreground">
-                          How you know it&apos;s done right
-                        </dt>
-                        <dd>{s.field_how_you_know ?? "—"}</dd>
-                      </div>
-                    </dl>
-                  </div>
-                </div>
-                )}
-
-                <Separator />
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    disabled={decide.isPending || (!s.step && !s.payload)}
-                    onClick={() => decide.mutate({ s, decision: "approved" })}
-                  >
-                    {isDeleteRequest ? "Approve deletion" : "Approve & publish"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={decide.isPending}
-                    onClick={() => decide.mutate({ s, decision: "rejected" })}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      <div className="space-y-5">
-        <h2 className="text-lg font-semibold tracking-tight">Sourcing Board removal requests</h2>
-        {!removalQuery.isPending && removals.length === 0 ? (
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold tracking-tight">Suggestions and flags</h2>
+        {suggestions.isPending ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : feedback.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              Nothing pending. Queue is clear.
+              Nothing waiting. Suggestions from your team show up here.
             </CardContent>
           </Card>
-        ) : null}
-        {removals.map((r) => {
+        ) : (
+          feedback.map((s) => {
+            const mod = s.step?.module;
+            return (
+              <Card key={s.id}>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {s.step?.title ?? displayWhat(s.field_what)}
+                  </CardTitle>
+                  <CardDescription>
+                    {mod ? `${mod.track?.name ?? ""} · ${mod.name}` : (s.module?.name ?? "")}
+                    {mod || s.module ? " · " : ""}
+                    From {who(s)} on {new Date(s.created_at).toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="whitespace-pre-wrap text-sm">
+                    {s.field_how?.trim() || displayWhat(s.field_what)}
+                  </p>
+                  <Input
+                    placeholder="Optional note"
+                    maxLength={300}
+                    value={notes[s.id] ?? ""}
+                    onChange={(e) => setNotes((n) => ({ ...n, [s.id]: e.target.value }))}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {mod ? (
+                      <Button size="sm" variant="outline" asChild>
+                        <Link
+                          to="/preview"
+                          search={{
+                            track: mod.track_id,
+                            module: mod.id,
+                            step: s.step!.id,
+                            branch: mod.path_id ?? undefined,
+                          }}
+                        >
+                          Open step
+                        </Link>
+                      </Button>
+                    ) : null}
+                    <Button
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => resolveFeedback.mutate({ s, decision: "approved" })}
+                    >
+                      Mark done
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() => resolveFeedback.mutate({ s, decision: "rejected" })}
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </section>
+
+      {reference.length ? (
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold tracking-tight">Reference document changes</h2>
+          {reference.map((s) => decisionCard(s, "Approve and apply"))}
+        </section>
+      ) : null}
+
+      {isOwner && ownerOnly.length ? (
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold tracking-tight">Needs Owner approval</h2>
+          {ownerOnly.map((s) => decisionCard(s, "Approve"))}
+        </section>
+      ) : null}
+
+      {removals.length ? (
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold tracking-tight">Sourcing Board removal requests</h2>
+          {removals.map((r) => {
+
             const requester = requestersQuery.data?.find((e) => e.id === r.requested_by);
             return (
               <Card key={r.id}>
@@ -426,7 +444,8 @@ function ApprovalsPage() {
               </Card>
             );
           })}
-      </div>
+        </section>
+      ) : null}
     </div>
   );
 }
