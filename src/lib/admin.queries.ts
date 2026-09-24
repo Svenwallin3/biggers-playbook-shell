@@ -107,6 +107,22 @@ export async function submitModuleDeleteRequest(input: {
   if (error) throw error;
 }
 
+export async function submitTrackDeleteRequest(input: {
+  trackId: string;
+  trackName: string;
+  submittedBy: string;
+}) {
+  const { error } = await supabase.from("suggestion_queue").insert({
+    submitted_by: input.submittedBy,
+    field_what: `Delete section "${input.trackName}"`,
+    field_how: null,
+    field_how_you_know: null,
+    payload: { type: "delete_track", track_id: input.trackId } as unknown as Json,
+    status: "pending",
+  });
+  if (error) throw error;
+}
+
 export async function submitStepSuggestion(input: {
   stepId: string;
   submittedBy: string;

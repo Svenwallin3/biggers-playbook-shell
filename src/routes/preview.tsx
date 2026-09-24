@@ -176,12 +176,11 @@ function PreviewPage() {
 
   // Create-authority (any manager in their own division) — RLS enforces it too.
   const canEditDepartment = (department: string | null | undefined) =>
-    employee?.auth_tier === "owner" ||
-    (employee?.auth_tier === "manager" && !!department && department === employee.department_scope);
-  const canCreateTrack = employee?.auth_tier === "owner" || employee?.auth_tier === "manager";
+    isOwner || (isGeneralManager && !!department && department === employee?.department_scope);
+  const canCreateTrack = isOwner || isGeneralManager;
   const canReorderTracks = isOwner || isGeneralManager;
   const canReorderModulesIn = (track: { department: string | null }) =>
-    isOwner || isGeneralManager || canEditDepartment(track.department);
+    isOwner || (isGeneralManager && track.department === employee?.department_scope);
 
   const selection: { kind: "step" | "module" | "track"; id: string } = urlStep
     ? { kind: "step", id: urlStep.id }
@@ -428,7 +427,7 @@ function PreviewPage() {
           sidebar={
             manageMode ? (
               <nav className="min-w-0 space-y-4 overflow-x-auto md:sticky md:top-24 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto md:pr-1">
-                <NewTrackDialog disabled={!canCreateTrack} onCreated={() => undefined} />
+                {canCreateTrack ? <NewTrackDialog onCreated={() => undefined} /> : null}
                 <div className="flex items-center justify-between gap-2 rounded-md border px-2 py-1.5">
                   <Label
                     htmlFor="show-hidden"
@@ -457,15 +456,16 @@ function PreviewPage() {
                       {m.is_deleted ? " (hidden)" : ""}
                     </>
                   )}
-                  renderTrackFooter={(track) => (
+                  renderTrackFooter={(track) =>
+                    canEditDepartment(track.department) ? (
                     <NewModuleDialog
                       trackId={track.id}
                       department={track.department}
                       nextSequence={allModules.filter((m) => m.track_id === track.id).length + 1}
-                      disabled={!canEditDepartment(track.department)}
                       onCreated={() => undefined}
                     />
-                  )}
+                    ) : null
+                  }
                   renderStepLabel={(s) => (
                     <span className="flex items-center gap-1.5">
                       <span className={s.is_deleted ? "line-through" : undefined}>{s.title}</span>
@@ -482,18 +482,19 @@ function PreviewPage() {
                       ) : null}
                     </span>
                   )}
-                  renderModuleChildren={(m, track) => (
+                  renderModuleChildren={(m, track) =>
+                    canEditDepartment(track.department) ? (
                     <NewStepDialog
                       moduleId={m.id}
                       nextSequence={allSteps.filter((s) => s.module_id === m.id).length + 1}
-                      disabled={!canEditDepartment(track.department)}
                       canEditDirect={canEditDirect}
                       onCreated={(id) => {
                         select({ kind: "step", id });
                         setStepSheetOpen(true);
                       }}
                     />
-                  )}
+                    ) : null
+                  }
                 />
               </nav>
             ) : undefined
