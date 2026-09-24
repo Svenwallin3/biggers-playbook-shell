@@ -1,9 +1,13 @@
 # Assignable modules: one compact tile on Preview training
 
-## Answer to your question
-Each module lives in exactly one division (Market, Kitchen, Delivery or Universal). There is only ever one copy, so editing it once updates it everywhere it is used. Division only decides where the module is *filed* — you can already assign any assignable module to any employee, whatever their division.
+## Shared modules (like Forklift)
+There is only ever one copy of a module, so editing it anywhere updates it everywhere. You can already assign any assignable module to anyone, whatever their division.
 
-For a module meant for all three divisions (for example a general forklift or safety module), file it under **Universal**. The tile below will also appear on the Universal pill, so you can find and edit it there. No copies, no syncing.
+For modules used by more than one division:
+- Shared modules are stored behind the scenes as "all divisions" (Universal). The Universal pill stays hidden.
+- A shared module shows up in the Market, Kitchen **and** Delivery lists, with a small "All divisions" tag.
+- Clicking Edit from any of the three opens the same single module, so one change covers all three.
+- When creating a new module with **+**, you pick "This division only" or "All divisions".
 
 ## What changes
 On Preview training, the long expanded list is replaced by one small tile under the division/branch buttons:
@@ -24,4 +28,6 @@ On Preview training, the long expanded list is replaced by one small tile under 
 - File: `src/routes/preview.tsx` only. Replace the `<details>` block (lines ~332–367) with a Card button + shadcn `Sheet`.
 - Reuse `NewModuleDialog` (`defaultIsAssignable`, trackId = active track) and `NewAssignmentDialog` (`presetModuleId`/`presetModuleName`), both already used on `/assign-training`.
 - Gate + and Assign on `isOwner || isGeneralManager`.
+- Tile list = assignable modules on the active track + assignable modules on the Universal track (tagged "All divisions").
+- + button: small choice before `NewModuleDialog`; "All divisions" passes the Universal track's id.
 - No database or permission changes.
