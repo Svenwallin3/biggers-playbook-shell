@@ -39,30 +39,20 @@ export const Route = createFileRoute("/approvals")({
   component: ApprovalsPage,
 });
 
-/** The approved body a suggestion becomes when it goes live. */
-function suggestedBody(s: SuggestionWithContext) {
-  const parts = [s.field_how?.trim() || s.field_what.trim()];
-  if (s.field_how_you_know?.trim()) {
-    parts.push(`Done right when: ${s.field_how_you_know.trim()}`);
-  }
-  return parts.filter(Boolean).join("\n");
+function displayWhat(text: string) {
+  return text.replace(/^FLAG:\s*/, "");
 }
 
 function ApprovalsPage() {
-  const { employee, loading, isGeneralManager } = useAuth();
+  const { employee, loading, isOwner } = useAuth();
   const queryClient = useQueryClient();
-  const isOwner = employee?.auth_tier === "owner";
-  const canSeeRemovals = isOwner || isGeneralManager;
-  const pendingQuery = useQuery({ ...suggestionsQueryOptions("pending"), enabled: isOwner });
-  const removalQuery = useQuery({
-    ...pendingSourcingDeleteRequestsQueryOptions(),
-    enabled: canSeeRemovals,
-  });
-  const removals = removalQuery.data ?? [];
+  const { canView, suggestions, removals: removalQuery, feedback, reference, ownerOnly, removalRows: removals } =
+    useApprovalsData();
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const requesterIds = [...new Set(removals.map((r) => r.requested_by))];
   const requestersQuery = useQuery({
     queryKey: ["employees-by-id", requesterIds],
-    enabled: canSeeRemovals && requesterIds.length > 0,
+    enabled: canView && requesterIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
@@ -84,31 +74,41 @@ function ApprovalsPage() {
       void queryClient.invalidateQueries({ queryKey: ["sourcing-board"] });
       toast.success(
         vars.decision === "approved"
-          ? "Approved — the entry is off the Sourcing Board."
-          : "Rejected — the entry stays on the board.",
+          ? "Approved. The entry is off the Sourcing Board."
+          : "Rejected. The entry stays on the board.",
       );
     },
     onError: (error: Error) => toast.error("Couldn't record that", { description: error.message }),
   });
 
+  /** Suggestions/flags: status only. Never touches training content. */
+  const resolveFeedback = useMutation({
+    mutationFn: async (input: { s: SuggestionWithContext; decision: "approved" | "rejected" }) => {
+      const note = notes[input.s.id]?.trim();
+      const { error } = await supabase
+        .from("suggestion_queue")
+        .update({
+          status: input.decision,
+          reviewed_by: employee!.id,
+          reviewed_at: new Date().toISOString(),
+          decision_notes: note ? note : null,
+        })
+        .eq("id", input.s.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ["suggestions"] });
+      toast.success(vars.decision === "approved" ? "Marked done" : "Dismissed");
+    },
+    onError: (error: Error) => toast.error("Couldn't record that", { description: error.message }),
+  });
+
+  /** Reference document changes and Owner-only requests (existing apply logic). */
   const decide = useMutation({
     mutationFn: async (input: { s: SuggestionWithContext; decision: "approved" | "rejected" }) => {
       const { s, decision } = input;
-      if (decision === "approved" && s.step) {
-        // Applying the edit fires the steps version trigger, so the prior
-        // content is captured in version_history automatically.
-        const { error: stepError } = await supabase
-          .from("steps")
-          .update({
-            title: s.field_what.trim() || s.step.title,
-            content_body: suggestedBody(s),
-            content_status: "ready",
-          })
-          .eq("id", s.step.id);
-        if (stepError) throw stepError;
-      }
-
-      if (decision === "approved" && !s.step) {
+      const bucket = bucketFor(s);
+      if (decision === "approved" && (bucket === "reference" || bucket === "owner")) {
         const payload = s.payload as SuggestionPayload | null;
 
         if (
