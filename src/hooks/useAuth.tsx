@@ -39,7 +39,9 @@ export type ViewAs = {
 };
 const VIEW_AS_KEY = "biggers-view-as";
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+// Kept on globalThis so a hot reload of this file doesn't orphan the mounted provider.
+const g = globalThis as { __biggersAuthContext?: React.Context<AuthContextValue | null> };
+const AuthContext = (g.__biggersAuthContext ??= createContext<AuthContextValue | null>(null));
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
