@@ -449,9 +449,7 @@ export function StepRenderer({
                 <div className="flex w-full flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <p className="flex items-center gap-2 text-sm font-medium">
                   <UserCheck className="size-4 shrink-0 text-accent" />
-                  {step.step_type === "doing_signoff"
-                    ? "This is the real certification — your trainer signs off after watching you do it."
-                    : "Day 4 is live practice with real customers, supervised by your trainer."}
+                  Your trainer needs to sign off here once completed
                 </p>
 
                 <Button
