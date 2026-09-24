@@ -13,8 +13,16 @@ import {
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { ViewAsBar } from "@/components/ViewAsBar";
+import { useApprovalsData } from "@/lib/approvals";
 
-type NavItem = { label: string; to: string };
+type NavItem = { label: string; to: string; badge?: number };
+
+const CountBadge = ({ n }: { n?: number }) =>
+  n ? (
+    <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-semibold leading-5 text-accent-foreground">
+      {n}
+    </span>
+  ) : null;
 
 const linkClass =
   "rounded-md px-2.5 py-1.5 transition-colors hover:bg-secondary/60 hover:text-foreground";
@@ -39,6 +47,7 @@ export function AppLayout() {
   ].some((p) => pathname.startsWith(p));
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { count: approvalCount } = useApprovalsData();
 
   const baseItems: NavItem[] = [
     { label: "Today", to: "/" },
@@ -48,7 +57,7 @@ export function AppLayout() {
 
   const contentItems: NavItem[] = isManagerOrOwner
     ? [
-        ...(isOwner || isGeneralManager ? [{ label: "Approvals", to: "/approvals" }] : []),
+        ...(isOwner || isGeneralManager ? [{ label: "Approvals", to: "/approvals", badge: approvalCount }] : []),
         { label: "Content", to: "/admin/content" },
         { label: "Preview Training", to: "/preview" },
         ...(isOwner ? [{ label: "Gaps", to: "/admin/gaps" }] : []),
@@ -95,6 +104,7 @@ export function AppLayout() {
         className={`flex items-center gap-1 ${linkClass} ${groupActive(items) ? activeClass : ""}`}
       >
         {label}
+        <CountBadge n={items.reduce((t, i) => t + (i.badge ?? 0), 0)} />
         <ChevronDown className="size-3.5" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -102,6 +112,7 @@ export function AppLayout() {
           <DropdownMenuItem key={item.to} asChild>
             <Link to={item.to} className={isActive(item.to) ? "font-semibold" : ""}>
               {item.label}
+              <CountBadge n={item.badge} />
             </Link>
           </DropdownMenuItem>
         ))}
@@ -123,6 +134,7 @@ export function AppLayout() {
             className={`block ${linkClass} ${isActive(item.to) ? activeClass : ""}`}
           >
             {item.label}
+            <CountBadge n={item.badge} />
           </Link>
         ))}
       </div>
