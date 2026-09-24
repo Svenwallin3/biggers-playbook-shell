@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
+import { ViewAsBar } from "@/components/ViewAsBar";
 
 type NavItem = { label: string; to: string };
 
@@ -130,6 +131,7 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <ViewAsBar />
       <header className="sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/75">
         <div
           className={`mx-auto flex min-h-14 w-full flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6 ${
