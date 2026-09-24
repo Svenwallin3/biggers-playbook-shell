@@ -727,21 +727,18 @@ export function StepEditPanel({
   step,
   stepModule,
   canEditDirect,
-  canSuggest,
   employeeId,
   onSaved,
 }: {
   step: StepRow;
   stepModule: (ModuleRow & { track?: TrackRow | null | undefined }) | undefined;
   canEditDirect: boolean;
-  canSuggest: boolean;
   employeeId: string | undefined;
-  /** Called after a successful save/suggest — used to close the inline sheet. */
+  /** Called after a successful save — used to close the inline sheet. */
   onSaved?: () => void;
 }) {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<StepDraft>(() => draftFromStep(step));
-  const [suggestionWhy, setSuggestionWhy] = useState("");
   // Pending block payload edits — saved together with the step fields by one button.
   const [blockDrafts, setBlockDrafts] = useState<Record<string, BlockPayload>>({});
   useEffect(() => {
@@ -847,23 +844,6 @@ export function StepEditPanel({
   });
 
 
-  const suggest = useMutation({
-    mutationFn: async () => {
-      await submitStepSuggestion({
-        stepId: step.id,
-        submittedBy: employeeId!,
-        title: draft.title.trim(),
-        contentBody: draft.content_body.trim(),
-        howYouKnow: suggestionWhy.trim() || null,
-      });
-    },
-    onSuccess: () => {
-      setSuggestionWhy("");
-      toast.success("Sent to the Owner approval queue.");
-      onSaved?.();
-    },
-    onError: (error: Error) => toast.error("Couldn't submit", { description: error.message }),
-  });
 
 
 
@@ -881,9 +861,7 @@ export function StepEditPanel({
             {stepModule?.track?.name} · {stepModule?.name}
             {canEditDirect
               ? ""
-              : canSuggest
-                ? " — You can suggest a change to the title and content below — it goes to the Owner approval queue."
-                : " — read-only: outside your division"}
+              : ". Read-only. To propose a change, use Suggest a change on the step."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -893,7 +871,7 @@ export function StepEditPanel({
               id="title"
               value={draft.title}
               maxLength={140}
-              disabled={!canEditDirect && !canSuggest}
+              disabled={!canEditDirect}
               onChange={(e) => patch({ title: e.target.value })}
             />
           </div>
@@ -950,9 +928,7 @@ export function StepEditPanel({
                 </p>
               ) : (
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Block-based content isn&apos;t editable from here yet. To recommend a change, use
-                  the Flag button on the step itself — it goes to your manager and never applies
-                  automatically.
+                  To propose a change, use Suggest a change on the step.
                 </p>
               )}
             </div>
@@ -965,26 +941,13 @@ export function StepEditPanel({
                 rows={6}
                 value={draft.content_body}
                 maxLength={4000}
-                disabled={!canEditDirect && !canSuggest}
+                disabled={!canEditDirect}
                 onChange={(e) => patch({ content_body: e.target.value })}
                 placeholder="One numbered step per line."
               />
             </div>
           )}
 
-          {canSuggest && !blockFirst ? (
-            <div className="space-y-2">
-              <Label htmlFor="why">How do you know it should change?</Label>
-              <Textarea
-                id="why"
-                rows={3}
-                value={suggestionWhy}
-                maxLength={1000}
-                onChange={(e) => setSuggestionWhy(e.target.value)}
-                placeholder="What you'd check before you'd sign off on it."
-              />
-            </div>
-          ) : null}
 
           <div className="space-y-2">
             <Label htmlFor="notes">Content notes (admin-only)</Label>
@@ -1111,11 +1074,6 @@ export function StepEditPanel({
           <Separator />
 
           <div className="flex flex-wrap gap-2">
-            {canSuggest && !blockFirst ? (
-              <Button disabled={suggest.isPending || !employeeId} onClick={() => suggest.mutate()}>
-                {suggest.isPending ? "Submitting…" : "Submit for approval"}
-              </Button>
-            ) : null}
 
             {step.is_deleted ? (
               <Button

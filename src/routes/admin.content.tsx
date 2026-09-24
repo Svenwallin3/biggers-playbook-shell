@@ -276,7 +276,6 @@ function ContentEditorPage() {
               step={step}
               stepModule={stepModule}
               canEditDirect={canEditDirect}
-              canSuggest={canSuggest}
               employeeId={employee?.id}
             />
           ) : null}
