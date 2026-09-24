@@ -17,7 +17,7 @@ import { useApprovalsData } from "@/lib/approvals";
 
 type NavItem = { label: string; to: string; badge?: number };
 
-const CountBadge = ({ n }: { n?: number }) =>
+const CountBadge = ({ n }: { n?: number | undefined }) =>
   n ? (
     <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 text-[11px] font-semibold leading-5 text-accent-foreground">
       {n}
