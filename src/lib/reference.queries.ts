@@ -217,7 +217,8 @@ export type SuggestionPayload =
       locationTag: string | null;
     }
   | { type: "delete_document" }
-  | { type: "delete_module" };
+  | { type: "delete_module" }
+  | { type: "delete_track"; track_id: string };
 
 /**
  * A General Manager cannot delete a reference document directly (the

@@ -220,9 +220,9 @@ function ModulePage() {
   if (previewMode && canEditDirect && mod.day_assignment === null && !traineePreview) {
     const canCreateHere =
       isOwner ||
-      (employee?.auth_tier === "manager" &&
+      (isGeneralManager &&
         !!mod.track?.department &&
-        mod.track.department === employee.department_scope);
+        mod.track.department === employee?.department_scope);
     return (
       <div className="space-y-6">
         <BackLink />

@@ -49,6 +49,7 @@ import { contentStatusOptions, stepTypeOptions } from "@/components/admin/Conten
 import {
   moduleCategoryOptionsQueryOptions,
   submitModuleDeleteRequest,
+  submitTrackDeleteRequest,
   submitStepSuggestion,
   versionHistoryQueryOptions,
 } from "@/lib/admin.queries";
@@ -528,10 +529,12 @@ export function TrackEditPanel({
   track,
   canEdit,
   employeeId,
+  deleteRequiresApproval = false,
 }: {
   track: TrackRow;
   canEdit: boolean;
   employeeId: string | undefined;
+  deleteRequiresApproval?: boolean;
 }) {
   const [form, setForm] = useState({
     name: track.name,
@@ -551,6 +554,18 @@ export function TrackEditPanel({
   }, [track.id, track.updated_at]);
   const patch = (p: Partial<typeof form>) => setForm((f) => ({ ...f, ...p }));
   const { save, softDelete } = useEntityMutations("tracks", track.id, employeeId);
+  const requestDelete = useMutation({
+    mutationFn: () =>
+      submitTrackDeleteRequest({
+        trackId: track.id,
+        trackName: track.name,
+        submittedBy: employeeId!,
+      }),
+    onSuccess: () =>
+      toast.success("Request sent. An Owner will review deleting this section. Nothing has changed yet."),
+    onError: (error: Error) =>
+      toast.error("Couldn't send that request", { description: error.message }),
+  });
 
   return (
     <>
@@ -648,10 +663,13 @@ export function TrackEditPanel({
             </Button>
             <DeleteControls
               isDeleted={track.is_deleted}
-              label="track"
+              label="section"
               canEdit={canEdit}
-              pending={softDelete.isPending}
+              pending={softDelete.isPending || requestDelete.isPending}
               onToggle={(hidden) => softDelete.mutate(hidden)}
+              requestOnly={deleteRequiresApproval}
+              targetName={`section ${track.name}`}
+              onRequest={() => requestDelete.mutate()}
             />
           </div>
         </CardContent>

@@ -178,6 +178,16 @@ function ApprovalsPage() {
             })
             .eq("id", s.module_id);
           if (error) throw error;
+        } else if (payload?.type === "delete_track" && payload.track_id) {
+          const { error } = await supabase
+            .from("tracks")
+            .update({
+              is_deleted: true,
+              deleted_by: employee!.id,
+              deleted_at: new Date().toISOString(),
+            })
+            .eq("id", payload.track_id);
+          if (error) throw error;
         }
       }
       const { error } = await supabase
@@ -250,10 +260,14 @@ function ApprovalsPage() {
           const isFlag = s.field_what.startsWith("FLAG:");
           const payload = s.payload as SuggestionPayload | null;
           const isDeleteRequest =
-            payload?.type === "delete_document" || payload?.type === "delete_module";
+            payload?.type === "delete_document" ||
+            payload?.type === "delete_module" ||
+            payload?.type === "delete_track";
           const deleteTarget =
             payload?.type === "delete_module"
               ? (s.module?.name ?? "module")
+              : payload?.type === "delete_track"
+              ? s.field_what.replace(/^Delete section "(.*)"$/, "$1")
               : (s.reference_document?.title ?? "document");
           return (
             <Card key={s.id}>
@@ -272,6 +286,8 @@ function ApprovalsPage() {
                   {isDeleteRequest
                     ? payload?.type === "delete_module"
                       ? "Training content · Module"
+                      : payload?.type === "delete_track"
+                      ? "Training content · Section"
                       : `Reference Library · ${s.reference_document?.document_type === "sop" ? "SOP" : "Checklist"}`
                     : s.step
                     ? `${s.step.module?.track?.name} · ${s.step.module?.name}`

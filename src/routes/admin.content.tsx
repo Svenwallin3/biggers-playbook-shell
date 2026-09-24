@@ -125,10 +125,7 @@ function ContentEditorPage() {
 
   // Same rule, applied to the row being created into (RLS enforces it too).
   const canEditDepartment = (department: string | null | undefined) =>
-    employee?.auth_tier === "owner" ||
-    (employee?.auth_tier === "manager" &&
-      !!department &&
-      department === employee.department_scope);
+    isOwner || (isGeneralManager && !!department && department === employee?.department_scope);
 
   // Direct-edit authority for existing content (post-2026-08-11 tightening): Owner or GM only.
   // Creating new content is still any-manager — see canEditDepartment above.
@@ -145,12 +142,12 @@ function ContentEditorPage() {
     !!stepModule?.track &&
     stepModule.track.department === employee?.department_scope;
 
-  const canCreateTrack = employee?.auth_tier === "owner" || employee?.auth_tier === "manager";
+  const canCreateTrack = isOwner || isGeneralManager;
 
   // Drag-and-drop authorisation (UX layer only — the database is the boundary).
   const canReorderTracks = isOwner || isGeneralManager;
   const canReorderModulesIn = (track: { department: string | null }) =>
-    isOwner || isGeneralManager || canEditDepartment(track.department);
+    isOwner || (isGeneralManager && track.department === employee?.department_scope);
 
   useEffect(() => {
     if (!selection.id && steps.length) setSelectedId(steps[0]!.id);
@@ -181,7 +178,7 @@ function ContentEditorPage() {
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr] lg:items-start">
         <nav className="space-y-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1">
-          <NewTrackDialog disabled={!canCreateTrack} onCreated={() => undefined} />
+          {canCreateTrack ? <NewTrackDialog onCreated={() => undefined} /> : null}
           <div className="flex items-center justify-between gap-2 rounded-md border px-2 py-1.5">
             <Label htmlFor="show-hidden" className="text-xs font-medium text-muted-foreground">
               Show hidden
@@ -205,15 +202,16 @@ function ContentEditorPage() {
                 {m.is_deleted ? " (hidden)" : ""}
               </>
             )}
-            renderTrackFooter={(track) => (
+            renderTrackFooter={(track) =>
+              canEditDepartment(track.department) ? (
               <NewModuleDialog
                 trackId={track.id}
                 department={track.department}
                 nextSequence={modules.filter((m) => m.track_id === track.id).length + 1}
-                disabled={!canEditDepartment(track.department)}
                 onCreated={() => undefined}
               />
-            )}
+              ) : null
+            }
             renderStepLabel={(s) => (
               <span className="flex items-center gap-1.5">
                 <span className={s.is_deleted ? "line-through" : undefined}>{s.title}</span>
@@ -230,15 +228,16 @@ function ContentEditorPage() {
                 ) : null}
               </span>
             )}
-            renderModuleChildren={(m, track) => (
+            renderModuleChildren={(m, track) =>
+              canEditDepartment(track.department) ? (
               <NewStepDialog
                 moduleId={m.id}
                 nextSequence={steps.filter((s) => s.module_id === m.id).length + 1}
-                disabled={!canEditDepartment(track.department)}
                 canEditDirect={canEditDirectInDepartment(track.department)}
                 onCreated={(id) => setSelectedId(id)}
               />
-            )}
+              ) : null
+            }
           />
         </nav>
 
@@ -248,6 +247,7 @@ function ContentEditorPage() {
               track={selectedTrack}
               canEdit={canEditDirectInDepartment(selectedTrack.department)}
               employeeId={employee?.id}
+              deleteRequiresApproval={isGeneralManager && !isOwner}
             />
           ) : null}
           {selectedModule ? (
