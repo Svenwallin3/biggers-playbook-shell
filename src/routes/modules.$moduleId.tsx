@@ -17,7 +17,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPanels";
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
-import { FlagStepButton } from "@/components/training/FlagStepButton";
+import { SuggestChangeButton } from "@/components/training/SuggestChangeButton";
 import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { TraineeWalk } from "@/components/training/TraineeWalk";
 import { StandaloneModuleBuilder } from "@/components/admin/StandaloneModuleBuilder";
@@ -441,7 +441,7 @@ function ModulePage() {
         blockedOnTrainer={blockedOnTrainer}
         onEndOfDayHome={() => void navigate({ to: "/" })}
         stepTitleAction={
-          canEditDirect || canSuggest ? (
+          canEditDirect ? (
             <Sheet open={stepSheetOpen} onOpenChange={setStepSheetOpen}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -460,9 +460,7 @@ function ModulePage() {
                 <SheetHeader>
                   <SheetTitle>Edit step</SheetTitle>
                   <SheetDescription>
-                    {canEditDirect
-                      ? "Saves straight to this step, with the previous version logged."
-                      : "Your changes go to the Owner approval queue."}
+                    Saves straight to this step, with the previous version logged.
                   </SheetDescription>
                 </SheetHeader>
                 <div className="mt-4 space-y-6">
@@ -471,7 +469,6 @@ function ModulePage() {
                     step={active}
                     stepModule={mod}
                     canEditDirect={canEditDirect}
-                    canSuggest={canSuggest}
                     employeeId={employee?.id}
                     onSaved={() => setStepSheetOpen(false)}
                   />
@@ -501,7 +498,9 @@ function ModulePage() {
         footer={
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <FlagStepButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
+              {employee && !canEditDirect ? (
+                <SuggestChangeButton stepId={active.id} stepTitle={active.title} moduleId={mod.id} />
+              ) : null}
             </div>
             {!needsTrainer && activeComplete && !previewMode ? (
               <Button

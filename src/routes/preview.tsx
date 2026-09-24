@@ -30,6 +30,7 @@ import { ModuleHeader } from "@/components/training/ModuleHeader";
 import { StepTypeChip } from "@/components/training/StepTypeChip";
 import { StepStatusBadge } from "@/components/training/StepStatusBadge";
 import { supabase } from "@/integrations/supabase/client";
+import { SuggestChangeButton } from "@/components/training/SuggestChangeButton";
 import { useAuth } from "@/hooks/useAuth";
 import { contentTreeQueryOptions } from "@/lib/admin.queries";
 import {
@@ -575,7 +576,7 @@ function PreviewPage() {
             </div>
           }
           stepTitleAction={
-            activeStep && (canEditDirect || canSuggest) ? (
+            activeStep && canEditDirect ? (
               <Sheet open={stepSheetOpen} onOpenChange={setStepSheetOpen}>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -594,9 +595,7 @@ function PreviewPage() {
                   <SheetHeader>
                     <SheetTitle>Edit step</SheetTitle>
                     <SheetDescription>
-                      {canEditDirect
-                        ? "Saves straight to this step, with the previous version logged."
-                        : "Your changes go to the Owner approval queue."}
+                      Saves straight to this step, with the previous version logged.
                     </SheetDescription>
                   </SheetHeader>
                   <div className="mt-4 space-y-6">
@@ -605,7 +604,6 @@ function PreviewPage() {
                       step={activeStep}
                       stepModule={{ ...activeModule, track: activeTrack }}
                       canEditDirect={canEditDirect}
-                      canSuggest={canSuggest}
                       employeeId={employee?.id}
                       onSaved={() => {
                         refreshPreview();
@@ -622,9 +620,18 @@ function PreviewPage() {
           }
           footer={
             activeStep ? (
-              <p className="text-xs text-muted-foreground">
-                {stepTypeLabels[activeStep.step_type]}
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {stepTypeLabels[activeStep.step_type]}
+                </p>
+                {employee && !canEditDirect ? (
+                  <SuggestChangeButton
+                    stepId={activeStep.id}
+                    stepTitle={activeStep.title}
+                    moduleId={activeModule.id}
+                  />
+                ) : null}
+              </div>
             ) : null
           }
         />

@@ -48,8 +48,7 @@ export function AppLayout() {
 
   const contentItems: NavItem[] = isManagerOrOwner
     ? [
-        { label: "Suggest", to: "/suggest" },
-        { label: "Approvals", to: "/approvals" },
+        ...(isOwner || isGeneralManager ? [{ label: "Approvals", to: "/approvals" }] : []),
         { label: "Content", to: "/admin/content" },
         { label: "Preview Training", to: "/preview" },
         ...(isOwner ? [{ label: "Gaps", to: "/admin/gaps" }] : []),

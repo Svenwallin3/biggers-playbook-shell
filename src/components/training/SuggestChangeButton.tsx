@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flag } from "lucide-react";
+import { MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export function FlagStepButton({
+export function SuggestChangeButton({
   stepId,
   stepTitle,
   moduleId,
@@ -31,28 +31,27 @@ export function FlagStepButton({
 
   async function submit() {
     if (!employee) {
-      toast.error("Sign in to flag a step.");
+      toast.error("Sign in to suggest a change.");
       return;
     }
     setBusy(true);
-    // Flags land in the suggestion queue as a pending item from this employee,
-    // which is what their manager reviews.
     const { error } = await supabase.from("suggestion_queue").insert({
       step_id: stepId,
       module_id: moduleId ?? null,
       submitted_by: employee.id,
-      field_what: `FLAG: ${stepTitle}`,
-      field_how: reason.trim() || null,
+      field_what: stepTitle,
+      field_how: reason.trim(),
+      payload: { type: "feedback" },
       status: "pending",
     });
     setBusy(false);
     if (error) {
-      toast.error("Couldn't send that flag", { description: error.message });
+      toast.error("Couldn't send that suggestion", { description: error.message });
       return;
     }
     setOpen(false);
     setReason("");
-    toast("Step flagged for your manager", { description: stepTitle });
+    toast.success("Sent for review");
   }
 
   return (
@@ -68,30 +67,30 @@ export function FlagStepButton({
           setOpen(true);
         }}
       >
-        <Flag className="size-3.5" />
-        Flag
+        <MessageSquarePlus className="size-3.5" />
+        Suggest a change
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Flag this step</DialogTitle>
+            <DialogTitle>Suggest a change</DialogTitle>
             <DialogDescription>
-              This goes to your manager. Tell them what looked wrong or confusing about &ldquo;
-              {stepTitle}&rdquo;.
+              Tell us what is wrong, missing, or confusing on &ldquo;{stepTitle}&rdquo;. It goes to
+              your General Manager and ownership. Nothing changes until they review it.
             </DialogDescription>
           </DialogHeader>
           <Textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="What's off about this step?"
+            placeholder="What should change, and why?"
             rows={4}
           />
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => void submit()} disabled={busy}>
-              {busy ? "Sending…" : "Send flag"}
+            <Button onClick={() => void submit()} disabled={busy || !reason.trim()}>
+              {busy ? "Sending…" : "Send"}
             </Button>
           </DialogFooter>
         </DialogContent>

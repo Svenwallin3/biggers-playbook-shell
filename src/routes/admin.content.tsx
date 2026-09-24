@@ -134,13 +134,6 @@ function ContentEditorPage() {
     (isGeneralManager && !!department && department === employee?.department_scope);
 
   const canEditDirect = canEditDirectInDepartment(stepModule?.track?.department);
-  // A regular (non-GM) manager, own department, sees an editable title/content_body form
-  // that submits to the approval queue instead of a direct save.
-  const canSuggest =
-    isManagerOrOwner &&
-    !canEditDirect &&
-    !!stepModule?.track &&
-    stepModule.track.department === employee?.department_scope;
 
   const canCreateTrack = isOwner || isGeneralManager;
 
@@ -276,7 +269,6 @@ function ContentEditorPage() {
               step={step}
               stepModule={stepModule}
               canEditDirect={canEditDirect}
-              canSuggest={canSuggest}
               employeeId={employee?.id}
             />
           ) : null}
