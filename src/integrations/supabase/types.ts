@@ -1485,6 +1485,7 @@ export type Database = {
           step_id: string
         }[]
       }
+      gm_can_review_suggestion: { Args: { _id: string }; Returns: boolean }
       has_tier: {
         Args: { _tier: Database["public"]["Enums"]["auth_tier"] }
         Returns: boolean
