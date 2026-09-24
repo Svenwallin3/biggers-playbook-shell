@@ -217,9 +217,13 @@ export function SortableContentTree({
   const moduleById = useMemo(() => new Map(modules.map((m) => [m.id, m])), [modules]);
   const stepById = useMemo(() => new Map(steps.map((s) => [s.id, s])), [steps]);
 
-  // Deep-link (?stepId=… / ?moduleId=…): expand division → day → module, then bring into view.
+  // Deep-link (?stepId=… / ?moduleId=…): expand division → day → module once per selection,
+  // then bring into view. Manual collapses afterwards always stick.
+  const lastAutoOpenedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!selection.id || (selection.kind !== "step" && selection.kind !== "module")) return;
+    const selKey = `${selection.kind}:${selection.id}`;
+    if (lastAutoOpenedRef.current === selKey) return;
     const mod =
       selection.kind === "module"
         ? moduleById.get(selection.id)
@@ -228,14 +232,14 @@ export function SortableContentTree({
             return step ? moduleById.get(step.module_id) : undefined;
           })();
     if (!mod) return;
+    lastAutoOpenedRef.current = selKey;
     const keys = [`t-${mod.track_id}`, `d-${mod.track_id}-${dayKeyOf(mod)}`, `m-${mod.id}`];
     if (keys.some((k) => openMap[k] !== true)) {
       setOpen({ ...openMap, ...Object.fromEntries(keys.map((k) => [k, true])) });
-      return;
     }
-    selectedRef.current?.scrollIntoView({ block: "nearest" });
+    requestAnimationFrame(() => selectedRef.current?.scrollIntoView({ block: "nearest" }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selection.kind, selection.id, steps.length, modules.length, moduleById, stepById, openMap]);
+  }, [selection.kind, selection.id, moduleById, stepById]);
 
 
   const sensors = useSensors(
