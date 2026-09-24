@@ -22,7 +22,7 @@ import {
 } from "@/components/admin/ContentCreateDialogs";
 import { SortableContentTree } from "@/components/admin/SortableContentTree";
 import { AssignableModulesTile } from "@/components/admin/AssignableModulesTile";
-import { ModuleEditPanel, StepEditPanel } from "@/components/admin/EntityEditPanels";
+import { ModuleEditPanel, StepEditPanel, TrackEditPanel } from "@/components/admin/EntityEditPanels";
 import { QuizQuestionsPanel } from "@/components/admin/QuizQuestionsPanel";
 import { TraineeWalk } from "@/components/training/TraineeWalk";
 import { ModuleThemeCard, introCardText } from "@/components/training/ModuleThemeCard";
@@ -84,6 +84,7 @@ function PreviewPage() {
   const queryClient = useQueryClient();
   const [stepSheetOpen, setStepSheetOpen] = useState(false);
   const [moduleSheetOpen, setModuleSheetOpen] = useState(false);
+  const [trackSheetOpen, setTrackSheetOpen] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
   const [manageMode, setManageMode] = useState(false);
 
@@ -299,6 +300,38 @@ function PreviewPage() {
             {t.name}
           </Link>
         ))}
+        {canEditDirect ? (
+          <Sheet open={trackSheetOpen} onOpenChange={setTrackSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-7 shrink-0"
+                aria-label={`Edit the ${activeTrack.name} section`}
+                title="Edit section"
+              >
+                <Pencil className="size-3.5" aria-hidden />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl">
+              <SheetHeader>
+                <SheetTitle>Edit section</SheetTitle>
+                <SheetDescription>
+                  Changes save straight to this section and are logged to version history.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-4 space-y-6">
+                <TrackEditPanel
+                  key={activeTrack.id}
+                  track={activeTrack}
+                  canEdit={canEditDirect}
+                  employeeId={employee?.id}
+                  deleteRequiresApproval={isGeneralManager && !isOwner}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        ) : null}
       </div>
 
       {branchOptions.length > 1 ? (
@@ -366,7 +399,7 @@ function PreviewPage() {
             onClick={() => setManageMode((v) => !v)}
           >
             <SlidersHorizontal className="size-4" aria-hidden />
-            Manage content
+            Outline
           </Button>
         ) : null}
       </div>

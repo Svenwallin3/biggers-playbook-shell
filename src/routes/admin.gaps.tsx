@@ -158,7 +158,16 @@ function GapsPage() {
             <CardHeader className="pb-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle className="text-base">
-                  <Link to="/admin/content" className="hover:underline">
+                  <Link
+                    to="/preview"
+                    search={{
+                      track: module!.track_id,
+                      module: module!.id,
+                      step: step.id,
+                      branch: module!.path_id ?? undefined,
+                    }}
+                    className="hover:underline"
+                  >
                     {step.title}
                   </Link>
                 </CardTitle>
