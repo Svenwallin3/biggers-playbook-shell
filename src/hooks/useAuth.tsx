@@ -23,9 +23,21 @@ type AuthContextValue = {
   isManagerOrOwner: boolean;
   isOwner: boolean;
   isGeneralManager: boolean;
+  /** True only for a real Owner, regardless of any "View as" override. */
+  realIsOwner: boolean;
+  viewAs: ViewAs | null;
+  setViewAs: (v: ViewAs | null) => void;
   refreshEmployee: () => Promise<void>;
   signOut: () => Promise<void>;
 };
+
+/** Owner-only, display-only role simulation. The database still sees the real Owner. */
+export type ViewAs = {
+  tier: "manager" | "staff";
+  canManageTeam: boolean;
+  divisionScope: Employee["department_scope"];
+};
+const VIEW_AS_KEY = "biggers-view-as";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -33,6 +45,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewAs, setViewAsState] = useState<ViewAs | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(VIEW_AS_KEY);
+      if (raw) setViewAsState(JSON.parse(raw) as ViewAs);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const setViewAs = useCallback((v: ViewAs | null) => {
+    setViewAsState(v);
+    try {
+      if (v) sessionStorage.setItem(VIEW_AS_KEY, JSON.stringify(v));
+      else sessionStorage.removeItem(VIEW_AS_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const loadEmployee = useCallback(async (userId: string | undefined) => {
     if (!userId) {
@@ -69,22 +100,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadEmployee]);
 
   const value = useMemo<AuthContextValue>(() => {
-    const tier = employee?.auth_tier ?? null;
+    const realIsOwner = employee?.auth_tier === "owner";
+    const activeViewAs = realIsOwner ? viewAs : null;
+    const effective: Employee | null =
+      employee && activeViewAs
+        ? {
+            ...employee,
+            auth_tier: activeViewAs.tier,
+            can_manage_team: activeViewAs.tier === "manager" && activeViewAs.canManageTeam,
+            department_scope: activeViewAs.divisionScope,
+          }
+        : employee;
+    const tier = effective?.auth_tier ?? null;
     return {
       session,
-      employee,
+      employee: effective,
+      realIsOwner,
+      viewAs: activeViewAs,
+      setViewAs,
       tier,
       loading,
       isManagerOrOwner: tier === "manager" || tier === "owner",
       isOwner: tier === "owner",
-      isGeneralManager: tier === "manager" && employee?.can_manage_team === true,
+      isGeneralManager: tier === "manager" && effective?.can_manage_team === true,
       refreshEmployee: () => loadEmployee(session?.user?.id),
       signOut: async () => {
+        setViewAs(null);
         await supabase.auth.signOut();
         setEmployee(null);
       },
     };
-  }, [employee, loading, loadEmployee, session]);
+  }, [employee, loading, loadEmployee, session, viewAs, setViewAs]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
