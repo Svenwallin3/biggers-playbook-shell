@@ -36,6 +36,7 @@ function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [sent, setSent] = useState(false);
   const [magicLink, setMagicLink] = useState("");
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState<{ fullName: string; maskedEmail: string } | null>(
@@ -138,9 +139,48 @@ function LoginPage() {
               <Mail className="mx-auto size-8 text-primary" />
               <p className="text-sm font-medium">Check your email</p>
               <p className="text-sm text-muted-foreground">
-                We sent a sign-in link to {email}. Open it on this device and you&apos;ll stay
-                signed in.
+                We sent a sign-in code to {email}. Type it below and you&apos;ll stay signed in
+                on this device.
               </p>
+              <form
+                className="space-y-2 text-left"
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  setError(null);
+                  setBusy(true);
+                  const { error: codeError } = await supabase.auth.verifyOtp({
+                    email,
+                    token: code.trim(),
+                    type: "email",
+                  });
+                  setBusy(false);
+                  if (codeError) {
+                    setError(
+                      codeError.message.toLowerCase().includes("expired")
+                        ? "That code has expired or was already used. Send yourself a new one."
+                        : "That code didn't work. Check the numbers and try again.",
+                    );
+                    return;
+                  }
+                  await navigate({ to: "/", replace: true });
+                }}
+              >
+                <Label htmlFor="otp-code">Sign-in code</Label>
+                <Input
+                  id="otp-code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="123456"
+                  maxLength={10}
+                  value={code}
+                  onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+                  className="text-center text-lg tracking-widest"
+                />
+                {error && !magicLink ? <p className="text-sm text-destructive">{error}</p> : null}
+                <Button type="submit" className="w-full" disabled={code.length < 6 || busy}>
+                  {busy ? "Signing in…" : "Sign in"}
+                </Button>
+              </form>
               <div className="space-y-3 rounded-md border border-dashed border-border bg-muted/40 p-4 text-left">
                 <div className="flex items-start gap-2">
                   <Link2 className="mt-0.5 size-4 shrink-0 text-primary" />
