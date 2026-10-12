@@ -69,7 +69,7 @@ export const Route = createFileRoute("/modules/$moduleId")({
   component: ModulePage,
   errorComponent: ({ error }) => (
     <p role="alert" className="text-sm text-destructive">
-      {error.message}
+      {error instanceof Error ? error.message : String(error)}
     </p>
   ),
   notFoundComponent: () => <p className="text-sm text-muted-foreground">Module not found.</p>,
