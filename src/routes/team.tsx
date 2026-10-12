@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 import {
   Select,
@@ -232,6 +233,16 @@ export const Route = createFileRoute("/team")({
   component: TeamPage,
 });
 
+type SortKey =
+  | "name"
+  | "email"
+  | "tier"
+  | "status"
+  | "onboarding"
+  | "division"
+  | "path"
+  | "location";
+
 function TeamPage() {
   const { isOwner, isGeneralManager, employee, loading, session } = useAuth();
   const queryClient = useQueryClient();
@@ -239,6 +250,16 @@ function TeamPage() {
   const onboardingQuery = useQuery(onboardingCompletionQueryOptions());
 
   const locations = useQuery(allLocationsQueryOptions()).data ?? [];
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
+  const pathsQuery = useQuery({
+    queryKey: ["team-path-names"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("paths").select("id, name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const pathNames = new Map((pathsQuery.data ?? []).map((p) => [p.id, p.name]));
   const update = useMutation({
     mutationFn: async (input: { id: string; patch: Partial<EmployeeRow> }) => {
       const { error } = await supabase.from("employees").update(input.patch).eq("id", input.id);
@@ -258,7 +279,7 @@ function TeamPage() {
   }
 
   const all = (employeesQuery.data ?? []).filter((e) => !e.is_deleted);
-  const rows = isOwner
+  const scoped = isOwner
     ? all
     : all.filter(
         (e) =>
@@ -266,6 +287,59 @@ function TeamPage() {
           e.department_scope === (employee?.department_scope ?? null) &&
           e.location_id === (employee?.location_id ?? null),
       );
+  const tierRank = (e: EmployeeRow) =>
+    e.auth_tier === "owner" ? 0 : e.auth_tier === "manager" ? (e.can_manage_team ? 1 : 2) : 3;
+  const sortValue = (e: EmployeeRow, key: SortKey): string | number | null => {
+    switch (key) {
+      case "name":
+        return e.full_name?.toLowerCase() ?? null;
+      case "email":
+        return e.email?.toLowerCase() ?? null;
+      case "tier":
+        return tierRank(e);
+      case "status":
+        return e.status ?? null;
+      case "onboarding": {
+        const p = onboardingQuery.data?.[e.id];
+        return p && p.total ? p.completed / p.total : null;
+      }
+      case "division":
+        return e.department_scope ? divisionLabel(e.department_scope).toLowerCase() : null;
+      case "path":
+        return e.path_id ? (pathNames.get(e.path_id)?.toLowerCase() ?? null) : null;
+      case "location":
+        return e.location_id
+          ? (locations.find((l) => l.id === e.location_id)?.name.toLowerCase() ?? null)
+          : null;
+    }
+  };
+  const rows = [...scoped].sort((a, b) => {
+    const va = sortValue(a, sort.key);
+    const vb = sortValue(b, sort.key);
+    if (va === vb) return 0;
+    if (va === null) return 1; // blanks always last
+    if (vb === null) return -1;
+    const cmp = va < vb ? -1 : 1;
+    return sort.dir === "asc" ? cmp : -cmp;
+  });
+  const SortHead = ({ k, label, className }: { k: SortKey; label: string; className?: string }) => (
+    <TableHead className={className} aria-sort={sort.key === k ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}>
+      <button
+        type="button"
+        className="inline-flex items-center gap-1 hover:text-foreground"
+        onClick={() =>
+          setSort((s) => ({ key: k, dir: s.key === k && s.dir === "asc" ? "desc" : "asc" }))
+        }
+      >
+        {label}
+        {sort.key === k ? (
+          sort.dir === "asc" ? <ArrowUp className="size-3.5" aria-hidden /> : <ArrowDown className="size-3.5" aria-hidden />
+        ) : (
+          <ArrowUpDown className="size-3.5 opacity-40" aria-hidden />
+        )}
+      </button>
+    </TableHead>
+  );
 
   return (
     <div className="space-y-5">
@@ -296,26 +370,15 @@ function TeamPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead className="w-[150px]">Access tier</TableHead>
-              <TableHead className="w-[140px]">Status</TableHead>
-              <TableHead className="w-[130px]">Onboarding</TableHead>
+              <SortHead k="name" label="Name" />
+              <SortHead k="email" label="Email" />
+              <SortHead k="tier" label="Access tier" className="w-[150px]" />
+              <SortHead k="status" label="Status" className="w-[140px]" />
+              <SortHead k="onboarding" label="Onboarding" className="w-[130px]" />
               <TableHead className="w-[210px]">Cross-training</TableHead>
-              {isOwner ? (
-                <>
-                  <TableHead className="w-[170px]">Division</TableHead>
-
-                  <TableHead className="w-[150px]">Path</TableHead>
-
-                  <TableHead className="w-[190px]">Location</TableHead>
-                </>
-              ) : (
-                <>
-                  <TableHead className="w-[170px]">Division</TableHead>
-                  <TableHead className="w-[190px]">Location</TableHead>
-                </>
-              )}
+              <SortHead k="division" label="Division" className="w-[170px]" />
+              {isOwner ? <SortHead k="path" label="Path" className="w-[150px]" /> : null}
+              <SortHead k="location" label="Location" className="w-[190px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
